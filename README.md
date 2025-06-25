@@ -76,6 +76,24 @@ vapi assistant create
 vapi assistant delete <assistant-id>
 ```
 
+### Workflow Management
+
+```bash
+# List all workflows
+vapi workflow list
+
+# Get workflow details
+vapi workflow get <workflow-id>
+
+# Create a new workflow (basic)
+vapi workflow create
+
+# Delete a workflow
+vapi workflow delete <workflow-id>
+```
+
+**Note**: For visual workflow building with nodes and edges, use the [Vapi Dashboard](https://dashboard.vapi.ai/workflows).
+
 ### Project Integration
 
 Initialize Vapi in your existing project:
@@ -115,6 +133,7 @@ cli/
 ├── cmd/                    # Command implementations
 │   ├── root.go            # Main CLI setup
 │   ├── assistant.go       # Assistant commands
+│   ├── workflow.go        # Workflow commands
 │   ├── call.go           # Call commands
 │   ├── config.go         # Configuration commands
 │   ├── init.go           # Project initialization
