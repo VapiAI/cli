@@ -1,0 +1,61 @@
+# golangci-lint configuration for Vapi CLI
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - gocritic
+    - gosec
+    - bodyclose
+    - dupl
+    - errname
+    - errorlint
+    - exhaustive
+    - prealloc
+    - unconvert
+    - unparam
+  
+  settings:
+    misspell:
+      locale: US
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+
+  exclusions:
+    paths:
+      - vendor
+      - third_party
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - dupl
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/VapiAI/cli
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 3
