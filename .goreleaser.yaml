@@ -1,0 +1,171 @@
+# GoReleaser configuration
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: vapi
+    main: ./main.go
+    binary: vapi
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "6"
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+
+archives:
+  - id: vapi
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Bug fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: VapiAI
+    name: cli
+  name_template: "{{.ProjectName}}-v{{.Version}}"
+  header: |
+    ## Vapi CLI v{{.Version}}
+    
+    Welcome to the v{{.Version}} release of Vapi CLI!
+    
+    ### Installation
+    
+    #### macOS/Linux
+    ```bash
+    curl -sSL https://github.com/VapiAI/cli/releases/download/v{{.Version}}/vapi_$(uname -s)_$(uname -m).tar.gz | tar xz
+    sudo mv vapi /usr/local/bin
+    ```
+    
+    #### Windows
+    Download the Windows archive from the assets below and add to your PATH.
+    
+    #### Homebrew (coming soon)
+    ```bash
+    brew install vapi/tap/vapi-cli
+    ```
+    
+  footer: |
+    **Full Changelog**: https://github.com/VapiAI/cli/compare/{{ .PreviousTag }}...{{ .Tag }}
+    
+    ---
+    
+    _Built with ❤️ by the Vapi team_
+
+# Homebrew tap configuration (for future use)
+# Note: 'brews' is deprecated, use 'brew' pipe instead
+brews:
+  - repository:
+      owner: VapiAI
+      name: homebrew-tap
+      branch: main
+    directory: Formula
+    name: vapi-cli
+    homepage: "https://vapi.ai"
+    description: "Voice AI for developers - Vapi CLI"
+    license: "MIT"
+    test: |
+      system "#{bin}/vapi", "--version"
+    install: |
+      bin.install "vapi"
+    skip_upload: true  # Set to false when ready to publish to Homebrew
+
+# Scoop bucket configuration (for Windows users)
+scoops:
+  - repository:
+      owner: VapiAI
+      name: scoop-bucket
+      branch: main
+    directory: bucket
+    name: vapi-cli
+    homepage: "https://vapi.ai"
+    description: "Voice AI for developers - Vapi CLI"
+    license: MIT
+    skip_upload: true  # Set to false when ready to publish to Scoop
+
+# Docker images (optional, for containerized usage)
+# dockers:
+#   - image_templates:
+#       - "ghcr.io/vapiai/cli:{{ .Tag }}"
+#       - "ghcr.io/vapiai/cli:v{{ .Major }}"
+#       - "ghcr.io/vapiai/cli:v{{ .Major }}.{{ .Minor }}"
+#       - "ghcr.io/vapiai/cli:latest"
+#     dockerfile: Dockerfile
+#     build_flag_templates:
+#       - "--pull"
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"
+#     skip_push: true  # Set to false when ready to publish Docker images
+
+# Announce releases
+announce:
+  discord:
+    enabled: false  # Enable when Discord webhook is set up
+    message_template: |
+      **Vapi CLI {{.Tag}} is out!** 🎉
+      
+      Check it out at {{ .ReleaseURL }}
+    
+  twitter:
+    enabled: false  # Enable when Twitter credentials are set up
+    message_template: |
+      Vapi CLI {{.Tag}} is out! 🚀
+      
+      Check it out at {{ .ReleaseURL }}
+      
+      #VapiAI #DevTools #CLI 
