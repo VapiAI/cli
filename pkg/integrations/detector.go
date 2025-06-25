@@ -195,6 +195,11 @@ func DetectProject(projectPath string) (*ProjectInfo, error) {
 		case FrameworkReact, FrameworkVue, FrameworkAngular, FrameworkSvelte,
 			FrameworkNext, FrameworkNuxt, FrameworkRemix, FrameworkVanilla:
 			project.ProjectType = ProjectTypeWeb
+		case FrameworkFlutter, FrameworkPython, FrameworkGolang, FrameworkRuby,
+			FrameworkJava, FrameworkCSharp, FrameworkNode, FrameworkUnknown:
+			// If no specific frontend framework detected, it's likely a Node.js backend
+			project.Framework = FrameworkNode
+			project.ProjectType = ProjectTypeBackend
 		default:
 			// If no specific frontend framework detected, it's likely a Node.js backend
 			project.Framework = FrameworkNode
@@ -426,6 +431,8 @@ func (p *ProjectInfo) GetFrameworkName() string {
 		return "C#/.NET"
 	case FrameworkNode:
 		return "Node.js"
+	case FrameworkUnknown:
+		return "Unknown"
 	default:
 		return "Unknown"
 	}
@@ -453,6 +460,8 @@ func (p *ProjectInfo) GetSDKPackage() string {
 		return "Vapi"
 	case FrameworkFlutter:
 		return "vapi_flutter"
+	case FrameworkUnknown:
+		return ""
 	default:
 		return ""
 	}
@@ -481,6 +490,11 @@ func (p *ProjectInfo) GetSDKInstallCommand() string {
 		return fmt.Sprintf("dotnet add package %s", sdk)
 	case FrameworkFlutter:
 		return fmt.Sprintf("flutter pub add %s", sdk)
+	case FrameworkReact, FrameworkVue, FrameworkAngular, FrameworkSvelte,
+		FrameworkNext, FrameworkNuxt, FrameworkRemix, FrameworkVanilla,
+		FrameworkReactNative, FrameworkNode, FrameworkUnknown:
+		// Node.js based frameworks
+		return p.GetAddCommand(sdk)
 	default:
 		// Node.js based frameworks
 		return p.GetAddCommand(sdk)

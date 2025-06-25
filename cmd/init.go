@@ -106,6 +106,8 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 		}
 	case integrations.ProjectTypeMobile:
 		// Mobile specific info
+	case integrations.ProjectTypeUnknown:
+		// Unknown project type
 	}
 	fmt.Println()
 
@@ -287,6 +289,11 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 		case integrations.FrameworkNode:
 			genErr = integrations.GenerateNodeIntegration(absPath, project)
 		// TODO: Add other framework integrations
+		case integrations.FrameworkVue, integrations.FrameworkAngular, integrations.FrameworkSvelte,
+			integrations.FrameworkNuxt, integrations.FrameworkVanilla, integrations.FrameworkReactNative,
+			integrations.FrameworkFlutter, integrations.FrameworkRuby, integrations.FrameworkJava,
+			integrations.FrameworkCSharp, integrations.FrameworkUnknown:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
 		default:
 			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
 		}
@@ -352,9 +359,17 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 			} else {
 				fmt.Println("   node vapi-examples/basic-example.js")
 			}
+		case integrations.FrameworkReact, integrations.FrameworkVue, integrations.FrameworkAngular,
+			integrations.FrameworkSvelte, integrations.FrameworkNext, integrations.FrameworkNuxt,
+			integrations.FrameworkRemix, integrations.FrameworkVanilla, integrations.FrameworkReactNative,
+			integrations.FrameworkFlutter, integrations.FrameworkRuby, integrations.FrameworkJava,
+			integrations.FrameworkCSharp, integrations.FrameworkUnknown:
+			fmt.Println("   Check the generated example code")
 		}
 	case integrations.ProjectTypeMobile:
 		fmt.Printf("%d. Check the generated example code\n", stepNum)
+	case integrations.ProjectTypeUnknown:
+		fmt.Printf("%d. Check the Vapi documentation for integration instructions\n", stepNum)
 	}
 	fmt.Println()
 

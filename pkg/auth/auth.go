@@ -74,7 +74,8 @@ func (a *AuthManager) Authenticate() (string, error) {
 
 	// Start HTTP server in background
 	server := &http.Server{
-		Handler: a.createCallbackHandler(state),
+		Handler:           a.createCallbackHandler(state),
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	go func() {
