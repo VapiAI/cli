@@ -21,8 +21,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/VapiAI/cli/pkg/auth"
 	"github.com/spf13/cobra"
+
+	"github.com/VapiAI/cli/pkg/auth"
 )
 
 // Authenticate with Vapi via browser-based OAuth flow
