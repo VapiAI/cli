@@ -1,0 +1,176 @@
+/*
+Copyright © 2025 Vapi, Inc.
+
+Licensed under the MIT License (the "License");
+you may not use this file except in compliance with the License.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+Authors:
+
+	Dan Goosewin <dan@vapi.ai>
+*/
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/VapiAI/cli/pkg/client"
+	"github.com/VapiAI/cli/pkg/config"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+var (
+	cfgFile    string
+	apiKey     string
+	vapiClient *client.VapiClient
+	cfg        *config.Config
+)
+
+// ASCII art banner
+var asciiArt = `
+  0000000          0000000            0000000                  00000000000000000           0000000  
+00000000000      00000000000        0000000000               0000000000000000000000      00000000000
+00000000000     000000000000       000000000000             000000000000000000000000     00000000000
+0000000000000  0000000000000      00000000000000            000000000000000000000000     00000000000
+0000000000000  000000000000      0000000000000000           0000000000000000000000000    00000000000
+ 00000000000000000000000000     000000000000000000          000000000000000000000000     00000000000
+  000000000000000000000000     00000000000000000000         000000000000000000000000     00000000000
+   0000000000000000000000      000000000000000000000        00000000000000000000000      00000000000
+    00000000000000000000      00000000000000000000000       000000000000000000000        00000000000
+     000000000000000000      0000000000000000000000000      0000000000000000             00000000000
+      0000000000000000      000000000000000000000000000     000000000000                 00000000000
+       00000000000000      00000000000000000000000000000    000000000000                 00000000000
+        000000000000       00000000000000000000000000000    000000000000                 00000000000
+         0000000000        00000000000000000000000000000     0000000000                  00000000000
+          00000000           0000000000000000000000000        00000000                     0000000  
+`
+
+// Display banner with styling
+func displayBanner() {
+	// Create styles
+	titleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#62F6B5")). // Brand green color
+		Bold(true)
+
+	subtitleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#A8F5D7")). // Light green
+		Italic(true)
+
+	versionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#6B7280")). // Gray
+		Faint(true)
+
+	// Print banner
+	fmt.Println(titleStyle.Render(asciiArt))
+	fmt.Println(subtitleStyle.Render("Voice AI for developers"))
+	fmt.Println(versionStyle.Render("v0.0.1"))
+	fmt.Println()
+}
+
+// The main CLI command that displays help when run without subcommands
+var rootCmd = &cobra.Command{
+	Use:   "vapi",
+	Short: "Voice AI for developers - Vapi CLI",
+	Long:  `The official CLI for Vapi - build voice AI agents that make phone calls`,
+	Run: func(cmd *cobra.Command, args []string) {
+		// Display help by default when no subcommand is provided
+		cmd.Help()
+	},
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip validation for root command with no subcommands (just showing help)
+		if cmd.Parent() == nil && len(args) == 0 {
+			return nil
+		}
+
+		// Skip API key validation for commands that don't need it
+		skipAuthCommands := []string{"login", "config", "init", "completion", "help"}
+		for _, skipCmd := range skipAuthCommands {
+			if cmd.Name() == skipCmd || (cmd.Parent() != nil && cmd.Parent().Name() == skipCmd) {
+				return nil
+			}
+		}
+
+		// Validate API key is configured
+		apiKey := viper.GetString("api_key")
+		if apiKey == "" {
+			printAuthPrompt()
+			return fmt.Errorf("not authenticated")
+		}
+
+		// Initialize the Vapi client for API commands
+		var err error
+		vapiClient, err = client.NewVapiClient(apiKey)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Vapi client: %w", err)
+		}
+
+		return nil
+	},
+}
+
+// Execute runs the root command - this is the main entry point
+func Execute() {
+	cobra.CheckErr(rootCmd.Execute())
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	// Show banner when displaying help
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if cmd.Parent() == nil {
+			displayBanner()
+		}
+		cmd.Usage()
+	})
+
+	// Global flag for config file location
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.vapi-cli.yaml or $HOME/.vapi-cli.yaml)")
+
+	// Global flag for API key override
+	rootCmd.PersistentFlags().String("api-key", "", "Vapi API key")
+	viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key"))
+}
+
+// Initialize viper configuration from file and environment
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Search for config in current directory first, then home
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("$HOME")
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(".vapi-cli")
+	}
+
+	// Environment variables take precedence
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("VAPI")
+
+	// Read config file if it exists (ignore errors)
+	viper.ReadInConfig()
+}
+
+// Display instructions for authentication
+func printAuthPrompt() {
+	fmt.Println("🔒 Authentication required")
+	fmt.Println()
+	fmt.Println("You need to authenticate with Vapi to use this command.")
+	fmt.Println()
+	fmt.Println("Run: vapi login")
+	fmt.Println()
+	fmt.Println("Or set your API key manually:")
+	fmt.Println("  export VAPI_API_KEY=your_api_key_here")
+	fmt.Println()
+}
