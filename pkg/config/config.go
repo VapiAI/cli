@@ -19,6 +19,7 @@ Authors:
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,11 +51,13 @@ func LoadConfig() (*Config, error) {
 	// Set defaults
 	viper.SetDefault("timeout", 30)
 
-	// Read config file (if exists)
+	// Read config file
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("error reading config file: %w", err)
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
+		// Config file not found is okay, we'll create one if needed
 	}
 
 	var config Config

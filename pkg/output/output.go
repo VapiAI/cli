@@ -42,23 +42,40 @@ func PrintJSON(data interface{}) error {
 func PrintTable(headers []string, rows [][]string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
+	// Print headers
 	for i, h := range headers {
 		if i > 0 {
-			fmt.Fprint(w, "\t")
-		}
-		fmt.Fprint(w, h)
-	}
-	fmt.Fprintln(w)
-
-	for _, row := range rows {
-		for i, col := range row {
-			if i > 0 {
-				fmt.Fprint(w, "\t")
+			if _, err := fmt.Fprint(w, "\t"); err != nil {
+				return
 			}
-			fmt.Fprint(w, col)
 		}
-		fmt.Fprintln(w)
+		if _, err := fmt.Fprint(w, h); err != nil {
+			return
+		}
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
+		return
 	}
 
-	w.Flush()
+	// Print rows
+	for _, row := range rows {
+		for i, cell := range row {
+			if i > 0 {
+				if _, err := fmt.Fprint(w, "\t"); err != nil {
+					return
+				}
+			}
+			if _, err := fmt.Fprint(w, cell); err != nil {
+				return
+			}
+		}
+		if _, err := fmt.Fprintln(w); err != nil {
+			return
+		}
+	}
+
+	// Flush buffer
+	if err := w.Flush(); err != nil {
+		fmt.Printf("Warning: failed to flush table writer: %v\n", err)
+	}
 }

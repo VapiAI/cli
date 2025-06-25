@@ -54,7 +54,11 @@ func (a *AuthManager) Authenticate() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to start callback server: %w", err)
 	}
-	defer listener.Close()
+	defer func() {
+		if err := listener.Close(); err != nil {
+			fmt.Printf("Warning: failed to close listener: %v\n", err)
+		}
+	}()
 
 	// Get the assigned port
 	a.callbackPort = listener.Addr().(*net.TCPAddr).Port
@@ -94,15 +98,21 @@ func (a *AuthManager) Authenticate() (string, error) {
 	select {
 	case apiKey := <-a.authCode:
 		// Shutdown server
-		server.Shutdown(context.Background())
+		if err := server.Shutdown(context.Background()); err != nil {
+			fmt.Printf("Warning: failed to shutdown server: %v\n", err)
+		}
 		return apiKey, nil
 
 	case err := <-a.authError:
-		server.Shutdown(context.Background())
+		if shutdownErr := server.Shutdown(context.Background()); shutdownErr != nil {
+			fmt.Printf("Warning: failed to shutdown server: %v\n", shutdownErr)
+		}
 		return "", err
 
 	case <-ctx.Done():
-		server.Shutdown(context.Background())
+		if err := server.Shutdown(context.Background()); err != nil {
+			fmt.Printf("Warning: failed to shutdown server: %v\n", err)
+		}
 		return "", fmt.Errorf("authentication timeout")
 	}
 }
@@ -200,7 +210,9 @@ func (a *AuthManager) writeSuccessPage(w http.ResponseWriter) {
 
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(html))
+	if _, err := w.Write([]byte(html)); err != nil {
+		fmt.Printf("Warning: failed to write response: %v\n", err)
+	}
 }
 
 func (a *AuthManager) writeErrorPage(w http.ResponseWriter, message string) {
@@ -253,7 +265,9 @@ func (a *AuthManager) writeErrorPage(w http.ResponseWriter, message string) {
 
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte(html))
+	if _, err := w.Write([]byte(html)); err != nil {
+		fmt.Printf("Warning: failed to write response: %v\n", err)
+	}
 }
 
 func generateRandomState() (string, error) {
@@ -264,20 +278,20 @@ func generateRandomState() (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-func openBrowser(url string) error {
+func openBrowser(targetURL string) error {
 	var cmd string
 	var args []string
 
 	switch runtime.GOOS {
 	case "windows":
 		cmd = "cmd"
-		args = []string{"/c", "start", url}
+		args = []string{"/c", "start", targetURL}
 	case "darwin":
 		cmd = "open"
-		args = []string{url}
+		args = []string{targetURL}
 	default: // Linux and others
 		cmd = "xdg-open"
-		args = []string{url}
+		args = []string{targetURL}
 	}
 
 	return exec.Command(cmd, args...).Start()

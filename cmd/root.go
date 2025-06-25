@@ -21,18 +21,17 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/VapiAI/cli/pkg/client"
-	"github.com/VapiAI/cli/pkg/config"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/VapiAI/cli/pkg/client"
 )
 
 var (
-	cfgFile    string
-	apiKey     string
-	vapiClient *client.VapiClient
-	cfg        *config.Config
+	cfgFile     string
+	vapiClient  *client.VapiClient
+	bannerShown bool
 )
 
 // ASCII art banner
@@ -56,6 +55,11 @@ var asciiArt = `
 
 // Display banner with styling
 func displayBanner() {
+	if bannerShown {
+		return
+	}
+	bannerShown = true
+
 	// Create styles
 	titleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#62F6B5")). // Brand green color
@@ -81,13 +85,21 @@ var rootCmd = &cobra.Command{
 	Use:   "vapi",
 	Short: "Voice AI for developers - Vapi CLI",
 	Long:  `The official CLI for Vapi - build voice AI agents that make phone calls`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Always display banner when running root command without subcommands
+		displayBanner()
 		// Display help by default when no subcommand is provided
-		cmd.Help()
+		return cmd.Help()
 	},
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	// Set up PersistentPreRunE here to avoid initialization cycle
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Skip validation for root command with no subcommands (just showing help)
-		if cmd.Parent() == nil && len(args) == 0 {
+		if cmd.Parent() == nil && len(args) == 0 && len(cmd.Commands()) > 0 {
 			return nil
 		}
 
@@ -114,31 +126,21 @@ var rootCmd = &cobra.Command{
 		}
 
 		return nil
-	},
-}
-
-// Execute runs the root command - this is the main entry point
-func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Show banner when displaying help
-	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if cmd.Parent() == nil {
-			displayBanner()
-		}
-		cmd.Usage()
-	})
+	}
 
 	// Global flag for config file location
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.vapi-cli.yaml or $HOME/.vapi-cli.yaml)")
 
 	// Global flag for API key override
 	rootCmd.PersistentFlags().String("api-key", "", "Vapi API key")
-	viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key"))
+	if err := viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
+		fmt.Printf("Warning: failed to bind api-key flag: %v\n", err)
+	}
+}
+
+// Execute runs the root command - this is the main entry point
+func Execute() {
+	cobra.CheckErr(rootCmd.Execute())
 }
 
 // Initialize viper configuration from file and environment
@@ -159,7 +161,12 @@ func initConfig() {
 	viper.SetEnvPrefix("VAPI")
 
 	// Read config file if it exists (ignore errors)
-	viper.ReadInConfig()
+	if err := viper.ReadInConfig(); err == nil {
+		// Config file was found and read successfully
+		if viper.GetBool("debug") {
+			fmt.Printf("Using config file: %s\n", viper.ConfigFileUsed())
+		}
+	}
 }
 
 // Display instructions for authentication
