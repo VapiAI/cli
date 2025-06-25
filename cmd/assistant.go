@@ -201,6 +201,7 @@ are best done through the Vapi dashboard at https://dashboard.vapi.ai`,
 	},
 }
 
+// nolint:dupl // Delete commands follow a similar pattern across resources
 var deleteAssistantCmd = &cobra.Command{
 	Use:   "delete [assistant-id]",
 	Short: "Delete an assistant",

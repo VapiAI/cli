@@ -316,7 +316,7 @@ var campaignGetCmd = &cobra.Command{
 		fmt.Printf("Created: %s\n", campaign.CreatedAt.Format("2006-01-02 15:04:05"))
 		fmt.Printf("Updated: %s\n", campaign.UpdatedAt.Format("2006-01-02 15:04:05"))
 
-		if campaign.Customers != nil && len(campaign.Customers) > 0 {
+		if len(campaign.Customers) > 0 {
 			fmt.Printf("\nCustomers: %d\n", len(campaign.Customers))
 		}
 
@@ -372,7 +372,7 @@ var campaignUpdateCmd = &cobra.Command{
 				return nil
 			}
 
-			fmt.Println("Campaign update cancelled.")
+			fmt.Println("Campaign update canceled.")
 			return nil
 		}
 
@@ -403,7 +403,7 @@ var campaignDeleteCmd = &cobra.Command{
 		}
 
 		if !confirm {
-			fmt.Println("Deletion cancelled.")
+			fmt.Println("Deletion canceled.")
 			return nil
 		}
 

@@ -98,7 +98,8 @@ func DetectProject(projectPath string) (*ProjectInfo, error) {
 		project.Framework = FrameworkGolang
 		project.ProjectType = ProjectTypeBackend
 		// Try to read Go version from go.mod
-		if data, err := os.ReadFile(filepath.Join(projectPath, "go.mod")); err == nil {
+		goModPath := filepath.Clean(filepath.Join(projectPath, "go.mod"))
+		if data, err := os.ReadFile(goModPath); err == nil {
 			// Simple version extraction (could be improved)
 			content := string(data)
 			if content != "" {
@@ -170,7 +171,7 @@ func DetectProject(projectPath string) (*ProjectInfo, error) {
 	}
 
 	// If no backend/mobile markers found, check for Node.js/frontend projects
-	packageJSONPath := filepath.Join(projectPath, "package.json")
+	packageJSONPath := filepath.Clean(filepath.Join(projectPath, "package.json"))
 	if _, err := os.Stat(packageJSONPath); err == nil {
 		// Read and parse package.json
 		data, err := os.ReadFile(packageJSONPath)

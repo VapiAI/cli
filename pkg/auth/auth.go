@@ -280,22 +280,14 @@ func generateRandomState() (string, error) {
 }
 
 func openBrowser(targetURL string) error {
-	var cmd string
-	var args []string
-
 	switch runtime.GOOS {
 	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start", targetURL}
+		return exec.Command("cmd", "/c", "start", targetURL).Start()
 	case "darwin":
-		cmd = "open"
-		args = []string{targetURL}
+		return exec.Command("open", targetURL).Start()
 	default: // Linux and others
-		cmd = "xdg-open"
-		args = []string{targetURL}
+		return exec.Command("xdg-open", targetURL).Start()
 	}
-
-	return exec.Command(cmd, args...).Start()
 }
 
 // Login performs the browser-based authentication flow

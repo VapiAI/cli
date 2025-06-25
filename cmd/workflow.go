@@ -197,6 +197,7 @@ are best done through the Vapi dashboard at https://dashboard.vapi.ai`,
 	},
 }
 
+// nolint:dupl // Delete commands follow a similar pattern across resources
 var deleteWorkflowCmd = &cobra.Command{
 	Use:   "delete [workflow-id]",
 	Short: "Delete a workflow",
