@@ -27,7 +27,7 @@ import (
 // GenerateNodeIntegration generates SDK examples and configuration for Node.js/TypeScript projects
 func GenerateNodeIntegration(projectPath string, info *ProjectInfo) error {
 	examplesDir := filepath.Join(projectPath, "vapi-examples")
-	if err := os.MkdirAll(examplesDir, 0755); err != nil {
+	if err := os.MkdirAll(examplesDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create examples directory: %w", err)
 	}
 
@@ -158,7 +158,7 @@ async function main() {
 main().catch(console.error);
 `
 
-	return os.WriteFile(filepath.Join(dir, "basic-example.js"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "basic-example.js"), []byte(content), 0o644)
 }
 
 func generateNodeJSExpressExample(dir string) error {
@@ -299,7 +299,7 @@ app.listen(PORT, () => {
 });
 `
 
-	return os.WriteFile(filepath.Join(dir, "express-example.js"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "express-example.js"), []byte(content), 0o644)
 }
 
 func generateNodeTSBasicExample(dir string) error {
@@ -402,7 +402,7 @@ async function main() {
 main().catch(console.error);
 `
 
-	return os.WriteFile(filepath.Join(dir, "basic-example.ts"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "basic-example.ts"), []byte(content), 0o644)
 }
 
 func generateNodeTSExpressExample(dir string) error {
@@ -557,7 +557,7 @@ app.listen(PORT, () => {
 });
 `
 
-	return os.WriteFile(filepath.Join(dir, "express-example.ts"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "express-example.ts"), []byte(content), 0o644)
 }
 
 func generateNodeTSFastifyExample(dir string) error {
@@ -724,7 +724,7 @@ const start = async () => {
 start();
 `
 
-	return os.WriteFile(filepath.Join(dir, "fastify-example.ts"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "fastify-example.ts"), []byte(content), 0o644)
 }
 
 func generateNodeEnvTemplate(projectPath string) error {
@@ -740,5 +740,5 @@ PORT=3000
 VAPI_WEBHOOK_URL=https://your-domain.com/webhook/vapi
 `
 
-	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0o644)
 }

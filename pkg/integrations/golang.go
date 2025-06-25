@@ -28,7 +28,7 @@ import (
 func GenerateGoIntegration(projectPath string, info *ProjectInfo) error {
 	// Create examples directory
 	examplesDir := filepath.Join(projectPath, "examples", "vapi")
-	if err := os.MkdirAll(examplesDir, 0755); err != nil {
+	if err := os.MkdirAll(examplesDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create examples directory: %w", err)
 	}
 
@@ -166,7 +166,7 @@ func makePhoneCall(client *vapi.Client, assistantID, phoneNumber string) {
 }
 `
 
-	return os.WriteFile(filepath.Join(dir, "basic_example.go"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "basic_example.go"), []byte(content), 0o644)
 }
 
 func generateGoHTTPExample(dir string) error {
@@ -357,7 +357,7 @@ func handleVapiWebhook(w http.ResponseWriter, r *http.Request) {
 }
 `
 
-	return os.WriteFile(filepath.Join(dir, "http_example.go"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "http_example.go"), []byte(content), 0o644)
 }
 
 func generateGoGinExample(dir string) error {
@@ -526,7 +526,7 @@ func handleHealth(c *gin.Context) {
 }
 `
 
-	return os.WriteFile(filepath.Join(dir, "gin_example.go"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "gin_example.go"), []byte(content), 0o644)
 }
 
 func generateGoEnvTemplate(projectPath string) error {
@@ -539,5 +539,5 @@ VAPI_ASSISTANT_ID=your_assistant_id_here
 PORT=8080
 `
 
-	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0o644)
 }

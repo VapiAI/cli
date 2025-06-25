@@ -27,7 +27,7 @@ import (
 // GeneratePythonIntegration generates SDK examples and configuration for Python projects
 func GeneratePythonIntegration(projectPath string, info *ProjectInfo) error {
 	examplesDir := filepath.Join(projectPath, "vapi_examples")
-	if err := os.MkdirAll(examplesDir, 0755); err != nil {
+	if err := os.MkdirAll(examplesDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create examples directory: %w", err)
 	}
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     main()
 `
 
-	return os.WriteFile(filepath.Join(dir, "basic_example.py"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "basic_example.py"), []byte(content), 0o644)
 }
 
 func generatePythonFlaskExample(dir string) error {
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     app.run(debug=True, port=5000)
 `
 
-	return os.WriteFile(filepath.Join(dir, "flask_example.py"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "flask_example.py"), []byte(content), 0o644)
 }
 
 func generatePythonFastAPIExample(dir string) error {
@@ -436,7 +436,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 `
 
-	return os.WriteFile(filepath.Join(dir, "fastapi_example.py"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, "fastapi_example.py"), []byte(content), 0o644)
 }
 
 func generatePythonEnvTemplate(projectPath string) error {
@@ -449,7 +449,7 @@ VAPI_ASSISTANT_ID=your_assistant_id_here
 VAPI_WEBHOOK_URL=https://your-domain.com/webhook/vapi
 `
 
-	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0o644)
 }
 
 func generatePythonRequirements(projectPath string) error {
@@ -467,5 +467,5 @@ python-dotenv>=1.0.0
 
 	// Check if requirements.txt already exists
 	reqPath := filepath.Join(projectPath, "requirements-vapi.txt")
-	return os.WriteFile(reqPath, []byte(content), 0644)
+	return os.WriteFile(reqPath, []byte(content), 0o644)
 }
