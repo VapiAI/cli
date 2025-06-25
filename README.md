@@ -1,64 +1,66 @@
 # Vapi CLI
 
-A powerful command-line interface for interacting with the Vapi API and seamlessly integrating Vapi into existing web projects.
+The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for developers.
 
 ## Features
 
-- 🔐 **Browser-Based Authentication**: Secure login flow that opens your browser for seamless authentication
-- 🎯 **Real API Integration**: Manage assistants, calls, and other Vapi resources using the official SDK
-- 🚀 **Smart Project Detection**: Automatically detects React, Vue, Angular, Svelte, Next.js, and more
-- 🎨 **Interactive Setup**: Step-by-step guided integration with customizable options
-- 📦 **Package Manager Detection**: Works with npm, yarn, pnpm, and bun
-- 🔧 **TypeScript & Tailwind Support**: Automatic detection and appropriate code generation
+- 🔐 **Browser-based Authentication** - Secure OAuth-style login flow
+- 🤖 **Assistant Management** - List, create, update, and delete voice assistants
+- 📞 **Call Management** - Monitor and control phone calls
+- 🔧 **Project Integration** - Auto-detect and integrate with existing projects
+- 🚀 **Framework Support** - React, Vue, Angular, Next.js, Node.js, Python, Go, and more
+- 📦 **SDK Installation** - Automatic SDK setup for your project type
+- 🎨 **Code Generation** - Generate components, hooks, and examples
 
 ## Installation
 
 ### From Source
 
 ```bash
+# Clone the repository
 git clone https://github.com/VapiAI/cli.git
 cd cli
-go build -o vapi .
+
+# Install dependencies
+make deps
+
+# Build the CLI
+make build
+
+# Install to ~/.local/bin
+make install
 ```
 
-### Using Go Install
+### Binary Releases
+
+Coming soon: Pre-built binaries for macOS, Linux, and Windows.
+
+## Development Requirements
+
+- **Go 1.21+** - [Install Go](https://golang.org/doc/install)
+- **golangci-lint** - For code linting
+
+  ```bash
+  # macOS
+  brew install golangci-lint
+
+  # Linux/Windows
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  ```
+
+## Usage
+
+### Authentication
+
+First, authenticate with your Vapi account:
 
 ```bash
-go install github.com/VapiAI/cli@latest
-```
-
-## Quick Start
-
-### 1. Authenticate with Vapi
-
-```bash
-# Login using browser-based authentication
 vapi login
 ```
 
-This will open your browser for secure authentication and save your credentials locally.
+This will open your browser for secure authentication. Your API key will be saved locally.
 
-### 2. Initialize Vapi in Your Project
-
-Navigate to your web project and run:
-
-```bash
-# Auto-detect framework and start interactive setup
-vapi init
-
-# Or specify a project path
-vapi init /path/to/your/project
-```
-
-The CLI will:
-
-- 🔍 Automatically detect your framework (React, Vue, Angular, etc.)
-- 📋 Show interactive prompts for customization
-- 📦 Install the Vapi Web SDK
-- 🎨 Generate framework-specific components
-- 📝 Create environment configuration templates
-
-### 3. Manage Your Assistants
+### Assistant Management
 
 ```bash
 # List all assistants
@@ -67,228 +69,155 @@ vapi assistant list
 # Get assistant details
 vapi assistant get <assistant-id>
 
-# Interactive assistant creation
+# Create a new assistant (interactive)
 vapi assistant create
-```
 
-```javascript
-import { VapiButton } from "./components/vapi/VapiButton";
-
-function App() {
-  return (
-    <div>
-      <h1>My App with Vapi</h1>
-      <VapiButton />
-    </div>
-  );
-}
-```
-
-## Commands
-
-### Authentication
-
-```bash
-# Login with browser-based authentication
-vapi login
-
-# Show current configuration
-vapi config show
-```
-
-### API Management
-
-```bash
-# Assistants
-vapi assistant list                    # List all assistants
-vapi assistant get <id>                # Get assistant details
-vapi assistant create                  # Interactive assistant creation
-vapi assistant delete <id>             # Delete an assistant
-
-# Calls
-vapi call list                         # List recent calls
-vapi call get <id>                     # Get call details
+# Delete an assistant
+vapi assistant delete <assistant-id>
 ```
 
 ### Project Integration
 
+Initialize Vapi in your existing project:
+
 ```bash
-# Auto-detect framework and initialize
+# Auto-detect project type and set up Vapi
 vapi init
 
-# Initialize in specific directory
+# Initialize in a specific directory
 vapi init /path/to/project
-
-# Get help
-vapi init --help
 ```
+
+The `init` command will:
+
+- Detect your project framework/language
+- Install the appropriate Vapi SDK
+- Generate example code and components
+- Create environment configuration templates
 
 ### Configuration
 
 ```bash
-# Manual configuration (if not using login)
-vapi config set api_key YOUR_API_KEY
-vapi config get api_key
-vapi config show
+# View current configuration
+vapi config get
+
+# Set configuration values
+vapi config set <key> <value>
+
+# List all configuration options
+vapi config list
 ```
 
-## Configuration
+## Project Structure
 
-The Vapi CLI uses a configuration file located at:
-
-- `./.vapi-cli.yaml` (current directory)
-- `$HOME/.vapi-cli.yaml` (home directory)
-
-### Configuration Options
-
-```yaml
-# Required: Your Vapi API key
-api_key: "your-api-key-here"
-
-# Optional: Custom Vapi server URL
-base_url: "https://api.vapi.ai"
-
-# Optional: Request timeout in seconds (default: 30)
-timeout: 30
 ```
-
-### Environment Variables
-
-You can also use environment variables:
-
-```bash
-export VAPI_API_KEY="your-api-key"
-export VAPI_BASE_URL="https://api.vapi.ai"
-export VAPI_TIMEOUT="30"
-```
-
-## React Integration Details
-
-### Supported Project Types
-
-- ✅ Create React App (CRA)
-- ✅ Next.js (App Router & Pages Router)
-- ✅ Vite
-- ✅ TypeScript projects
-- ✅ Tailwind CSS projects
-
-### Generated Components
-
-The CLI generates the following files in your React project:
-
-#### `useVapi` Hook
-
-A custom React hook for managing Vapi connections:
-
-```typescript
-const { startCall, endCall, isSessionActive, isLoading, error } = useVapi({
-  publicKey: "your-public-key",
-  assistantId: "your-assistant-id",
-});
-```
-
-#### `VapiButton` Component
-
-A ready-to-use button component:
-
-```jsx
-<VapiButton />
-<VapiButton className="custom-style">Custom Text</VapiButton>
-```
-
-#### `VapiExample` Component
-
-A complete example showing how to use Vapi in your app.
-
-### Environment Variables
-
-For React projects, set these environment variables:
-
-**Standard React Apps:**
-
-```bash
-REACT_APP_VAPI_PUBLIC_KEY=your_public_key
-REACT_APP_VAPI_ASSISTANT_ID=your_assistant_id
-```
-
-**Next.js Apps:**
-
-```bash
-NEXT_PUBLIC_VAPI_PUBLIC_KEY=your_public_key
-NEXT_PUBLIC_VAPI_ASSISTANT_ID=your_assistant_id
-```
-
-## Global Flags
-
-- `--config`: Specify custom config file path
-- `--api-key`: Override API key from command line
-- `--help`: Show help information
-
-## Examples
-
-### Basic API Usage
-
-```bash
-# Configure CLI
-vapi config set api_key sk-xxx
-
-# List your assistants
-vapi assistant list
-
-# Get details of a specific assistant
-vapi assistant get assistant-123
-
-# Create a new call
-vapi call create
-```
-
-### React Integration Workflow
-
-```bash
-# Navigate to your React project
-cd my-react-app
-
-# Initialize Vapi integration
-vapi init react
-
-# Follow the setup instructions
-cp .env.example .env
-# Edit .env with your keys
-npm install
+cli/
+├── cmd/                    # Command implementations
+│   ├── root.go            # Main CLI setup
+│   ├── assistant.go       # Assistant commands
+│   ├── call.go           # Call commands
+│   ├── config.go         # Configuration commands
+│   ├── init.go           # Project initialization
+│   └── login.go          # Authentication
+├── pkg/                   # Core packages
+│   ├── auth/             # Authentication logic
+│   ├── client/           # Vapi API client
+│   ├── config/           # Configuration management
+│   ├── integrations/     # Framework integrations
+│   └── output/           # Output formatting
+├── build/                # Build artifacts (git-ignored)
+├── main.go              # Entry point
+├── Makefile             # Build automation
+└── README.md            # This file
 ```
 
 ## Development
 
-### Building from Source
+### Building
 
 ```bash
-git clone https://github.com/VapiAI/cli.git
-cd cli
-go mod download
-go build -o vapi .
+# Build for current platform
+make build
+
+# Build for all platforms
+make build-all
+
+# Run without building
+go run main.go
 ```
 
-### Running Tests
+### Testing
 
 ```bash
-go test ./...
+# Run all tests
+make test
+
+# Run tests with coverage
+make test-coverage
 ```
 
-## Contributing
+### Code Quality
+
+```bash
+# Run linters
+make lint
+
+# Format code
+go fmt ./...
+```
+
+### Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## Configuration
+
+The CLI stores configuration in `~/.vapi-cli.yaml`. You can also use environment variables:
+
+- `VAPI_API_KEY` - Your Vapi API key
+- `VAPI_BASE_URL` - API base URL (for development)
+
+## Supported Frameworks
+
+### Frontend
+
+- React (Create React App, Vite)
+- Vue.js
+- Angular
+- Svelte
+- Next.js
+- Nuxt.js
+- Remix
+- Vanilla JavaScript
+
+### Mobile
+
+- React Native
+- Flutter
+
+### Backend
+
+- Node.js/TypeScript
+- Python
+- Go
+- Ruby
+- Java
+- C#/.NET
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- 📖 [Vapi Documentation](https://docs.vapi.ai)
+- 📚 [Documentation](https://docs.vapi.ai)
 - 💬 [Discord Community](https://discord.gg/vapi)
-- 🐛 [Issues](https://github.com/VapiAI/cli/issues)
-- 📧 [Email Support](mailto:support@vapi.ai)
+- 🐛 [Issue Tracker](https://github.com/VapiAI/cli/issues)
+
+---
+
+Built with ❤️ by the Vapi team
