@@ -25,8 +25,9 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/VapiAI/cli/pkg/integrations"
 	"github.com/spf13/cobra"
+
+	"github.com/VapiAI/cli/pkg/integrations"
 )
 
 var initCmd = &cobra.Command{
@@ -152,7 +153,7 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := survey.AskOne(prompt, &frameworkChoice); err != nil {
-		return fmt.Errorf("framework selection cancelled: %w", err)
+		return fmt.Errorf("framework selection canceled: %w", err)
 	}
 
 	// Update framework if user selected different one
@@ -253,7 +254,7 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := survey.Ask(questions, &integrationOptions); err != nil {
-		return fmt.Errorf("setup cancelled: %w", err)
+		return fmt.Errorf("setup canceled: %w", err)
 	}
 
 	fmt.Println()

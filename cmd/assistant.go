@@ -23,9 +23,10 @@ import (
 	"fmt"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/VapiAI/cli/pkg/output"
 	vapi "github.com/VapiAI/server-sdk-go"
 	"github.com/spf13/cobra"
+
+	"github.com/VapiAI/cli/pkg/output"
 )
 
 // Manage AI voice assistants that handle phone calls and conversations
@@ -118,7 +119,7 @@ use the Vapi dashboard at https://dashboard.vapi.ai`,
 		}
 
 		if err := survey.Ask(questions, &config); err != nil {
-			return fmt.Errorf("assistant creation cancelled: %w", err)
+			return fmt.Errorf("assistant creation canceled: %w", err)
 		}
 
 		fmt.Println()
@@ -134,7 +135,7 @@ use the Vapi dashboard at https://dashboard.vapi.ai`,
 		}
 
 		if err := survey.AskOne(confirmPrompt, &confirmCreate); err != nil || !confirmCreate {
-			fmt.Println("Creation cancelled.")
+			fmt.Println("Creation canceled.")
 			return nil
 		}
 
@@ -217,11 +218,11 @@ var deleteAssistantCmd = &cobra.Command{
 		}
 
 		if err := survey.AskOne(prompt, &confirmDelete); err != nil {
-			return fmt.Errorf("deletion cancelled: %w", err)
+			return fmt.Errorf("deletion canceled: %w", err)
 		}
 
 		if !confirmDelete {
-			fmt.Println("Deletion cancelled.")
+			fmt.Println("Deletion canceled.")
 			return nil
 		}
 
