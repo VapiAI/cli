@@ -22,8 +22,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/VapiAI/cli/pkg/output"
 	"github.com/spf13/cobra"
+
+	"github.com/VapiAI/cli/pkg/output"
 )
 
 // Manage phone calls - list call history, get recordings, and create outbound calls
