@@ -1,0 +1,9 @@
+
+# Build artifacts
+/build/
+/vapi
+*.exe
+
+# Test artifacts
+coverage.out
+coverage.html
