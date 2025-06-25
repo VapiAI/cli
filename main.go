@@ -20,6 +20,18 @@ package main
 
 import "github.com/VapiAI/cli/cmd"
 
+// Build variables set by goreleaser
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+	builtBy = "unknown"
+)
+
 func main() {
+	// Set version information
+	cmd.SetVersion(version, commit, date, builtBy)
+
+	// Execute the CLI
 	cmd.Execute()
 }

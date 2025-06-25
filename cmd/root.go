@@ -86,6 +86,12 @@ var rootCmd = &cobra.Command{
 	Short: "Voice AI for developers - Vapi CLI",
 	Long:  `The official CLI for Vapi - build voice AI agents that make phone calls`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Check if --version flag is set
+		if versionFlag, _ := cmd.Flags().GetBool("version"); versionFlag {
+			fmt.Printf("vapi version %s\n", version)
+			return nil
+		}
+
 		// Always display banner when running root command without subcommands
 		displayBanner()
 		// Display help by default when no subcommand is provided
@@ -104,7 +110,7 @@ func init() {
 		}
 
 		// Skip API key validation for commands that don't need it
-		skipAuthCommands := []string{"login", "config", "init", "completion", "help"}
+		skipAuthCommands := []string{"login", "config", "init", "completion", "help", "version"}
 		for _, skipCmd := range skipAuthCommands {
 			if cmd.Name() == skipCmd || (cmd.Parent() != nil && cmd.Parent().Name() == skipCmd) {
 				return nil
@@ -136,6 +142,9 @@ func init() {
 	if err := viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
 		fmt.Printf("Warning: failed to bind api-key flag: %v\n", err)
 	}
+
+	// Add version flag
+	rootCmd.Flags().BoolP("version", "v", false, "Print version information")
 }
 
 // Execute runs the root command - this is the main entry point
