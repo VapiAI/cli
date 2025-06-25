@@ -21,7 +21,6 @@ package integrations
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -173,7 +172,7 @@ func (rp *ReactProject) GenerateVapiComponents() error {
 	}
 
 	componentsDir := filepath.Join(rp.Path, srcDir, "components", "vapi")
-	if err := os.MkdirAll(componentsDir, 0755); err != nil {
+	if err := os.MkdirAll(componentsDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create components directory: %w", err)
 	}
 
@@ -187,7 +186,7 @@ func (rp *ReactProject) GenerateVapiComponents() error {
 
 	hookContent := rp.generateVapiHook()
 	hookPath := filepath.Join(componentsDir, hookFile)
-	if err := ioutil.WriteFile(hookPath, []byte(hookContent), 0644); err != nil {
+	if err := os.WriteFile(hookPath, []byte(hookContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write Vapi hook: %w", err)
 	}
 
@@ -201,7 +200,7 @@ func (rp *ReactProject) GenerateVapiComponents() error {
 
 	componentContent := rp.generateVapiComponent()
 	componentPath := filepath.Join(componentsDir, componentFile)
-	if err := ioutil.WriteFile(componentPath, []byte(componentContent), 0644); err != nil {
+	if err := os.WriteFile(componentPath, []byte(componentContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write Vapi component: %w", err)
 	}
 
@@ -215,7 +214,7 @@ func (rp *ReactProject) GenerateVapiComponents() error {
 
 	exampleContent := rp.generateVapiExample()
 	examplePath := filepath.Join(componentsDir, exampleFile)
-	if err := ioutil.WriteFile(examplePath, []byte(exampleContent), 0644); err != nil {
+	if err := os.WriteFile(examplePath, []byte(exampleContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write Vapi example: %w", err)
 	}
 
@@ -245,7 +244,7 @@ NEXT_PUBLIC_VAPI_ASSISTANT_ID=your_assistant_id_here
 `
 	}
 
-	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
+	if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
 		return fmt.Errorf("failed to create .env.example: %w", err)
 	}
 
@@ -260,7 +259,7 @@ func (rp *ReactProject) savePackageJSON() error {
 	}
 
 	packageJSONPath := filepath.Join(rp.Path, "package.json")
-	return os.WriteFile(packageJSONPath, data, 0644)
+	return os.WriteFile(packageJSONPath, data, 0o644)
 }
 
 func (rp *ReactProject) generateVapiHook() string {
@@ -761,10 +760,10 @@ func GenerateReactIntegration(projectPath string, info *ProjectInfo) error {
 	}
 
 	// Create directories if they don't exist
-	if err := os.MkdirAll(componentsDir, 0755); err != nil {
+	if err := os.MkdirAll(componentsDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create components directory: %w", err)
 	}
-	if err := os.MkdirAll(hooksDir, 0755); err != nil {
+	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create hooks directory: %w", err)
 	}
 
@@ -941,7 +940,7 @@ export const useVapi = (config) => {
 	}
 
 	filename := fmt.Sprintf("useVapi.%s", ext)
-	return os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, filename), []byte(content), 0o644)
 }
 
 // generateVapiButton creates the VapiButton component
@@ -1150,7 +1149,7 @@ export const VapiButton = ({
 	}
 
 	filename := fmt.Sprintf("VapiButton.%s", ext)
-	return os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, filename), []byte(content), 0o644)
 }
 
 // generateVapiExample creates an example component showing Vapi usage
@@ -1209,7 +1208,7 @@ export const VapiExample = () => {
 	}
 
 	filename := fmt.Sprintf("VapiExample.%s", ext)
-	return os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(dir, filename), []byte(content), 0o644)
 }
 
 // generateEnvTemplate creates environment template file
@@ -1230,5 +1229,5 @@ func generateEnvTemplate(projectPath string) error {
 # %sVAPI_BASE_URL=https://api.vapi.ai
 `, envPrefix, envPrefix, envPrefix)
 
-	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(projectPath, ".env.example"), []byte(content), 0o644)
 }

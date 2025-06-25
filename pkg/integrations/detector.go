@@ -21,7 +21,6 @@ package integrations
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,10 +98,10 @@ func DetectProject(projectPath string) (*ProjectInfo, error) {
 		project.Framework = FrameworkGolang
 		project.ProjectType = ProjectTypeBackend
 		// Try to read Go version from go.mod
-		if data, err := ioutil.ReadFile(filepath.Join(projectPath, "go.mod")); err == nil {
+		if data, err := os.ReadFile(filepath.Join(projectPath, "go.mod")); err == nil {
 			// Simple version extraction (could be improved)
 			content := string(data)
-			if len(content) > 0 {
+			if content != "" {
 				lines := strings.Split(content, "\n")
 				for _, line := range lines {
 					if strings.HasPrefix(line, "go ") {
@@ -141,7 +140,7 @@ func DetectProject(projectPath string) (*ProjectInfo, error) {
 	}
 
 	// C#/.NET - .csproj and .sln are specific to .NET
-	files, _ := ioutil.ReadDir(projectPath)
+	files, _ := os.ReadDir(projectPath)
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".csproj") || strings.HasSuffix(file.Name(), ".sln") {
 			project.Framework = FrameworkCSharp
@@ -174,7 +173,7 @@ func DetectProject(projectPath string) (*ProjectInfo, error) {
 	packageJSONPath := filepath.Join(projectPath, "package.json")
 	if _, err := os.Stat(packageJSONPath); err == nil {
 		// Read and parse package.json
-		data, err := ioutil.ReadFile(packageJSONPath)
+		data, err := os.ReadFile(packageJSONPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read package.json: %w", err)
 		}
@@ -477,7 +476,7 @@ func (p *ProjectInfo) GetSDKInstallCommand() string {
 		if p.JavaBuildTool == "gradle" {
 			return fmt.Sprintf("// Add to build.gradle:\nimplementation '%s:latest.release'", sdk)
 		}
-		return fmt.Sprintf("// Add to pom.xml:\n<dependency>\n  <groupId>ai.vapi</groupId>\n  <artifactId>vapi-java</artifactId>\n  <version>LATEST</version>\n</dependency>")
+		return "// Add to pom.xml:\n<dependency>\n  <groupId>ai.vapi</groupId>\n  <artifactId>vapi-java</artifactId>\n  <version>LATEST</version>\n</dependency>"
 	case FrameworkCSharp:
 		return fmt.Sprintf("dotnet add package %s", sdk)
 	case FrameworkFlutter:
