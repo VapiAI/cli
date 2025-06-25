@@ -1,0 +1,28 @@
+{
+  "name": "@vapi/cli",
+  "version": "0.0.0",
+  "description": "Voice AI for developers - Vapi CLI",
+  "homepage": "https://vapi.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VapiAI/cli.git"
+  },
+  "keywords": ["vapi", "voice", "ai", "cli", "voice-ai", "developer-tools"],
+  "author": "Dan Goosewin <dan@vapi.ai>",
+  "license": "MIT",
+  "preferGlobal": true,
+  "bin": {
+    "vapi": "./bin/vapi"
+  },
+  "files": [
+    "bin/",
+    "install.js",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 
