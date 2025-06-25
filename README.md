@@ -6,6 +6,8 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 - 🔐 **Browser-based Authentication** - Secure OAuth-style login flow
 - 🤖 **Assistant Management** - List, create, update, and delete voice assistants
+- 🔄 **Workflow Management** - Manage visual conversation flows and branching logic
+- 📣 **Campaign Management** - Create and manage AI phone call campaigns at scale
 - 📞 **Call Management** - Monitor and control phone calls
 - 🔧 **Project Integration** - Auto-detect and integrate with existing projects
 - 🚀 **Framework Support** - React, Vue, Angular, Next.js, Node.js, Python, Go, and more
@@ -94,6 +96,27 @@ vapi workflow delete <workflow-id>
 
 **Note**: For visual workflow building with nodes and edges, use the [Vapi Dashboard](https://dashboard.vapi.ai/workflows).
 
+### Campaign Management
+
+```bash
+# List all campaigns
+vapi campaign list
+
+# Get campaign details
+vapi campaign get <campaign-id>
+
+# Create a new campaign
+vapi campaign create
+
+# Update/end a campaign
+vapi campaign update <campaign-id>
+
+# Delete a campaign
+vapi campaign delete <campaign-id>
+```
+
+**Note**: For advanced campaign features (customer lists, scheduling), use the [Vapi Dashboard](https://dashboard.vapi.ai).
+
 ### Project Integration
 
 Initialize Vapi in your existing project:
@@ -134,6 +157,7 @@ cli/
 │   ├── root.go            # Main CLI setup
 │   ├── assistant.go       # Assistant commands
 │   ├── workflow.go        # Workflow commands
+│   ├── campaign.go        # Campaign commands
 │   ├── call.go           # Call commands
 │   ├── config.go         # Configuration commands
 │   ├── init.go           # Project initialization
