@@ -21,6 +21,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	vapi "github.com/VapiAI/server-sdk-go"
@@ -47,9 +48,9 @@ var listAssistantCmd = &cobra.Command{
 	Short: "List all assistants",
 	Long:  `Display all assistants in your account with their IDs, names, and metadata.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
-
 		fmt.Println("📋 Listing assistants...")
+
+		ctx := context.Background()
 
 		// Fetch up to 50 assistants from the API
 		listRequest := &vapi.AssistantsListRequest{
@@ -58,6 +59,15 @@ var listAssistantCmd = &cobra.Command{
 
 		assistants, err := vapiClient.GetClient().Assistants.List(ctx, listRequest)
 		if err != nil {
+			// Check if this is a deserialization error related to new features
+			if strings.Contains(err.Error(), "cannot be deserialized") {
+				fmt.Println("⚠️  Warning: The Vapi API returned data in a format not yet supported by this CLI version.")
+				fmt.Println("   This usually happens when new features are added to Vapi.")
+				fmt.Println("   Please check for CLI updates: https://github.com/VapiAI/cli/releases")
+				fmt.Println()
+				fmt.Printf("   Technical details: %v\n", err)
+				return fmt.Errorf("incompatible API response format")
+			}
 			return fmt.Errorf("failed to list assistants: %w", err)
 		}
 

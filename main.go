@@ -18,19 +18,25 @@ Authors:
 */
 package main
 
-import "github.com/VapiAI/cli/cmd"
+import (
+	"github.com/VapiAI/cli/cmd"
+	"github.com/VapiAI/cli/pkg/version"
+)
 
 // Build variables set by goreleaser
 var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-	builtBy = "unknown"
+	buildVersion = "dev" // Will be overridden by -ldflags
+	commit       = "none"
+	date         = "unknown"
+	builtBy      = "unknown"
 )
 
 func main() {
-	// Set version information
-	cmd.SetVersion(version, commit, date, builtBy)
+	// Set build information in the version package
+	version.SetBuildInfo(buildVersion, commit, date, builtBy)
+
+	// Set version information for the CLI commands
+	cmd.SetVersion(version.Get(), version.GetCommit(), version.GetDate(), version.GetBuiltBy())
 
 	// Execute the CLI
 	cmd.Execute()

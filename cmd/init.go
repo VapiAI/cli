@@ -21,7 +21,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -264,11 +266,39 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	// Execute selected options
+	sdkInstalled := false
 	if integrationOptions.InstallSDK {
 		installCmd := project.GetSDKInstallCommand()
 		if installCmd != "" {
 			fmt.Printf("📦 Installing %s...\n", project.GetSDKPackage())
-			fmt.Printf("   Run: %s\n", installCmd)
+
+			// Check if it's a build file modification (Java)
+			if strings.Contains(installCmd, "//") {
+				fmt.Printf("   %s\n", installCmd)
+			} else {
+				// Split the command into parts
+				parts := strings.Fields(installCmd)
+				if len(parts) > 0 {
+					// Validate command parts for security
+					if !isValidCommand(parts[0]) {
+						fmt.Printf("   ⚠️  Skipping potentially unsafe command: %s\n", installCmd)
+					} else {
+						// #nosec G204 - command is validated above
+						cmd := exec.Command(parts[0], parts[1:]...)
+						cmd.Dir = absPath
+						cmd.Stdout = os.Stdout
+						cmd.Stderr = os.Stderr
+
+						if err := cmd.Run(); err != nil {
+							fmt.Printf("   ⚠️  Installation failed: %v\n", err)
+							fmt.Printf("   You may need to run this manually: %s\n", installCmd)
+						} else {
+							fmt.Printf("   ✅ Successfully installed %s\n", project.GetSDKPackage())
+							sdkInstalled = true
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -314,8 +344,8 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 
 	stepNum := 1
 
-	// SDK installation step
-	if integrationOptions.InstallSDK {
+	// SDK installation step (only show if not already installed)
+	if integrationOptions.InstallSDK && !sdkInstalled {
 		installCmd := project.GetSDKInstallCommand()
 		if strings.Contains(installCmd, "//") {
 			// For Java/build file modifications
@@ -382,11 +412,53 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 
 	if survey.AskOne(docsPrompt, &openDocs) == nil && openDocs {
 		fmt.Println("📖 Opening documentation...")
-		// TODO: Open browser to framework-specific Vapi docs
-		fmt.Printf("   Visit: https://docs.vapi.ai/sdk/%s\n", strings.ToLower(project.GetFrameworkName()))
+
+		// Use the correct documentation URL
+		docURL := "https://docs.vapi.ai/quickstart/introduction"
+
+		// Try to open the browser
+		var openCmd *exec.Cmd
+		switch runtime.GOOS {
+		case "darwin":
+			openCmd = exec.Command("open", docURL)
+		case "linux":
+			openCmd = exec.Command("xdg-open", docURL)
+		case "windows":
+			openCmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", docURL)
+		default:
+			fmt.Printf("   Visit: %s\n", docURL)
+			return nil
+		}
+
+		if openCmd != nil {
+			if err := openCmd.Start(); err != nil {
+				fmt.Printf("   Visit: %s\n", docURL)
+			}
+		}
 	}
 
 	return nil
+}
+
+// isValidCommand checks if a command is safe to execute
+func isValidCommand(cmd string) bool {
+	// Allow common package managers and build tools
+	allowedCommands := []string{
+		"npm", "yarn", "pnpm", "bun", // Node.js package managers
+		"pip", "pip3", "poetry", "conda", // Python package managers
+		"mvn", "gradle", // Java build tools
+		"go", "cargo", // Go and Rust
+		"composer", // PHP
+		"bundle",   // Ruby
+		"dotnet",   // .NET
+	}
+
+	for _, allowed := range allowedCommands {
+		if cmd == allowed {
+			return true
+		}
+	}
+	return false
 }
 
 func init() {

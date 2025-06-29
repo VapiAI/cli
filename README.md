@@ -13,6 +13,7 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 - 🚀 **Framework Support** - React, Vue, Angular, Next.js, Node.js, Python, Go, and more
 - 📦 **SDK Installation** - Automatic SDK setup for your project type
 - 🎨 **Code Generation** - Generate components, hooks, and examples
+- ⬆️ **Auto-Updates** - Keep your CLI up-to-date with the latest features
 
 ## Installation
 
@@ -149,6 +150,20 @@ vapi config set <key> <value>
 vapi config list
 ```
 
+### Staying Updated
+
+Keep your CLI up-to-date with the latest features and bug fixes:
+
+```bash
+# Check for available updates
+vapi update check
+
+# Update to the latest version
+vapi update
+```
+
+The CLI will automatically check for updates periodically and notify you when a new version is available.
+
 ## Project Structure
 
 ```
@@ -264,3 +279,56 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 Built with ❤️ by the Vapi team
+
+## Version Management
+
+The Vapi CLI uses a simple and discoverable version management system:
+
+### Current Version
+
+The current version is stored in the `VERSION` file at the project root. This makes it easy to find and update.
+
+### Managing Versions
+
+#### Using Make (Recommended)
+
+```bash
+# Show current version
+make version
+
+# Set a specific version
+make version-set VERSION=1.2.3
+
+# Bump versions automatically
+make version-bump-patch    # 1.2.3 -> 1.2.4
+make version-bump-minor    # 1.2.3 -> 1.3.0
+make version-bump-major    # 1.2.3 -> 2.0.0
+```
+
+#### Using the Script Directly
+
+```bash
+# Show current version
+./scripts/version.sh get
+
+# Set a specific version
+./scripts/version.sh set 1.2.3
+
+# Bump versions
+./scripts/version.sh bump patch
+./scripts/version.sh bump minor
+./scripts/version.sh bump major
+```
+
+### How It Works
+
+1. **Development**: The CLI reads the version from the `VERSION` file
+2. **Release Builds**: GoReleaser overrides the version using git tags and ldflags
+3. **Priority**: Build-time version (from releases) takes priority over the VERSION file
+
+This approach provides:
+
+- ✅ Easy version discovery (just check the `VERSION` file)
+- ✅ Automated version bumping with semantic versioning
+- ✅ Consistent versioning across development and releases
+- ✅ No need to manually edit code files

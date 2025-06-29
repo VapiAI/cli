@@ -119,7 +119,16 @@ func (a *AuthManager) Authenticate() (string, error) {
 }
 
 func (a *AuthManager) buildAuthURL(state string) string {
-	baseURL := "https://dashboard.vapi.ai/cli-auth"
+	// Load config to get environment-specific dashboard URL
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		// Fallback to production if config loading fails
+		cfg = &config.Config{}
+		cfg.Environment = "production"
+		cfg.DashboardURL = "https://dashboard.vapi.ai"
+	}
+
+	baseURL := fmt.Sprintf("%s/auth/cli", cfg.GetDashboardURL())
 	params := url.Values{}
 	params.Add("state", state)
 	params.Add("redirect_uri", fmt.Sprintf("http://localhost:%d/callback", a.callbackPort))

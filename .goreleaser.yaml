@@ -31,7 +31,7 @@ builds:
       - goos: windows
         goarch: arm
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+      - -s -w -X main.buildVersion={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
 
 archives:
   - id: vapi

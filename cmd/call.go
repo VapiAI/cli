@@ -21,7 +21,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	vapi "github.com/VapiAI/server-sdk-go"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/output"
@@ -46,9 +48,22 @@ var listCallsCmd = &cobra.Command{
 
 		fmt.Println("Listing calls...")
 
-		// Fetch call history from the API
-		calls, err := vapiClient.GetClient().Calls.List(ctx, nil)
+		// Fetch up to 50 calls from the API
+		listRequest := &vapi.CallsListRequest{
+			Limit: vapi.Float64(50),
+		}
+
+		calls, err := vapiClient.GetClient().Calls.List(ctx, listRequest)
 		if err != nil {
+			// Check if this is a deserialization error related to new features
+			if strings.Contains(err.Error(), "cannot be deserialized") {
+				fmt.Println("⚠️  Warning: The Vapi API returned data in a format not yet supported by this CLI version.")
+				fmt.Println("   This usually happens when new features are added to Vapi.")
+				fmt.Println("   Please check for CLI updates: https://github.com/VapiAI/cli/releases")
+				fmt.Println()
+				fmt.Printf("   Technical details: %v\n", err)
+				return fmt.Errorf("incompatible API response format")
+			}
 			return fmt.Errorf("failed to list calls: %w", err)
 		}
 

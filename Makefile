@@ -89,18 +89,47 @@ install: build
 run: build
 	$(BINARY_PATH)
 
-# Help
+# Version management
+.PHONY: version version-get version-set version-bump-major version-bump-minor version-bump-patch
+version: version-get
+
+version-get:
+	@./scripts/version.sh get
+
+version-set:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ VERSION is required. Usage: make version-set VERSION=1.2.3"; \
+		exit 1; \
+	fi
+	@./scripts/version.sh set $(VERSION)
+
+version-bump-major:
+	@./scripts/version.sh bump major
+
+version-bump-minor:
+	@./scripts/version.sh bump minor
+
+version-bump-patch:
+	@./scripts/version.sh bump patch
+
+# Help target to show available commands
 help:
 	@echo "Available targets:"
-	@echo "  make build       - Build the binary"
-	@echo "  make build-all   - Build for all platforms"
-	@echo "  make test        - Run tests"
-	@echo "  make test-coverage - Run tests with coverage"
-	@echo "  make clean       - Clean build artifacts"
-	@echo "  make tidy        - Run go mod tidy"
-	@echo "  make deps        - Download dependencies"
-	@echo "  make lint        - Run linters"
-	@echo "  make install     - Install binary to ~/.local/bin"
-	@echo "  make run         - Build and run the binary"
+	@echo "  build              Build the CLI binary"
+	@echo "  install            Install the CLI to ~/.local/bin"
+	@echo "  test               Run all tests"
+	@echo "  lint               Run linters"
+	@echo "  clean              Clean build artifacts"
+	@echo ""
+	@echo "Version management:"
+	@echo "  version            Show current version"
+	@echo "  version-set        Set version (requires VERSION=x.y.z)"
+	@echo "  version-bump-major Bump major version (1.2.3 -> 2.0.0)"
+	@echo "  version-bump-minor Bump minor version (1.2.3 -> 1.3.0)"
+	@echo "  version-bump-patch Bump patch version (1.2.3 -> 1.2.4)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make version-set VERSION=1.2.3"
+	@echo "  make version-bump-patch"
 
 .PHONY: all build build-all test test-coverage clean tidy deps lint install run help 
