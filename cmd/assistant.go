@@ -27,6 +27,7 @@ import (
 	vapi "github.com/VapiAI/server-sdk-go"
 	"github.com/spf13/cobra"
 
+	"github.com/VapiAI/cli/pkg/analytics"
 	"github.com/VapiAI/cli/pkg/output"
 )
 
@@ -47,7 +48,7 @@ var listAssistantCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all assistants",
 	Long:  `Display all assistants in your account with their IDs, names, and metadata.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: analytics.TrackCommandWrapper("assistant", "list", func(cmd *cobra.Command, args []string) error {
 		fmt.Println("📋 Listing assistants...")
 
 		ctx := context.Background()
@@ -73,6 +74,9 @@ var listAssistantCmd = &cobra.Command{
 
 		if len(assistants) == 0 {
 			fmt.Println("No assistants found. Create one with 'vapi assistant create'")
+			analytics.TrackEvent("assistant_list_empty", map[string]interface{}{
+				"count": 0,
+			})
 			return nil
 		}
 
@@ -92,8 +96,12 @@ var listAssistantCmd = &cobra.Command{
 			fmt.Printf("%-36s %-30s %-20s\n", assistant.Id, name, created)
 		}
 
+		analytics.TrackEvent("assistant_list_success", map[string]interface{}{
+			"count": len(assistants),
+		})
+
 		return nil
-	},
+	}),
 }
 
 var createAssistantCmd = &cobra.Command{
@@ -103,7 +111,7 @@ var createAssistantCmd = &cobra.Command{
 	
 For advanced configuration (voice selection, model parameters, tools), 
 use the Vapi dashboard at https://dashboard.vapi.ai`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: analytics.TrackCommandWrapper("assistant", "create", func(cmd *cobra.Command, args []string) error {
 		fmt.Println("🤖 Create a new Vapi assistant")
 		fmt.Println()
 
@@ -146,6 +154,7 @@ use the Vapi dashboard at https://dashboard.vapi.ai`,
 
 		if err := survey.AskOne(confirmPrompt, &confirmCreate); err != nil || !confirmCreate {
 			fmt.Println("Creation canceled.")
+			analytics.TrackEvent("assistant_create_canceled", nil)
 			return nil
 		}
 
@@ -157,7 +166,7 @@ use the Vapi dashboard at https://dashboard.vapi.ai`,
 		fmt.Println("\nVisit https://dashboard.vapi.ai to create and configure assistants.")
 
 		return nil
-	},
+	}),
 }
 
 var getAssistantCmd = &cobra.Command{
@@ -165,7 +174,7 @@ var getAssistantCmd = &cobra.Command{
 	Short: "Get details of a specific assistant",
 	Long:  `Retrieve the full configuration of an assistant including voice, model, and tool settings.`,
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: analytics.TrackCommandWrapper("assistant", "get", func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		assistantID := args[0]
 
@@ -183,7 +192,7 @@ var getAssistantCmd = &cobra.Command{
 		}
 
 		return nil
-	},
+	}),
 }
 
 var updateAssistantCmd = &cobra.Command{
@@ -194,7 +203,7 @@ var updateAssistantCmd = &cobra.Command{
 Complex updates involving voice models, tools, or advanced settings 
 are best done through the Vapi dashboard at https://dashboard.vapi.ai`,
 	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: analytics.TrackCommandWrapper("assistant", "update", func(cmd *cobra.Command, args []string) error {
 		assistantID := args[0]
 
 		fmt.Printf("📝 Update assistant: %s\n", assistantID)
@@ -208,7 +217,7 @@ are best done through the Vapi dashboard at https://dashboard.vapi.ai`,
 		fmt.Println("Visit: https://dashboard.vapi.ai/assistants")
 
 		return nil
-	},
+	}),
 }
 
 // nolint:dupl // Delete commands follow a similar pattern across resources
@@ -217,7 +226,7 @@ var deleteAssistantCmd = &cobra.Command{
 	Short: "Delete an assistant",
 	Long:  `Permanently delete an assistant. This cannot be undone.`,
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: analytics.TrackCommandWrapper("assistant", "delete", func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		assistantID := args[0]
 
@@ -234,6 +243,7 @@ var deleteAssistantCmd = &cobra.Command{
 
 		if !confirmDelete {
 			fmt.Println("Deletion canceled.")
+			analytics.TrackEvent("assistant_delete_canceled", nil)
 			return nil
 		}
 
@@ -247,7 +257,7 @@ var deleteAssistantCmd = &cobra.Command{
 
 		fmt.Println("✅ Assistant deleted successfully")
 		return nil
-	},
+	}),
 }
 
 func init() {

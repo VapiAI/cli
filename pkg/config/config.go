@@ -29,11 +29,12 @@ import (
 )
 
 type Config struct {
-	APIKey       string `mapstructure:"api_key"`
-	BaseURL      string `mapstructure:"base_url"`
-	DashboardURL string `mapstructure:"dashboard_url"`
-	Environment  string `mapstructure:"environment"`
-	Timeout      int    `mapstructure:"timeout"`
+	APIKey           string `mapstructure:"api_key"`
+	BaseURL          string `mapstructure:"base_url"`
+	DashboardURL     string `mapstructure:"dashboard_url"`
+	Environment      string `mapstructure:"environment"`
+	Timeout          int    `mapstructure:"timeout"`
+	DisableAnalytics bool   `mapstructure:"disable_analytics"`
 }
 
 // Environment configuration
@@ -79,6 +80,7 @@ func LoadConfig() (*Config, error) {
 	// Set defaults
 	viper.SetDefault("timeout", 30)
 	viper.SetDefault("environment", "production")
+	viper.SetDefault("disable_analytics", false)
 
 	// Read config file
 	if err := viper.ReadInConfig(); err != nil {
@@ -197,6 +199,7 @@ func SaveConfig(config *Config) error {
 	viper.Set("dashboard_url", config.DashboardURL)
 	viper.Set("environment", config.Environment)
 	viper.Set("timeout", config.Timeout)
+	viper.Set("disable_analytics", config.DisableAnalytics)
 
 	// Save to home directory for persistence
 	home, err := os.UserHomeDir()
@@ -206,4 +209,16 @@ func SaveConfig(config *Config) error {
 
 	configPath := filepath.Join(home, ".vapi-cli.yaml")
 	return viper.WriteConfigAs(configPath)
+}
+
+var globalConfig *Config
+
+// GetConfig returns the global configuration instance
+func GetConfig() *Config {
+	return globalConfig
+}
+
+// SetConfig sets the global configuration instance
+func SetConfig(config *Config) {
+	globalConfig = config
 }

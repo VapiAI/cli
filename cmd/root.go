@@ -20,12 +20,16 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/VapiAI/cli/pkg/analytics"
 	"github.com/VapiAI/cli/pkg/client"
+	"github.com/VapiAI/cli/pkg/config"
 )
 
 var (
@@ -86,9 +90,19 @@ var rootCmd = &cobra.Command{
 	Short: "Voice AI for developers - Vapi CLI",
 	Long:  `The official CLI for Vapi - build voice AI agents that make phone calls`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Track command execution
+		startTime := time.Now()
+		defer func() {
+			duration := time.Since(startTime)
+			analytics.TrackCommand("vapi", "", true, duration, "")
+		}()
+
 		// Check if --version flag is set
 		if versionFlag, _ := cmd.Flags().GetBool("version"); versionFlag {
 			fmt.Printf("vapi version %s\n", version)
+			analytics.TrackEvent("version_displayed", map[string]interface{}{
+				"version": version,
+			})
 			return nil
 		}
 
@@ -134,6 +148,13 @@ func init() {
 		return nil
 	}
 
+	// Set up PersistentPostRunE for cleanup
+	rootCmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+		// Ensure analytics client is properly closed
+		analytics.Close()
+		return nil
+	}
+
 	// Global flag for config file location
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.vapi-cli.yaml or $HOME/.vapi-cli.yaml)")
 
@@ -149,7 +170,25 @@ func init() {
 
 // Execute runs the root command - this is the main entry point
 func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
+	// Setup graceful shutdown handling
+	defer func() {
+		if r := recover(); r != nil {
+			analytics.TrackError(fmt.Sprintf("CLI panic: %v", r), map[string]interface{}{
+				"command": "unknown",
+			})
+			analytics.Close()
+			panic(r) // Re-panic after tracking
+		}
+		analytics.Close()
+	}()
+
+	// Execute the CLI
+	if err := rootCmd.Execute(); err != nil {
+		analytics.TrackError(err.Error(), map[string]interface{}{
+			"command": "root",
+		})
+		os.Exit(1)
+	}
 }
 
 // Initialize viper configuration from file and environment
@@ -176,6 +215,20 @@ func initConfig() {
 			fmt.Printf("Using config file: %s\n", viper.ConfigFileUsed())
 		}
 	}
+
+	// Load configuration and set global config
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		// Don't fail the CLI if config loading fails
+		if viper.GetBool("debug") {
+			fmt.Printf("Warning: failed to load config: %v\n", err)
+		}
+	} else {
+		config.SetConfig(cfg)
+	}
+
+	// Initialize analytics after config is loaded
+	analytics.Initialize()
 }
 
 // Display instructions for authentication

@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/VapiAI/cli/pkg/analytics"
 	"github.com/VapiAI/cli/pkg/config"
 )
 
@@ -228,6 +229,129 @@ func init() {
 	configCmd.AddCommand(configGetCmd)
 	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configEnvCmd)
+
+	// Add analytics subcommand
+	var analyticsCmd = &cobra.Command{
+		Use:   "analytics",
+		Short: "Manage analytics preferences",
+		Long:  `Configure whether the CLI sends anonymous usage analytics to help improve the product.`,
+	}
+
+	var analyticsStatusCmd = &cobra.Command{
+		Use:   "status",
+		Short: "Show current analytics status",
+		RunE: analytics.TrackCommandWrapper("config", "analytics-status", func(cmd *cobra.Command, args []string) error {
+			cfg := config.GetConfig()
+
+			fmt.Println("📊 Analytics Status")
+			fmt.Println()
+
+			if analytics.IsEnabled() {
+				fmt.Println("✅ Analytics: ENABLED")
+				fmt.Println("   Anonymous usage data is being collected to help improve the CLI")
+			} else {
+				fmt.Println("🚫 Analytics: DISABLED")
+				fmt.Println("   No usage data is being collected")
+			}
+
+			fmt.Println()
+			fmt.Println("Configuration:")
+
+			if cfg != nil && cfg.DisableAnalytics {
+				fmt.Println("  • Config file: disabled")
+			} else {
+				fmt.Println("  • Config file: enabled (default)")
+			}
+
+			// Check environment variables
+			envDisabled := false
+			envVars := []string{"VAPI_DISABLE_ANALYTICS", "VAPI_NO_TELEMETRY", "DISABLE_TELEMETRY", "DO_NOT_TRACK"}
+			for _, env := range envVars {
+				if os.Getenv(env) != "" {
+					fmt.Printf("  • Environment (%s): disabled\n", env)
+					envDisabled = true
+					break
+				}
+			}
+			if !envDisabled {
+				fmt.Println("  • Environment: enabled (default)")
+			}
+
+			fmt.Println()
+			fmt.Println("Data collected (when enabled):")
+			fmt.Println("  • Command usage patterns (anonymous)")
+			fmt.Println("  • Error types and frequencies (hashed)")
+			fmt.Println("  • Performance metrics")
+			fmt.Println("  • Operating system and architecture")
+			fmt.Println("  • CLI version information")
+			fmt.Println()
+			fmt.Println("Data NOT collected:")
+			fmt.Println("  • API keys or sensitive credentials")
+			fmt.Println("  • File contents or personal data")
+			fmt.Println("  • User-identifiable information")
+			fmt.Println("  • Specific error messages (only hashed patterns)")
+
+			return nil
+		}),
+	}
+
+	var analyticsEnableCmd = &cobra.Command{
+		Use:   "enable",
+		Short: "Enable analytics collection",
+		RunE: analytics.TrackCommandWrapper("config", "analytics-enable", func(cmd *cobra.Command, args []string) error {
+			cfg := config.GetConfig()
+			if cfg == nil {
+				cfg = &config.Config{}
+			}
+
+			cfg.DisableAnalytics = false
+
+			if err := config.SaveConfig(cfg); err != nil {
+				return fmt.Errorf("failed to save config: %w", err)
+			}
+
+			// Update global config
+			config.SetConfig(cfg)
+
+			fmt.Println("✅ Analytics enabled")
+			fmt.Println("   Anonymous usage data will be collected to help improve the CLI")
+			fmt.Println("   You can disable this anytime with: vapi config analytics disable")
+
+			return nil
+		}),
+	}
+
+	var analyticsDisableCmd = &cobra.Command{
+		Use:   "disable",
+		Short: "Disable analytics collection",
+		RunE: analytics.TrackCommandWrapper("config", "analytics-disable", func(cmd *cobra.Command, args []string) error {
+			cfg := config.GetConfig()
+			if cfg == nil {
+				cfg = &config.Config{}
+			}
+
+			cfg.DisableAnalytics = true
+
+			if err := config.SaveConfig(cfg); err != nil {
+				return fmt.Errorf("failed to save config: %w", err)
+			}
+
+			// Update global config
+			config.SetConfig(cfg)
+
+			fmt.Println("🚫 Analytics disabled")
+			fmt.Println("   No usage data will be collected")
+			fmt.Println("   You can re-enable this anytime with: vapi config analytics enable")
+
+			return nil
+		}),
+	}
+
+	analyticsCmd.AddCommand(analyticsStatusCmd)
+	analyticsCmd.AddCommand(analyticsEnableCmd)
+	analyticsCmd.AddCommand(analyticsDisableCmd)
+
+	configCmd.AddCommand(analyticsCmd)
 
 	// Here you will define your flags and configuration settings.
 

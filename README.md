@@ -203,7 +203,51 @@ vapi config set <key> <value>
 
 # List all configuration options
 vapi config list
+
+# Manage analytics preferences
+vapi config analytics status   # Show current analytics status
+vapi config analytics disable  # Disable analytics collection
+vapi config analytics enable   # Enable analytics collection
 ```
+
+#### Analytics and Privacy
+
+The Vapi CLI collects anonymous usage analytics to help improve the product. **We prioritize your privacy**:
+
+**What we collect:**
+
+- Command usage patterns (anonymous)
+- Error types and frequencies (hashed)
+- Performance metrics
+- Operating system and architecture
+- CLI version information
+
+**What we DON'T collect:**
+
+- API keys or sensitive credentials
+- File contents or personal data
+- User-identifiable information
+- Specific error messages (only hashed patterns)
+
+**How to opt out:**
+
+You can disable analytics collection in multiple ways:
+
+```bash
+# Via CLI command
+vapi config analytics disable
+
+# Via environment variable (any of these)
+export VAPI_DISABLE_ANALYTICS=1
+export VAPI_NO_TELEMETRY=1
+export DISABLE_TELEMETRY=1
+export DO_NOT_TRACK=1
+
+# Via config file
+echo "disable_analytics: true" >> ~/.vapi-cli.yaml
+```
+
+All data is collected anonymously and securely transmitted to PostHog for analysis.
 
 ### Chat Management
 
