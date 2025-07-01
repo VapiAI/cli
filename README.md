@@ -150,6 +150,28 @@ vapi config set <key> <value>
 vapi config list
 ```
 
+### Webhook Testing
+
+Test your webhook integrations locally without needing ngrok or other tunneling tools:
+
+```bash
+# Forward webhooks to your local development server
+vapi listen --forward-to localhost:3000/webhook
+
+# Use a different port for the webhook listener
+vapi listen --forward-to localhost:8080/api/webhooks --port 4242
+
+# Skip TLS verification (for development only)
+vapi listen --forward-to localhost:3000/webhook --skip-verify
+```
+
+The `listen` command will:
+
+- Start a local webhook server (default port 4242)
+- Forward all incoming Vapi webhooks to your specified endpoint
+- Display webhook events in real-time for debugging
+- Add helpful headers to identify forwarded requests
+
 ### Staying Updated
 
 Keep your CLI up-to-date with the latest features and bug fixes:
