@@ -71,7 +71,7 @@ Users can download pre-built binaries from GitHub Releases:
 2. Update `.goreleaser.yaml` to set `skip_upload: false`
 3. Users install with:
    ```bash
-   brew tap vapi/tap
+   brew tap VapiAI/homebrew-tap
    brew install vapi-cli
    ```
 
@@ -202,7 +202,7 @@ Essential platforms:
 2. GoReleaser will auto-update the formula
 3. Test installation:
    ```bash
-   brew tap vapi/tap
+   brew tap VapiAI/homebrew-tap
    brew install vapi-cli
    brew test vapi-cli
    ```

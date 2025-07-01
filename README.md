@@ -42,7 +42,7 @@ npm install -g @vapi-ai/cli
 #### Homebrew (macOS/Linux)
 
 ```bash
-brew tap vapi/tap
+brew tap VapiAI/homebrew-tap
 brew install vapi-cli
 ```
 

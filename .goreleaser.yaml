@@ -97,7 +97,7 @@ release:
     npm install -g @vapi-ai/cli
     
     # Homebrew (macOS/Linux)
-    brew tap vapi/tap && brew install vapi-cli
+    brew tap VapiAI/homebrew-tap && brew install vapi-cli
     
     # Scoop (Windows)  
     scoop bucket add vapi https://github.com/VapiAI/scoop-bucket && scoop install vapi-cli
@@ -177,7 +177,7 @@ announce:
       📦 **Distribution:**
       • Universal: `curl -sSL https://vapi.ai/install.sh | bash`
       • npm: `npm install -g @vapi-ai/cli`
-      • Homebrew: `brew tap vapi/tap && brew install vapi-cli`
+      • Homebrew: `brew tap VapiAI/homebrew-tap && brew install vapi-cli`
       • Docker: `docker run -it ghcr.io/vapiai/cli:{{.Tag}} --help`
       
       🔗 **Links:**
