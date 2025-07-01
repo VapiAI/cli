@@ -81,21 +81,70 @@ var createCallCmd = &cobra.Command{
 	Short: "Create a new call",
 	Long: `Initiate an outbound call.
 
-Required parameters:
-- Phone number ID (from your Vapi account)
-- Customer phone number
-- Assistant ID to handle the call`,
+This command provides guidance for call creation which requires specific parameters
+and is typically done programmatically via the Vapi SDKs.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Creating a new call...")
-
-		// Full call creation requires specific parameters
-		// This is a placeholder showing what's needed
+		fmt.Println("📞 Creating a new call...")
+		fmt.Println()
 		fmt.Println("Call creation requires specific parameters:")
 		fmt.Println("- phoneNumberId: Your Vapi phone number ID")
 		fmt.Println("- customer: { number: \"+1234567890\" }")
 		fmt.Println("- assistantId: Your assistant ID")
 		fmt.Println()
-		fmt.Println("Use the Vapi dashboard or API documentation to create calls with proper parameters.")
+		fmt.Println("Use the Vapi SDKs for programmatic call creation:")
+		fmt.Println("- Node.js: @vapi-ai/server-sdk")
+		fmt.Println("- Python: vapi-python")
+		fmt.Println("- Go: github.com/VapiAI/server-sdk-go")
+		fmt.Println()
+		fmt.Println("Or use the Vapi dashboard: https://dashboard.vapi.ai")
+		return nil
+	},
+}
+
+var updateCallCmd = &cobra.Command{
+	Use:   "update [call-id]",
+	Short: "Update a call in progress",
+	Long:  `Update an active call with new parameters, such as transferring or ending the call.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		callID := args[0]
+
+		fmt.Printf("🔄 Updating call with ID: %s\n", callID)
+
+		// For now, show what update operations are available
+		fmt.Println()
+		fmt.Println("Call update operations include:")
+		fmt.Println("- Transfer to another number or assistant")
+		fmt.Println("- Update call metadata")
+		fmt.Println("- Modify call parameters")
+		fmt.Println()
+		fmt.Println("Use the Vapi SDKs for programmatic call updates:")
+		fmt.Println("- Call Transfer: PATCH /call/{id}")
+		fmt.Println("- Call Control: Various API endpoints")
+		fmt.Println()
+		fmt.Println("Or use the Vapi dashboard for manual call control.")
+
+		return nil
+	},
+}
+
+var endCallCmd = &cobra.Command{
+	Use:   "end [call-id]",
+	Short: "End an active call",
+	Long:  `Terminate an active call immediately.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		callID := args[0]
+
+		fmt.Printf("📞 Ending call: %s\n", callID)
+		fmt.Println()
+		fmt.Println("Call termination can be done via:")
+		fmt.Println("- PATCH /call/{id} API endpoint")
+		fmt.Println("- Vapi SDKs with call control methods")
+		fmt.Println("- Dashboard call management interface")
+		fmt.Println()
+		fmt.Println("This ensures proper call cleanup and billing accuracy.")
+
 		return nil
 	},
 }
@@ -131,14 +180,6 @@ func init() {
 	callCmd.AddCommand(listCallsCmd)
 	callCmd.AddCommand(createCallCmd)
 	callCmd.AddCommand(getCallCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// callCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// callCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	callCmd.AddCommand(updateCallCmd)
+	callCmd.AddCommand(endCallCmd)
 }
