@@ -183,8 +183,6 @@ announce:
       🔗 **Links:**
       • Release: {{ .ReleaseURL }}
       • Changelog: {{ .ReleaseURL }}#changelog
-      
-      Built with ❤️ by the Vapi team
     username: "Vapi Release Bot"
     icon_emoji: ":rocket:"
     channel: "#releases"  # or whatever channel you want
