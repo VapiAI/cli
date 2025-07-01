@@ -169,6 +169,26 @@ dockers:
 
 # Announce releases
 announce:
+  slack:
+    enabled: true
+    message_template: |
+      🚀 **Vapi CLI {{.Tag}} Released!**
+      
+      📦 **Distribution:**
+      • Universal: `curl -sSL https://vapi.ai/install.sh | bash`
+      • npm: `npm install -g @vapi-ai/cli`
+      • Homebrew: `brew tap vapi/tap && brew install vapi-cli`
+      • Docker: `docker run -it ghcr.io/vapiai/cli:{{.Tag}} --help`
+      
+      🔗 **Links:**
+      • Release: {{ .ReleaseURL }}
+      • Changelog: {{ .ReleaseURL }}#changelog
+      
+      Built with ❤️ by the Vapi team
+    username: "Vapi Release Bot"
+    icon_emoji: ":rocket:"
+    channel: "#releases"  # or whatever channel you want
+    
   discord:
     enabled: false  # Enable when Discord webhook is set up
     message_template: |
