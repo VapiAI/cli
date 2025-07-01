@@ -42,6 +42,8 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format: tar.gz
+    wrap_in_directory: false
     format_overrides:
       - goos: windows
         format: zip
@@ -156,7 +158,7 @@ dockers:
       - "ghcr.io/vapiai/cli:v{{ .Major }}"
       - "ghcr.io/vapiai/cli:v{{ .Major }}.{{ .Minor }}"
       - "ghcr.io/vapiai/cli:latest"
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
