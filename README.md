@@ -23,6 +23,49 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 ## Installation
 
+### npm (Cross-platform)
+
+```bash
+npm install -g @vapi-ai/cli
+```
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap vapi/tap
+brew install vapi-cli
+```
+
+### Scoop (Windows)
+
+```powershell
+scoop bucket add vapi https://github.com/VapiAI/scoop-bucket
+scoop install vapi-cli
+```
+
+### Docker
+
+```bash
+# Run directly
+docker run -it ghcr.io/vapiai/cli:latest --help
+
+# Or with persistent config
+docker run -it -v ~/.vapi-cli.yaml:/home/vapi/.vapi-cli.yaml ghcr.io/vapiai/cli:latest assistant list
+```
+
+### Direct Download
+
+Download pre-built binaries from [GitHub Releases](https://github.com/VapiAI/cli/releases):
+
+```bash
+# macOS/Linux
+curl -sSL https://github.com/VapiAI/cli/releases/latest/download/cli_$(uname -s)_$(uname -m).tar.gz | tar xz
+sudo mv vapi /usr/local/bin
+
+# Or download specific version
+curl -sSL https://github.com/VapiAI/cli/releases/download/v0.0.6/cli_Darwin_arm64.tar.gz | tar xz
+```
+
 ### From Source
 
 ```bash
@@ -39,10 +82,6 @@ make build
 # Install to ~/.local/bin
 make install
 ```
-
-### Binary Releases
-
-Coming soon: Pre-built binaries for macOS, Linux, and Windows.
 
 ## Development Requirements
 

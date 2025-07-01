@@ -84,18 +84,32 @@ release:
     
     ### Installation
     
-    #### macOS/Linux
+    #### npm (Cross-platform)
     ```bash
-    curl -sSL https://github.com/VapiAI/cli/releases/download/v{{.Version}}/vapi_$(uname -s)_$(uname -m).tar.gz | tar xz
-    sudo mv vapi /usr/local/bin
+    npm install -g @vapi-ai/cli
     ```
     
-    #### Windows
-    Download the Windows archive from the assets below and add to your PATH.
-    
-    #### Homebrew (coming soon)
+    #### Homebrew (macOS/Linux)
     ```bash
-    brew install vapi/tap/vapi-cli
+    brew tap vapi/tap && brew install vapi-cli
+    ```
+    
+    #### Scoop (Windows)
+    ```powershell
+    scoop bucket add vapi https://github.com/VapiAI/scoop-bucket
+    scoop install vapi-cli
+    ```
+    
+    #### Docker
+    ```bash
+    docker run -it ghcr.io/vapiai/cli:latest --help
+    ```
+    
+    #### Direct Download
+    ```bash
+    # macOS/Linux
+    curl -sSL https://github.com/VapiAI/cli/releases/download/v{{.Version}}/cli_$(uname -s)_$(uname -m).tar.gz | tar xz
+    sudo mv vapi /usr/local/bin
     ```
     
   footer: |
