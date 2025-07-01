@@ -14,7 +14,7 @@ import (
 
 const (
 	// PostHog project configuration
-	PostHogAPIKey = "phc_7n8hfXiXUYnJfXh93QH1WCLhvQhvwKlpvY5aDzqnNHm" // Replace with actual Vapi PostHog key
+	PostHogAPIKey = "phc_oX8UUqsZVs6ifWJRTZ0yNtwTv852ccqRsk09SsZbHHb"
 	PostHogHost   = "https://us.i.posthog.com"
 
 	// Event names following PostHog conventions
