@@ -8,13 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VapiAI/cli/pkg/config"
 	"github.com/posthog/posthog-go"
+
+	"github.com/VapiAI/cli/pkg/config"
 )
 
 const (
 	// PostHog project configuration
-	PostHogAPIKey = "phc_oX8UUqsZVs6ifWJRTZ0yNtwTv852ccqRsk09SsZbHHb"
+	// PostHogAPIKey is a public key for PostHog analytics - not a secret credential
+	PostHogAPIKey = "phc_oX8UUqsZVs6ifWJRTZ0yNtwTv852ccqRsk09SsZbHHb" // #nosec G101
 	PostHogHost   = "https://us.i.posthog.com"
 
 	// Event names following PostHog conventions
@@ -73,7 +75,7 @@ func Initialize() {
 // Close properly shuts down the analytics client
 func Close() {
 	if globalClient != nil && globalClient.enabled && globalClient.client != nil {
-		globalClient.client.Close()
+		_ = globalClient.client.Close() // Ignore close error as it's cleanup
 	}
 }
 
@@ -94,7 +96,7 @@ func TrackEvent(event string, properties map[string]interface{}) {
 	properties["timestamp"] = time.Now().UTC().Format(time.RFC3339)
 
 	// Send event asynchronously (non-blocking)
-	globalClient.client.Enqueue(posthog.Capture{
+	_ = globalClient.client.Enqueue(posthog.Capture{ // Ignore enqueue error as it's fire-and-forget
 		DistinctId: globalClient.distinctID,
 		Event:      event,
 		Properties: properties,
@@ -102,7 +104,7 @@ func TrackEvent(event string, properties map[string]interface{}) {
 }
 
 // TrackCommand tracks CLI command usage
-func TrackCommand(command string, subcommand string, success bool, duration time.Duration, errorMsg string) {
+func TrackCommand(command, subcommand string, success bool, duration time.Duration, errorMsg string) {
 	properties := map[string]interface{}{
 		"command":     command,
 		"subcommand":  subcommand,

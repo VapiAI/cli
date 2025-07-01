@@ -231,13 +231,13 @@ func init() {
 	configCmd.AddCommand(configEnvCmd)
 
 	// Add analytics subcommand
-	var analyticsCmd = &cobra.Command{
+	analyticsCmd := &cobra.Command{
 		Use:   "analytics",
 		Short: "Manage analytics preferences",
 		Long:  `Configure whether the CLI sends anonymous usage analytics to help improve the product.`,
 	}
 
-	var analyticsStatusCmd = &cobra.Command{
+	analyticsStatusCmd := &cobra.Command{
 		Use:   "status",
 		Short: "Show current analytics status",
 		RunE: analytics.TrackCommandWrapper("config", "analytics-status", func(cmd *cobra.Command, args []string) error {
@@ -295,7 +295,7 @@ func init() {
 		}),
 	}
 
-	var analyticsEnableCmd = &cobra.Command{
+	analyticsEnableCmd := &cobra.Command{
 		Use:   "enable",
 		Short: "Enable analytics collection",
 		RunE: analytics.TrackCommandWrapper("config", "analytics-enable", func(cmd *cobra.Command, args []string) error {
@@ -321,7 +321,7 @@ func init() {
 		}),
 	}
 
-	var analyticsDisableCmd = &cobra.Command{
+	analyticsDisableCmd := &cobra.Command{
 		Use:   "disable",
 		Short: "Disable analytics collection",
 		RunE: analytics.TrackCommandWrapper("config", "analytics-disable", func(cmd *cobra.Command, args []string) error {

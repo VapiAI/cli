@@ -7,7 +7,7 @@ import (
 )
 
 // TrackCommandWrapper wraps a cobra command function with analytics tracking
-func TrackCommandWrapper(cmdName string, subCmd string, fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
+func TrackCommandWrapper(cmdName, subCmd string, fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		startTime := time.Now()
 
@@ -27,7 +27,7 @@ func TrackCommandWrapper(cmdName string, subCmd string, fn func(cmd *cobra.Comma
 }
 
 // TrackCommandWithContext wraps a command with additional context properties
-func TrackCommandWithContext(cmdName string, subCmd string, context map[string]interface{}, fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
+func TrackCommandWithContext(cmdName, subCmd string, context map[string]interface{}, fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		startTime := time.Now()
 

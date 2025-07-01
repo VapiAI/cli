@@ -170,25 +170,17 @@ func init() {
 
 // Execute runs the root command - this is the main entry point
 func Execute() {
-	// Setup graceful shutdown handling
-	defer func() {
-		if r := recover(); r != nil {
-			analytics.TrackError(fmt.Sprintf("CLI panic: %v", r), map[string]interface{}{
-				"command": "unknown",
-			})
-			analytics.Close()
-			panic(r) // Re-panic after tracking
-		}
-		analytics.Close()
-	}()
-
 	// Execute the CLI
 	if err := rootCmd.Execute(); err != nil {
 		analytics.TrackError(err.Error(), map[string]interface{}{
 			"command": "root",
 		})
+		analytics.Close()
 		os.Exit(1)
 	}
+
+	// Close analytics on successful completion
+	analytics.Close()
 }
 
 // Initialize viper configuration from file and environment
