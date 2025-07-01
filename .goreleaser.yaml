@@ -84,20 +84,21 @@ release:
     
     ### Installation
     
-    #### npm (Cross-platform)
+    #### Universal Install Script (Recommended)
     ```bash
+    curl -sSL https://vapi.ai/install.sh | bash
+    ```
+    
+    #### Package Managers
+    ```bash
+    # npm
     npm install -g @vapi-ai/cli
-    ```
     
-    #### Homebrew (macOS/Linux)
-    ```bash
+    # Homebrew (macOS/Linux)
     brew tap vapi/tap && brew install vapi-cli
-    ```
     
-    #### Scoop (Windows)
-    ```powershell
-    scoop bucket add vapi https://github.com/VapiAI/scoop-bucket
-    scoop install vapi-cli
+    # Scoop (Windows)  
+    scoop bucket add vapi https://github.com/VapiAI/scoop-bucket && scoop install vapi-cli
     ```
     
     #### Docker
@@ -105,9 +106,8 @@ release:
     docker run -it ghcr.io/vapiai/cli:latest --help
     ```
     
-    #### Direct Download
+    #### Manual Download
     ```bash
-    # macOS/Linux
     curl -sSL https://github.com/VapiAI/cli/releases/download/v{{.Version}}/cli_$(uname -s)_$(uname -m).tar.gz | tar xz
     sudo mv vapi /usr/local/bin
     ```

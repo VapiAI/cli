@@ -23,20 +23,30 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 ## Installation
 
-### npm (Cross-platform)
+### Universal Install Script (Recommended)
+
+```bash
+curl -sSL https://vapi.ai/install.sh | bash
+```
+
+This script automatically detects your platform and installs the latest version.
+
+### Package Managers
+
+#### npm (Cross-platform)
 
 ```bash
 npm install -g @vapi-ai/cli
 ```
 
-### Homebrew (macOS/Linux)
+#### Homebrew (macOS/Linux)
 
 ```bash
 brew tap vapi/tap
 brew install vapi-cli
 ```
 
-### Scoop (Windows)
+#### Scoop (Windows)
 
 ```powershell
 scoop bucket add vapi https://github.com/VapiAI/scoop-bucket
@@ -53,7 +63,7 @@ docker run -it ghcr.io/vapiai/cli:latest --help
 docker run -it -v ~/.vapi-cli.yaml:/home/vapi/.vapi-cli.yaml ghcr.io/vapiai/cli:latest assistant list
 ```
 
-### Direct Download
+### Manual Download
 
 Download pre-built binaries from [GitHub Releases](https://github.com/VapiAI/cli/releases):
 
