@@ -76,7 +76,7 @@ func displayBanner() {
 	// Print banner
 	fmt.Println(titleStyle.Render(asciiArt))
 	fmt.Println(subtitleStyle.Render("Voice AI for developers"))
-	fmt.Println(versionStyle.Render("v0.0.1"))
+	fmt.Println(versionStyle.Render("v" + version))
 	fmt.Println()
 }
 
