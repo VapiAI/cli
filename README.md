@@ -6,9 +6,15 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 - 🔐 **Browser-based Authentication** - Secure OAuth-style login flow
 - 🤖 **Assistant Management** - List, create, update, and delete voice assistants
+- 💬 **Chat Management** - Text-based conversations and chat history
+- 📞 **Enhanced Call Management** - Full call lifecycle control and monitoring
+- 📱 **Phone Number Management** - Purchase, configure, and manage phone numbers
 - 🔄 **Workflow Management** - Manage visual conversation flows and branching logic
 - 📣 **Campaign Management** - Create and manage AI phone call campaigns at scale
-- 📞 **Call Management** - Monitor and control phone calls
+- 🛠️ **Tool Management** - Custom functions and API integrations
+- 🔗 **Webhook Management** - Configure and manage real-time event delivery
+- 🎧 **Webhook Testing** - Local webhook forwarding without ngrok
+- 📋 **Logs & Debugging** - System logs, call logs, and error tracking
 - 🔧 **Project Integration** - Auto-detect and integrate with existing projects
 - 🚀 **Framework Support** - React, Vue, Angular, Next.js, Node.js, Python, Go, and more
 - 📦 **SDK Installation** - Automatic SDK setup for your project type
@@ -148,6 +154,141 @@ vapi config set <key> <value>
 
 # List all configuration options
 vapi config list
+```
+
+### Chat Management
+
+Manage text-based chat conversations with Vapi assistants:
+
+```bash
+# List all chat conversations
+vapi chat list
+
+# Get chat conversation details
+vapi chat get <chat-id>
+
+# Create a new chat (guided setup)
+vapi chat create
+
+# Continue an existing chat conversation
+vapi chat continue <chat-id> "Your message here"
+
+# Delete a chat conversation
+vapi chat delete <chat-id>
+```
+
+### Phone Number Management
+
+Manage your Vapi phone numbers for calls:
+
+```bash
+# List all phone numbers
+vapi phone list
+
+# Get phone number details
+vapi phone get <phone-number-id>
+
+# Purchase a new phone number (guided)
+vapi phone create
+
+# Update phone number configuration
+vapi phone update <phone-number-id>
+
+# Release a phone number
+vapi phone delete <phone-number-id>
+```
+
+### Enhanced Call Management
+
+Enhanced call operations and monitoring:
+
+```bash
+# List all calls
+vapi call list
+
+# Get call details
+vapi call get <call-id>
+
+# Create a new call (guided)
+vapi call create
+
+# Update a call in progress
+vapi call update <call-id>
+
+# End an active call
+vapi call end <call-id>
+```
+
+### Logs and Debugging
+
+View system logs for debugging and monitoring:
+
+```bash
+# List recent system logs
+vapi logs list
+
+# View call-specific logs
+vapi logs calls [call-id]
+
+# View recent error logs
+vapi logs errors
+
+# View webhook delivery logs
+vapi logs webhooks
+```
+
+### Tool Management
+
+Manage custom tools and functions that connect your voice agents to external APIs:
+
+```bash
+# List all tools
+vapi tool list
+
+# Get tool details
+vapi tool get <tool-id>
+
+# Create a new tool (guided)
+vapi tool create
+
+# Update tool configuration
+vapi tool update <tool-id>
+
+# Delete a tool
+vapi tool delete <tool-id>
+
+# Test a tool with sample input
+vapi tool test <tool-id>
+
+# List available tool types
+vapi tool types
+```
+
+### Webhook Management
+
+Manage webhook endpoints and configurations for real-time event delivery:
+
+```bash
+# List all webhook endpoints
+vapi webhook list
+
+# Get webhook details
+vapi webhook get <webhook-id>
+
+# Create a new webhook endpoint
+vapi webhook create [url]
+
+# Update webhook configuration
+vapi webhook update <webhook-id>
+
+# Delete a webhook endpoint
+vapi webhook delete <webhook-id>
+
+# Test a webhook endpoint
+vapi webhook test <webhook-id>
+
+# List available webhook event types
+vapi webhook events
 ```
 
 ### Webhook Testing
