@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/output"
@@ -163,25 +162,18 @@ var deletePhoneCmd = &cobra.Command{
 		phoneNumberID := args[0]
 
 		// Require explicit confirmation for destructive actions
-		var confirmDelete bool
-		prompt := &survey.Confirm{
-			Message: fmt.Sprintf("Are you sure you want to release phone number %s?", phoneNumberID),
-			Default: false,
+		confirmed, err := confirmDeletion("phone number", phoneNumberID)
+		if err != nil {
+			return err
 		}
-
-		if err := survey.AskOne(prompt, &confirmDelete); err != nil {
-			return fmt.Errorf("deletion canceled: %w", err)
-		}
-
-		if !confirmDelete {
-			fmt.Println("Release canceled.")
+		if !confirmed {
 			return nil
 		}
 
 		fmt.Printf("🗑️  Releasing phone number with ID: %s\n", phoneNumberID)
 
 		// Execute deletion via API
-		_, err := vapiClient.GetClient().PhoneNumbers.Delete(ctx, phoneNumberID)
+		_, err = vapiClient.GetClient().PhoneNumbers.Delete(ctx, phoneNumberID)
 		if err != nil {
 			return fmt.Errorf("failed to release phone number: %w", err)
 		}

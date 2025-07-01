@@ -118,12 +118,13 @@ func startWebhookListener(forwardURL string, port int, skipVerify bool) error {
 	// Create HTTP server
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		handleWebhook(w, r, forwardURL, skipVerify, sessionID)
+		handleWebhook(w, r, forwardURL, sessionID)
 	})
 
 	server := &http.Server{
-		Addr:    ":" + strconv.Itoa(port),
-		Handler: mux,
+		Addr:              ":" + strconv.Itoa(port),
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Handle graceful shutdown
@@ -158,7 +159,7 @@ func startWebhookListener(forwardURL string, port int, skipVerify bool) error {
 }
 
 // handleWebhook processes incoming webhook requests and forwards them
-func handleWebhook(w http.ResponseWriter, r *http.Request, forwardURL string, skipVerify bool, sessionID string) {
+func handleWebhook(w http.ResponseWriter, r *http.Request, forwardURL, sessionID string) {
 	timestamp := time.Now().Format("15:04:05")
 
 	// Create styles
@@ -174,7 +175,11 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, forwardURL string, sk
 		http.Error(w, "Failed to read request body", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			fmt.Printf("[%s] %s Failed to close request body: %v\n", timestamp, errorStyle.Render("ERROR"), err)
+		}
+	}()
 
 	// Try to parse as JSON to get event type if possible
 	var webhook map[string]interface{}
@@ -227,7 +232,11 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, forwardURL string, sk
 		http.Error(w, "Failed to forward request", http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("[%s] %s Failed to close response body: %v\n", timestamp, errorStyle.Render("ERROR"), err)
+		}
+	}()
 
 	// Read response from target server
 	respBody, err := io.ReadAll(resp.Body)
@@ -259,7 +268,9 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, forwardURL string, sk
 
 	// Send response back to Vapi
 	w.WriteHeader(resp.StatusCode)
-	w.Write(respBody)
+	if _, err := w.Write(respBody); err != nil {
+		fmt.Printf("[%s] %s Failed to write response: %v\n", timestamp, errorStyle.Render("ERROR"), err)
+	}
 
 	// Print webhook details if it's a JSON payload
 	if strings.Contains(r.Header.Get("Content-Type"), "application/json") && len(body) > 0 {
@@ -273,9 +284,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request, forwardURL string, sk
 
 // generateSessionID creates a unique identifier for this listening session
 func generateSessionID() string {
-	bytes := make([]byte, 4)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
+	b := make([]byte, 4)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to timestamp-based ID if random fails
+		return fmt.Sprintf("%d", time.Now().Unix())
+	}
+	return hex.EncodeToString(b)
 }
 
 func init() {
@@ -287,5 +301,7 @@ func init() {
 	listenCmd.Flags().BoolVar(&skipVerify, "skip-verify", false, "Skip TLS certificate verification when forwarding")
 
 	// Mark required flags
-	listenCmd.MarkFlagRequired("forward-to")
+	if err := listenCmd.MarkFlagRequired("forward-to"); err != nil {
+		panic(fmt.Sprintf("Failed to mark flag as required: %v", err))
+	}
 }

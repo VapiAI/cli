@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/output"
@@ -183,25 +182,18 @@ var deleteToolCmd = &cobra.Command{
 		toolID := args[0]
 
 		// Require explicit confirmation for destructive actions
-		var confirmDelete bool
-		prompt := &survey.Confirm{
-			Message: fmt.Sprintf("Are you sure you want to delete tool %s? This will remove it from all assistants.", toolID),
-			Default: false,
+		confirmed, err := confirmDeletion("tool", fmt.Sprintf("%s (this will remove it from all assistants)", toolID))
+		if err != nil {
+			return err
 		}
-
-		if err := survey.AskOne(prompt, &confirmDelete); err != nil {
-			return fmt.Errorf("deletion canceled: %w", err)
-		}
-
-		if !confirmDelete {
-			fmt.Println("Deletion canceled.")
+		if !confirmed {
 			return nil
 		}
 
 		fmt.Printf("🗑️  Deleting tool with ID: %s\n", toolID)
 
 		// Execute deletion via API
-		_, err := vapiClient.GetClient().Tools.Delete(ctx, toolID)
+		_, err = vapiClient.GetClient().Tools.Delete(ctx, toolID)
 		if err != nil {
 			return fmt.Errorf("failed to delete tool: %w", err)
 		}

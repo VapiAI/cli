@@ -141,25 +141,18 @@ var deleteChatCmd = &cobra.Command{
 		chatID := args[0]
 
 		// Require explicit confirmation for destructive actions
-		var confirmDelete bool
-		prompt := &survey.Confirm{
-			Message: fmt.Sprintf("Are you sure you want to delete chat conversation %s?", chatID),
-			Default: false,
+		confirmed, err := confirmDeletion("chat conversation", chatID)
+		if err != nil {
+			return err
 		}
-
-		if err := survey.AskOne(prompt, &confirmDelete); err != nil {
-			return fmt.Errorf("deletion canceled: %w", err)
-		}
-
-		if !confirmDelete {
-			fmt.Println("Deletion canceled.")
+		if !confirmed {
 			return nil
 		}
 
 		fmt.Printf("🗑️  Deleting chat conversation with ID: %s\n", chatID)
 
 		// Execute deletion via API
-		_, err := vapiClient.GetClient().Chats.Delete(ctx, chatID)
+		_, err = vapiClient.GetClient().Chats.Delete(ctx, chatID)
 		if err != nil {
 			return fmt.Errorf("failed to delete chat: %w", err)
 		}
@@ -194,6 +187,26 @@ using the Vapi SDKs or through the dashboard interface.`,
 
 		return nil
 	},
+}
+
+// confirmDeletion prompts the user for confirmation before destructive actions
+func confirmDeletion(itemType, itemID string) (bool, error) {
+	var confirmDelete bool
+	prompt := &survey.Confirm{
+		Message: fmt.Sprintf("Are you sure you want to delete %s %s?", itemType, itemID),
+		Default: false,
+	}
+
+	if err := survey.AskOne(prompt, &confirmDelete); err != nil {
+		return false, fmt.Errorf("deletion canceled: %w", err)
+	}
+
+	if !confirmDelete {
+		fmt.Println("Deletion canceled.")
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func init() {
