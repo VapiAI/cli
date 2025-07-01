@@ -42,11 +42,7 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    format: tar.gz
     wrap_in_directory: false
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - README.md
       - LICENSE
@@ -122,20 +118,15 @@ release:
     _Built with ❤️ by the Vapi team_
 
 # Homebrew tap configuration
-brews:
+homebrew_casks:
   - repository:
       owner: VapiAI
       name: homebrew-tap
       branch: main
-    directory: Formula
     name: vapi-cli
     homepage: "https://vapi.ai"
     description: "Voice AI for developers - Vapi CLI"
     license: "MIT"
-    test: |
-      system "#{bin}/vapi", "--version"
-    install: |
-      bin.install "vapi"
     skip_upload: false
 
 # Scoop bucket configuration (for Windows users)
