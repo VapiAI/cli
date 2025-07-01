@@ -92,7 +92,7 @@ async function install() {
     
     const ext = isWindows ? '.zip' : '.tar.gz';
     const binExt = isWindows ? '.exe' : '';
-    const assetName = `vapi_${platform}${ext}`;
+    const assetName = `cli_${platform}${ext}`;
     
     const asset = release.assets.find(a => a.name === assetName);
     if (!asset) {
