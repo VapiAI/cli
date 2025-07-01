@@ -1,72 +1,52 @@
 # Vapi CLI
 
-Voice AI for developers - The official Vapi CLI
+Voice AI for developers - Official CLI tool for the Vapi platform.
 
 ## Installation
 
 ```bash
 npm install -g @vapi/cli
-# or
-yarn global add @vapi/cli
-# or
-pnpm add -g @vapi/cli
 ```
 
-## Quick Start
+## Usage
 
-1. **Install the CLI**:
+```bash
+# Get help
+vapi --help
 
-   ```bash
-   npm install -g @vapi/cli
-   ```
+# Login to your Vapi account
+vapi login
 
-2. **Login to Vapi**:
+# List your assistants
+vapi assistant list
 
-   ```bash
-   vapi login
-   ```
+# List your calls
+vapi call list
 
-3. **Initialize a project**:
-
-   ```bash
-   vapi init
-   ```
-
-4. **List your assistants**:
-   ```bash
-   vapi assistants list
-   ```
+# Start webhook listener for development
+vapi listen --forward-to localhost:3000/webhook
+```
 
 ## Features
 
-- 🔐 **Browser-based authentication** - Secure login via your Vapi dashboard
-- 🚀 **Quick project setup** - Initialize Vapi in any JavaScript/TypeScript project
-- 🤖 **Assistant management** - List, create, and manage your voice AI assistants
-- 📞 **Call management** - View and manage your calls
-- 🔧 **Framework detection** - Automatically detects React, Vue, Next.js, and more
-
-## Commands
-
-```bash
-vapi --help              # Show help
-vapi login               # Authenticate with Vapi
-vapi init                # Initialize Vapi in your project
-vapi assistants list     # List all assistants
-vapi assistants get <id> # Get assistant details
-vapi calls list          # List recent calls
-vapi config get          # View configuration
-```
+- **Assistant Management** - Create, update, and manage AI assistants
+- **Call Management** - Handle inbound/outbound calls
+- **Phone Number Management** - Manage your Vapi phone numbers
+- **Chat Management** - Text-based conversations with assistants
+- **Webhook Development** - Local webhook forwarding for testing
+- **Tool Management** - Custom functions and integrations
+- **Logs & Debugging** - Comprehensive logging and troubleshooting
 
 ## Documentation
 
-For detailed documentation, visit [docs.vapi.ai](https://docs.vapi.ai)
+Visit [docs.vapi.ai](https://docs.vapi.ai) for complete documentation.
 
 ## Support
 
-- Documentation: [docs.vapi.ai](https://docs.vapi.ai)
-- GitHub Issues: [github.com/VapiAI/cli](https://github.com/VapiAI/cli/issues)
-- Discord: [discord.gg/vapi](https://discord.gg/vapi)
+- [GitHub Issues](https://github.com/VapiAI/cli/issues)
+- [Discord Community](https://discord.gg/vapi)
+- [Documentation](https://docs.vapi.ai)
 
-## License
+---
 
-MIT © [Vapi, Inc.](https://vapi.ai)
+Built with ❤️ by the [Vapi](https://vapi.ai) team.

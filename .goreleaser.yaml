@@ -121,7 +121,7 @@ brews:
       system "#{bin}/vapi", "--version"
     install: |
       bin.install "vapi"
-    skip_upload: true  # Set to false when ready to publish to Homebrew
+    skip_upload: false  # Now ready to publish to Homebrew
 
 # Scoop bucket configuration (for Windows users)
 scoops:
@@ -134,7 +134,7 @@ scoops:
     homepage: "https://vapi.ai"
     description: "Voice AI for developers - Vapi CLI"
     license: MIT
-    skip_upload: true  # Set to false when ready to publish to Scoop
+    skip_upload: false  # Now ready to publish to Scoop
 
 # Docker images (optional, for containerized usage)
 # dockers:

@@ -1,0 +1,12 @@
+*.log
+*.tmp
+.DS_Store
+.git/
+.github/
+.vscode/
+node_modules/
+.env*
+*.test.js
+*.spec.js
+coverage/
+.nyc_output/ 

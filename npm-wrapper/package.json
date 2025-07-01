@@ -1,6 +1,6 @@
 {
   "name": "@vapi/cli",
-  "version": "0.0.0",
+  "version": "0.0.3",
   "description": "Voice AI for developers - Vapi CLI",
   "homepage": "https://vapi.ai",
   "repository": {
