@@ -5,7 +5,7 @@ Voice AI for developers - Official CLI tool for the Vapi platform.
 ## Installation
 
 ```bash
-npm install -g @vapi/cli
+npm install -g @vapi-ai/cli
 ```
 
 ## Usage

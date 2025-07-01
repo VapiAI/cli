@@ -36,9 +36,9 @@ npm version "$VERSION" --no-git-tag-version
 echo "📤 Publishing to npm..."
 npm publish --access public
 
-echo "✅ Successfully published @vapi/cli@$VERSION to npm!"
+echo "✅ Successfully published @vapi-ai/cli@$VERSION to npm!"
 echo ""
 echo "Users can now install with:"
-echo "  npm install -g @vapi/cli"
+echo "  npm install -g @vapi-ai/cli"
 echo ""
-echo "Verify the publish at: https://www.npmjs.com/package/@vapi/cli" 
+echo "Verify the publish at: https://www.npmjs.com/package/@vapi-ai/cli" 
