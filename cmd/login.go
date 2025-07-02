@@ -23,10 +23,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/VapiAI/cli/pkg/analytics"
 	"github.com/VapiAI/cli/pkg/auth"
 )
 
-// Authenticate with Vapi via browser-based OAuth flow
+// Authenticate with Vapi via browser-based OAuth flow (alias for 'vapi auth login')
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate with Vapi using browser-based login",
@@ -35,8 +36,11 @@ var loginCmd = &cobra.Command{
 This secure authentication flow:
 1. Opens dashboard.vapi.ai in your browser
 2. Runs a local server to receive the auth token
-3. Saves your API key for future CLI commands`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+3. Saves your API key for future CLI commands
+
+Note: This is an alias for 'vapi auth login'. For more authentication commands,
+see 'vapi auth --help'.`,
+	RunE: analytics.TrackCommandWrapper("auth", "login", func(cmd *cobra.Command, args []string) error {
 		fmt.Println("🔐 Authenticating with Vapi...")
 		fmt.Println()
 
@@ -50,9 +54,11 @@ This secure authentication flow:
 		fmt.Println("• List assistants: vapi assistant list")
 		fmt.Println("• View call history: vapi call list")
 		fmt.Println("• Integrate with projects: vapi init")
+		fmt.Println()
+		fmt.Println("💡 For more auth commands, try: vapi auth --help")
 
 		return nil
-	},
+	}),
 }
 
 func init() {

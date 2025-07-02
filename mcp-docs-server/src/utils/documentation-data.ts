@@ -1,12 +1,15 @@
-export interface DocItem {
-  id: string;
+export interface DocSection {
   title: string;
-  description: string;
-  content: string;
-  category: "api" | "guides" | "examples" | "changelog";
   url: string;
-  tags: string[];
-  lastUpdated: string;
+  description: string;
+  category: string;
+  content?: string;
+}
+
+export interface DocIndex {
+  sections: DocSection[];
+  lastFetched: Date;
+  version: string;
 }
 
 export interface CodeExample {
@@ -34,511 +37,288 @@ export interface ApiEndpoint {
   };
 }
 
-export class VapiDocumentation {
-  private static docs: DocItem[] = [
-    {
-      id: "getting-started",
-      title: "Getting Started with Vapi",
-      description: "Learn how to create your first voice AI assistant with Vapi in minutes",
-      content: `# Getting Started with Vapi
+// Cache for documentation
+let docCache: DocIndex | null = null;
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
-Vapi is the voice AI platform that lets you build voice assistants that can make and receive phone calls. Here's how to get started:
-
-## Quick Start
-
-1. Sign up at https://dashboard.vapi.ai
-2. Get your API key from the dashboard
-3. Create your first assistant
-4. Make your first call
-
-## Installation
-
-### JavaScript/TypeScript
-\`\`\`bash
-npm install @vapi-ai/web
-# or
-npm install @vapi-ai/server
-\`\`\`
-
-### Python
-\`\`\`bash
-pip install vapi-python
-\`\`\`
-
-## Your First Assistant
-
-\`\`\`typescript
-import Vapi from '@vapi-ai/web';
-
-const vapi = new Vapi('your-api-key');
-
-const assistant = await vapi.assistants.create({
-  name: "My First Assistant",
-  voice: {
-    provider: "openai",
-    voiceId: "alloy"
-  },
-  model: {
-    provider: "openai",
-    model: "gpt-3.5-turbo",
-    messages: [{
-      role: "system",
-      content: "You are a helpful assistant."
-    }]
+export async function fetchDocumentationIndex(): Promise<DocIndex> {
+  // Return cached version if still fresh
+  if (docCache && Date.now() - docCache.lastFetched.getTime() < CACHE_TTL) {
+    return docCache;
   }
-});
-\`\`\``,
-      category: "guides",
-      url: "https://docs.vapi.ai/quickstart",
-      tags: ["quickstart", "setup", "assistant", "beginner"],
-      lastUpdated: "2024-01-15"
-    },
-    {
-      id: "assistants-api",
-      title: "Assistants API",
-      description: "Create and manage AI voice assistants programmatically",
-      content: `# Assistants API
 
-The Assistants API allows you to create, update, and manage your voice AI assistants.
-
-## Creating an Assistant
-
-\`\`\`typescript
-const assistant = await vapi.assistants.create({
-  name: "Customer Support Bot",
-  voice: {
-    provider: "elevenlabs",
-    voiceId: "21m00Tcm4TlvDq8ikWAM"
-  },
-  model: {
-    provider: "openai",
-    model: "gpt-4",
-    messages: [{
-      role: "system",
-      content: "You are a customer support representative."
-    }]
-  },
-  tools: [
-    {
-      type: "function",
-      function: {
-        name: "get_order_status",
-        description: "Get the status of a customer order"
-      }
-    }
-  ]
-});
-\`\`\`
-
-## Voice Configuration
-
-Choose from multiple voice providers:
-- OpenAI (alloy, echo, fable, onyx, nova, shimmer)
-- ElevenLabs (premium voices)
-- Azure (neural voices)
-- Deepgram (Aura voices)`,
-      category: "api",
-      url: "https://docs.vapi.ai/api-reference/assistants",
-      tags: ["assistants", "api", "voice", "models"],
-      lastUpdated: "2024-01-20"
-    },
-    {
-      id: "phone-calls",
-      title: "Making Phone Calls",
-      description: "Learn how to make outbound phone calls with your voice assistants",
-      content: `# Making Phone Calls
-
-Vapi allows you to make outbound phone calls using your voice assistants.
-
-## Outbound Calls
-
-\`\`\`typescript
-const call = await vapi.calls.create({
-  phoneNumber: "+1234567890",
-  assistantId: "assistant-id",
-  // Optional: Override assistant settings
-  assistantOverrides: {
-    voice: {
-      provider: "openai",
-      voiceId: "alloy"
-    }
-  }
-});
-\`\`\`
-
-## Call Status
-
-Monitor your calls in real-time:
-
-\`\`\`typescript
-// Get call details
-const call = await vapi.calls.get('call-id');
-
-// List all calls
-const calls = await vapi.calls.list({
-  limit: 100,
-  assistantId: 'assistant-id'
-});
-\`\`\`
-
-## Webhooks
-
-Set up webhooks to receive real-time call events:
-
-\`\`\`typescript
-// Configure webhook URL in dashboard
-// Receive events: call.started, call.ended, function.called
-\`\`\``,
-      category: "guides",
-      url: "https://docs.vapi.ai/phone-calls",
-      tags: ["calls", "outbound", "webhooks", "monitoring"],
-      lastUpdated: "2024-01-18"
-    },
-    {
-      id: "tools-functions",
-      title: "Tools and Functions",
-      description: "Add custom functions and tools to your voice assistants",
-      content: `# Tools and Functions
-
-Extend your assistants with custom functions that can interact with external APIs and services.
-
-## Function Calling
-
-\`\`\`typescript
-const assistant = await vapi.assistants.create({
-  name: "Weather Assistant",
-  tools: [
-    {
-      type: "function",
-      function: {
-        name: "get_weather",
-        description: "Get current weather for a location",
-        parameters: {
-          type: "object",
-          properties: {
-            location: {
-              type: "string",
-              description: "The city and state"
-            }
-          },
-          required: ["location"]
-        }
-      }
-    }
-  ]
-});
-\`\`\`
-
-## Webhook Implementation
-
-Handle function calls via webhooks:
-
-\`\`\`typescript
-app.post('/webhook', (req, res) => {
-  const { type, functionCall } = req.body;
+  console.log('Fetching fresh documentation from Vapi...');
   
-  if (type === 'function-call') {
-    const { name, parameters } = functionCall;
+  try {
+    // Fetch the structured documentation index
+    const response = await fetch('https://docs.vapi.ai/llms.txt');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch docs: ${response.status}`);
+    }
     
-    if (name === 'get_weather') {
-      const weather = getWeatherData(parameters.location);
-      res.json({
-        result: \`The weather in \${parameters.location} is \${weather}\`
+    const docsText = await response.text();
+    const sections = parseDocumentationIndex(docsText);
+    
+    docCache = {
+      sections,
+      lastFetched: new Date(),
+      version: 'live'
+    };
+    
+    console.log(`Fetched ${sections.length} documentation sections`);
+    return docCache;
+    
+  } catch (error) {
+    console.error('Failed to fetch live documentation:', error);
+    
+    // Return minimal fallback if fetch fails
+    return {
+      sections: [{
+        title: "Vapi Documentation",
+        url: "https://docs.vapi.ai",
+        description: "Visit docs.vapi.ai for the latest documentation",
+        category: "fallback"
+      }],
+      lastFetched: new Date(),
+      version: 'fallback'
+    };
+  }
+}
+
+function parseDocumentationIndex(docsText: string): DocSection[] {
+  const sections: DocSection[] = [];
+  const lines = docsText.split('\n');
+  
+  let currentCategory = 'general';
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // Skip empty lines and main headers
+    if (!trimmedLine || trimmedLine === '# Vapi' || trimmedLine === '____') {
+      continue;
+    }
+    
+    // Detect category headers
+    if (trimmedLine.startsWith('## ')) {
+      currentCategory = trimmedLine.replace('## ', '').toLowerCase().replace(/\s+/g, '-');
+      continue;
+    }
+    
+    // Parse documentation links
+    // Format: - [Title](url): Description
+    const linkMatch = trimmedLine.match(/^- \[(.*?)\]\((.*?)\):\s*(.*)/);
+    if (linkMatch && linkMatch[1] && linkMatch[2] && linkMatch[3]) {
+      const title = linkMatch[1];
+      const url = linkMatch[2];
+      const description = linkMatch[3];
+      
+      sections.push({
+        title: title.trim(),
+        url: url.startsWith('http') ? url : `https://docs.vapi.ai${url}`,
+        description: description.trim(),
+        category: currentCategory
       });
     }
   }
-});
-\`\`\``,
-      category: "guides",
-      url: "https://docs.vapi.ai/tools",
-      tags: ["tools", "functions", "webhooks", "integration"],
-      lastUpdated: "2024-01-22"
-    },
-    {
-      id: "voice-settings",
-      title: "Voice Settings and Providers",
-      description: "Configure voice settings, providers, and speech parameters",
-      content: `# Voice Settings and Providers
-
-Customize the voice experience for your assistants.
-
-## Voice Providers
-
-### OpenAI Voices
-\`\`\`typescript
-voice: {
-  provider: "openai",
-  voiceId: "alloy", // alloy, echo, fable, onyx, nova, shimmer
-  speed: 1.0,
-  emotion: "neutral"
-}
-\`\`\`
-
-### ElevenLabs Voices
-\`\`\`typescript
-voice: {
-  provider: "elevenlabs",
-  voiceId: "21m00Tcm4TlvDq8ikWAM",
-  stability: 0.5,
-  similarityBoost: 0.75,
-  style: 0.0,
-  useSpeakerBoost: true
-}
-\`\`\`
-
-### Azure Voices
-\`\`\`typescript
-voice: {
-  provider: "azure",
-  voiceId: "jenny",
-  style: "cheerful",
-  rate: "medium",
-  pitch: "medium"
-}
-\`\`\`
-
-## Speech Settings
-
-\`\`\`typescript
-{
-  voice: { /* voice config */ },
-  // Interruption handling
-  interruptionsEnabled: true,
-  responseDelaySeconds: 0.5,
   
-  // Background sound
-  backgroundSound: "office",
-  backgroundDenoisingEnabled: true,
-  
-  // Call recording
-  recordingEnabled: true
+  return sections;
 }
-\`\`\``,
-      category: "api",
-      url: "https://docs.vapi.ai/voice-settings",
-      tags: ["voice", "speech", "providers", "settings"],
-      lastUpdated: "2024-01-25"
-    }
-  ];
 
-  private static examples: CodeExample[] = [
-    {
-      id: "basic-assistant",
-      title: "Basic Voice Assistant",
-      description: "Create a simple voice assistant that can answer questions",
-      code: `import Vapi from '@vapi-ai/web';
-
-const vapi = new Vapi('your-api-key');
-
-// Create assistant
-const assistant = await vapi.assistants.create({
-  name: "Basic Assistant",
-  voice: {
-    provider: "openai",
-    voiceId: "alloy"
-  },
-  model: {
-    provider: "openai",
-    model: "gpt-3.5-turbo",
-    messages: [{
-      role: "system",
-      content: "You are a helpful assistant that answers questions clearly and concisely."
-    }]
-  }
-});
-
-// Make a call
-const call = await vapi.calls.create({
-  phoneNumber: "+1234567890",
-  assistantId: assistant.id
-});
-
-console.log('Call started:', call.id);`,
-      language: "typescript",
-      framework: "node",
-      category: "getting-started",
-      tags: ["assistant", "basic", "calls"]
-    },
-    {
-      id: "weather-function",
-      title: "Weather Assistant with Function Calling",
-      description: "Voice assistant that can get weather information using function calls",
-      code: `import Vapi from '@vapi-ai/server';
-import express from 'express';
-
-const app = express();
-app.use(express.json());
-
-const vapi = new Vapi('your-api-key');
-
-// Create weather assistant
-const assistant = await vapi.assistants.create({
-  name: "Weather Assistant",
-  voice: {
-    provider: "openai",
-    voiceId: "alloy"
-  },
-  model: {
-    provider: "openai",
-    model: "gpt-4",
-    messages: [{
-      role: "system",
-      content: "You are a weather assistant. Use the get_weather function to provide accurate weather information."
-    }]
-  },
-  tools: [{
-    type: "function",
-    function: {
-      name: "get_weather",
-      description: "Get current weather for a location",
-      parameters: {
-        type: "object",
-        properties: {
-          location: {
-            type: "string",
-            description: "The city and state or country"
-          }
-        },
-        required: ["location"]
-      }
-    }
-  }]
-});
-
-// Webhook to handle function calls
-app.post('/webhook', async (req, res) => {
-  const { type, functionCall } = req.body;
-  
-  if (type === 'function-call' && functionCall.name === 'get_weather') {
-    const { location } = functionCall.parameters;
+export async function fetchDocumentationContent(url: string): Promise<string> {
+  try {
+    // For now, return a helpful summary with the real URL
+    const index = await fetchDocumentationIndex();
+    const section = index.sections.find(s => s.url === url);
     
-    // In a real app, call a weather API
-    const weather = await getWeatherData(location);
-    
-    res.json({
-      result: \`The current weather in \${location} is \${weather.temperature}°F with \${weather.conditions}.\`
-    });
-  }
-});
+    if (section) {
+      return `# ${section.title}
 
-async function getWeatherData(location: string) {
-  // Simulate weather API call
-  return {
-    temperature: 72,
-    conditions: "sunny"
-  };
+${section.description}
+
+**Category:** ${section.category}
+**Full documentation:** ${section.url}
+
+Visit the link above for the complete, interactive documentation with examples, code samples, and detailed explanations.
+
+This is the official Vapi documentation, always up-to-date with the latest features and API changes.`;
+    }
+    
+    return `Documentation not found for URL: ${url}`;
+    
+  } catch (error) {
+    console.error('Failed to fetch documentation content:', error);
+    return `Error fetching documentation: ${error}`;
+  }
 }
 
-app.listen(3000, () => {
-  console.log('Webhook server running on port 3000');
-});`,
-      language: "typescript",
-      framework: "express",
-      category: "functions",
-      tags: ["functions", "weather", "webhook", "express"]
-    }
-  ];
+// Utility function to search documentation
+export async function searchDocumentation(query: string, category?: string): Promise<DocSection[]> {
+  const index = await fetchDocumentationIndex();
+  const searchTerm = query.toLowerCase();
+  
+  return index.sections.filter(section => {
+    const matchesQuery = 
+      section.title.toLowerCase().includes(searchTerm) ||
+      section.description.toLowerCase().includes(searchTerm) ||
+      section.url.toLowerCase().includes(searchTerm);
+    
+    const matchesCategory = !category || section.category === category;
+    
+    return matchesQuery && matchesCategory;
+  }).slice(0, 20); // Limit results
+}
 
-  private static apiEndpoints: ApiEndpoint[] = [
-    {
-      id: "create-assistant",
-      path: "/assistants",
-      method: "POST",
-      description: "Create a new voice assistant",
-      requestBody: {
-        name: "string",
-        voice: "object",
-        model: "object",
-        tools: "array"
-      },
-      examples: {
-        request: `{
-  "name": "Customer Support Bot",
-  "voice": {
-    "provider": "openai",
-    "voiceId": "alloy"
-  },
-  "model": {
-    "provider": "openai",
-    "model": "gpt-3.5-turbo",
-    "messages": [{
-      "role": "system",
-      "content": "You are a helpful customer support representative."
-    }]
-  }
-}`,
-        response: `{
-  "id": "assistant_123",
-  "name": "Customer Support Bot",
-  "createdAt": "2024-01-15T10:30:00Z",
-  "voice": { ... },
-  "model": { ... }
-}`
-      }
-    },
-    {
-      id: "make-call",
-      path: "/calls",
-      method: "POST",
-      description: "Make an outbound phone call",
-      requestBody: {
-        phoneNumber: "string",
-        assistantId: "string",
-        assistantOverrides: "object"
-      },
-      examples: {
-        request: `{
-  "phoneNumber": "+1234567890",
-  "assistantId": "assistant_123"
-}`,
-        response: `{
-  "id": "call_456",
-  "phoneNumber": "+1234567890",
-  "assistantId": "assistant_123",
-  "status": "queued",
-  "createdAt": "2024-01-15T10:35:00Z"
-}`
-      }
-    }
-  ];
+// Get sections by category
+export async function getDocumentationByCategory(category: string): Promise<DocSection[]> {
+  const index = await fetchDocumentationIndex();
+  return index.sections.filter(section => section.category === category);
+}
 
-  static getAllDocs(): DocItem[] {
-    return this.docs;
-  }
+// Get all available categories
+export async function getDocumentationCategories(): Promise<string[]> {
+  const index = await fetchDocumentationIndex();
+  const categories = [...new Set(index.sections.map(s => s.category))];
+  return categories.sort();
+}
 
-  static getDocsByCategory(category: string): DocItem[] {
-    return this.docs.filter(doc => doc.category === category);
-  }
+// Extract API references
+export async function getApiEndpoints(): Promise<DocSection[]> {
+  const index = await fetchDocumentationIndex();
+  return index.sections.filter(section => 
+    section.category === 'api-docs' || 
+    section.title.toLowerCase().includes('api reference') ||
+    section.url.includes('/api-reference/')
+  );
+}
 
-  static getDocById(id: string): DocItem | undefined {
-    return this.docs.find(doc => doc.id === id);
-  }
+// Get examples from documentation
+export async function getExamples(framework?: string): Promise<DocSection[]> {
+  const index = await fetchDocumentationIndex();
+  let examples = index.sections.filter(section => 
+    section.category === 'docs' && (
+      section.title.toLowerCase().includes('example') ||
+      section.title.toLowerCase().includes('quickstart') ||
+      section.title.toLowerCase().includes('guide') ||
+      section.description.toLowerCase().includes('example')
+    )
+  );
 
-  static getAllExamples(): CodeExample[] {
-    return this.examples;
-  }
-
-  static getExamplesByLanguage(language: string): CodeExample[] {
-    return this.examples.filter(ex => ex.language === language || language === "all");
-  }
-
-  static getExamplesByFramework(framework: string): CodeExample[] {
-    return this.examples.filter(ex => ex.framework === framework || framework === "all");
-  }
-
-  static getAllApiEndpoints(): ApiEndpoint[] {
-    return this.apiEndpoints;
-  }
-
-  static getApiEndpointsByMethod(method: string): ApiEndpoint[] {
-    return this.apiEndpoints.filter(ep => ep.method === method || method === "all");
-  }
-
-  static searchApiEndpoints(query: string): ApiEndpoint[] {
-    const lowerQuery = query.toLowerCase();
-    return this.apiEndpoints.filter(ep => 
-      ep.path.toLowerCase().includes(lowerQuery) ||
-      ep.description.toLowerCase().includes(lowerQuery)
+  if (framework) {
+    examples = examples.filter(section => 
+      section.title.toLowerCase().includes(framework.toLowerCase()) ||
+      section.description.toLowerCase().includes(framework.toLowerCase())
     );
+  }
+
+  return examples;
+}
+
+// Get guides from documentation  
+export async function getGuides(level?: string): Promise<DocSection[]> {
+  const index = await fetchDocumentationIndex();
+  let guides = index.sections.filter(section => 
+    section.title.toLowerCase().includes('guide') ||
+    section.title.toLowerCase().includes('tutorial') ||
+    section.title.toLowerCase().includes('quickstart') ||
+    section.title.toLowerCase().includes('workflow') ||
+    section.description.toLowerCase().includes('learn')
+  );
+
+  if (level) {
+    // Filter by difficulty level (beginner, intermediate, advanced)
+    const isBeginnerLevel = (s: DocSection) => 
+      s.title.toLowerCase().includes('quickstart') ||
+      s.title.toLowerCase().includes('introduction') ||
+      s.title.toLowerCase().includes('getting started');
+    
+    const isAdvancedLevel = (s: DocSection) =>
+      s.title.toLowerCase().includes('advanced') ||
+      s.title.toLowerCase().includes('enterprise') ||
+      s.title.toLowerCase().includes('custom');
+
+    switch (level) {
+      case 'beginner':
+        guides = guides.filter(isBeginnerLevel);
+        break;
+      case 'advanced':
+        guides = guides.filter(isAdvancedLevel);
+        break;
+      case 'intermediate':
+        guides = guides.filter(s => !isBeginnerLevel(s) && !isAdvancedLevel(s));
+        break;
+    }
+  }
+
+  return guides;
+}
+
+// Get changelog entries
+export async function getChangelog(limit = 10): Promise<DocSection[]> {
+  const index = await fetchDocumentationIndex();
+  const changelog = index.sections.filter(section => 
+    section.category === 'docs' && section.url.includes('/changelog/')
+  );
+
+  // Sort by date (assuming URLs contain dates)
+  changelog.sort((a, b) => {
+    const dateA = extractDateFromUrl(a.url);
+    const dateB = extractDateFromUrl(b.url);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  return changelog.slice(0, limit);
+}
+
+function extractDateFromUrl(url: string): Date {
+  // Extract date from URL like /changelog/2025/1/15.mdx
+  const match = url.match(/\/changelog\/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (match && match[1] && match[2] && match[3]) {
+    const year = match[1];
+    const month = match[2];
+    const day = match[3];
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  return new Date(0); // fallback to epoch
+}
+
+// Main class for backward compatibility and easier access
+export class VapiDocumentation {
+  static async getAllDocs(): Promise<DocSection[]> {
+    const index = await fetchDocumentationIndex();
+    return index.sections;
+  }
+
+  static async getDocsByCategory(category: string): Promise<DocSection[]> {
+    return getDocumentationByCategory(category);
+  }
+
+  static async searchDocs(query: string): Promise<DocSection[]> {
+    return searchDocumentation(query);
+  }
+
+  static async getAllExamples(): Promise<DocSection[]> {
+    return getExamples();
+  }
+
+  static async getExamplesByFramework(framework: string): Promise<DocSection[]> {
+    return getExamples(framework);
+  }
+
+  static async getAllApiEndpoints(): Promise<DocSection[]> {
+    return getApiEndpoints();
+  }
+
+  static async getGuides(level?: string): Promise<DocSection[]> {
+    return getGuides(level);
+  }
+
+  static async getChangelog(limit = 10): Promise<DocSection[]> {
+    return getChangelog(limit);
+  }
+
+  static async refreshCache(): Promise<void> {
+    docCache = null;
+    await fetchDocumentationIndex();
   }
 } 

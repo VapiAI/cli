@@ -1,4 +1,4 @@
-import { VapiDocumentation, DocItem } from "../utils/documentation-data.js";
+import { getGuides as getGuidesDocs } from "../utils/documentation-data";
 
 /**
  * Get step-by-step guides for implementing Vapi features
@@ -8,35 +8,38 @@ export async function getGuides(
   level: string = "all"
 ): Promise<string> {
   try {
-    // Get guides category docs
-    const guides = VapiDocumentation.getDocsByCategory("guides");
+    // Get guides from Vapi documentation
+    const guidesLevel = level === "all" ? undefined : level;
+    const guides = await getGuidesDocs(guidesLevel);
     
     // Search for topic in guides
     const searchTerm = topic.toLowerCase();
-    const relevantGuides = guides.filter((guide: DocItem) =>
+    const relevantGuides = guides.filter(guide =>
       guide.title.toLowerCase().includes(searchTerm) ||
       guide.description.toLowerCase().includes(searchTerm) ||
-      guide.content.toLowerCase().includes(searchTerm) ||
-      guide.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+      guide.url.toLowerCase().includes(searchTerm)
     );
 
     if (relevantGuides.length === 0) {
       return `# 📖 No Guides Found
 
-No guides found for "${topic}".
+No guides found for "${topic}" with level "${level}".
 
 ## Available Guides:
-${guides.map((guide: DocItem) => `- **${guide.title}** - ${guide.description}`).join('\n')}
+${guides.slice(0, 10).map(guide => `- **${guide.title}** - ${guide.description}`).join('\n')}
 
 ## Popular Topics:
-- **getting started** - Create your first voice assistant
-- **phone calls** - Make outbound calls
-- **tools** - Add custom functions
-- **voice settings** - Configure voice providers
-- **webhooks** - Handle real-time events
-- **assistants** - Create and manage assistants
+- **introduction** - Getting started with Vapi
+- **phone** - Making phone calls 
+- **workflows** - Building conversation flows
+- **assistants** - Creating voice assistants
+- **tools** - Adding custom functions
+- **campaigns** - Outbound call campaigns
+- **webhooks** - Handling real-time events
 
-Try searching for one of these topics!`;
+Try searching for one of these topics!
+
+📚 **All Guides:** https://docs.vapi.ai/guides`;
     }
 
     let response = `# 📖 Vapi Implementation Guides\n\n`;
@@ -46,33 +49,30 @@ Try searching for one of these topics!`;
     }
     response += `\n`;
 
-    relevantGuides.forEach((guide: DocItem, index: number) => {
+    relevantGuides.forEach((guide, index) => {
       response += `## ${index + 1}. ${guide.title}\n\n`;
       response += `${guide.description}\n\n`;
-      
-      // Add the full content
-      response += guide.content + "\n\n";
-      
-      response += `**📅 Last Updated:** ${guide.lastUpdated}\n`;
-      response += `**🔗 View Online:** ${guide.url}\n`;
-      
-      if (guide.tags.length > 0) {
-        response += `**🏷️ Tags:** ${guide.tags.join(', ')}\n`;
-      }
-      
-      response += "\n---\n\n";
+      response += `**Category:** ${guide.category}\n`;
+      response += `**📖 View Guide:** ${guide.url}\n\n`;
+      response += "---\n\n";
     });
 
     response += `## 🎯 Next Steps\n\n`;
-    response += `After following this guide:\n`;
+    response += `After reviewing these guides:\n`;
     response += `- Use \`get_examples\` to see code implementations\n`;
-    response += `- Use \`get_api_reference\` for detailed API docs\n`;
+    response += `- Use \`get_api_reference\` for detailed API documentation\n`;
     response += `- Visit [Vapi Dashboard](https://dashboard.vapi.ai) to test your implementation\n`;
-    response += `- Join our [Discord Community](https://discord.gg/vapi) for support`;
+    response += `- Check out [Quickstart Guide](https://docs.vapi.ai/quickstart/introduction)\n\n`;
+    
+    response += `📋 **Popular Getting Started Guides:**\n`;
+    response += `- **Introduction:** https://docs.vapi.ai/quickstart/introduction\n`;
+    response += `- **Phone Calls:** https://docs.vapi.ai/quickstart/phone\n`;
+    response += `- **Web Calls:** https://docs.vapi.ai/quickstart/web\n`;
+    response += `- **Workflows:** https://docs.vapi.ai/workflows/quickstart`;
 
     return response;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return `❌ Error fetching guides: ${errorMessage}\n\nPlease try again or visit https://docs.vapi.ai`;
+    return `❌ Error fetching guides: ${errorMessage}\n\nPlease visit https://docs.vapi.ai/guides for guides`;
   }
 } 

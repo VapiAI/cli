@@ -4,7 +4,7 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 ## Features
 
-- 🔐 **Browser-based Authentication** - Secure OAuth-style login flow
+- 🔐 **Authentication Management** - Secure OAuth login, logout, and account switching
 - 🤖 **Assistant Management** - List, create, update, and delete voice assistants
 - 💬 **Chat Management** - Text-based conversations and chat history
 - 📞 **Enhanced Call Management** - Full call lifecycle control and monitoring
@@ -117,6 +117,40 @@ vapi login
 ```
 
 This will open your browser for secure authentication. Your API key will be saved locally.
+
+#### Managing Authentication
+
+For users who work with multiple organizations or need to switch accounts:
+
+```bash
+# Check current authentication status and list all accounts
+vapi auth status
+
+# Switch between multiple authenticated accounts
+vapi auth switch [account-name]
+
+# View current API key and source
+vapi auth token
+
+# View current user and organization info
+vapi auth whoami
+
+# Add another account (keeping existing ones)
+vapi auth login
+
+# Logout from current account
+vapi auth logout
+
+# Logout from all accounts
+vapi auth logout --all
+```
+
+The CLI supports **multiple accounts** simultaneously, similar to GitHub CLI. This is perfect for:
+
+- Working with multiple Vapi organizations
+- Switching between production and staging environments
+- Managing different client accounts
+- Team collaboration with role-specific access
 
 ### Assistant Management
 

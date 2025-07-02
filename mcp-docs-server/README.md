@@ -5,17 +5,17 @@
 
 **Turn your IDE into a Vapi expert!** 🎯
 
-This is a Model Context Protocol (MCP) server that provides comprehensive access to Vapi documentation, examples, and knowledge base. It integrates seamlessly with AI-powered IDEs like Cursor, Windsurf, and VSCode to give you instant access to Vapi expertise.
+This is a Model Context Protocol (MCP) server that provides direct access to live Vapi documentation from docs.vapi.ai. It fetches real documentation, examples, and API references, integrating seamlessly with AI-powered IDEs like Cursor, Windsurf, and VSCode to give you instant access to accurate Vapi expertise.
 
 ## ✨ Features
 
-- 📚 **Complete Documentation Access** - Search through all Vapi docs
-- 💻 **Ready-to-Use Examples** - Get working code for any Vapi feature
-- 🔧 **API Reference** - Detailed API documentation with examples
-- 📖 **Step-by-Step Guides** - Implementation tutorials
-- 📋 **Changelog** - Latest updates and new features
-- 🔍 **Smart Search** - Semantic search across all content
-- 🎯 **Context-Aware** - Provides relevant information based on your queries
+- 📚 **Live Documentation Access** - Fetches real docs from docs.vapi.ai
+- 💻 **Real Examples** - Links to actual working code in Vapi docs
+- 🔧 **Current API Reference** - Always up-to-date API documentation
+- 📖 **Official Guides** - Step-by-step tutorials from Vapi
+- 📋 **Real Changelog** - Latest updates from actual Vapi changelog
+- 🔍 **Smart Search** - Search across all live Vapi documentation
+- 🎯 **Always Fresh** - Documentation cached and auto-refreshed
 
 ## 🚀 Quick Start
 

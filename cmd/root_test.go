@@ -21,6 +21,7 @@ func TestRootCommand(t *testing.T) {
 			contains: []string{
 				"Available Commands:",
 				"assistant",
+				"auth",
 				"call",
 				"config",
 				"init",
@@ -60,6 +61,7 @@ func TestAuthValidation(t *testing.T) {
 	authRequiredCommands := [][]string{
 		{"assistant", "list"},
 		{"call", "list"},
+		{"auth", "whoami"},
 	}
 
 	for _, args := range authRequiredCommands {
@@ -87,6 +89,8 @@ func TestNoAuthValidation(t *testing.T) {
 		{"login"},
 		{"config", "get"},
 		{"init"},
+		{"auth", "status"},
+		{"auth", "logout"},
 		{"--help"},
 	}
 
@@ -95,6 +99,11 @@ func TestNoAuthValidation(t *testing.T) {
 			// Skip interactive commands in tests
 			if args[0] == "init" || args[0] == "login" {
 				t.Skipf("Skipping %s command test (interactive)", args[0])
+			}
+
+			// Skip logout command to avoid clearing API key during tests
+			if len(args) >= 2 && args[0] == "auth" && args[1] == "logout" {
+				t.Skipf("Skipping auth logout command test (modifies auth state)")
 			}
 
 			// Clear viper config to ensure no API key

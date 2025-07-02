@@ -1,4 +1,4 @@
-import { VapiDocumentation, ApiEndpoint, DocItem } from "../utils/documentation-data.js";
+import { getApiEndpoints } from "../utils/documentation-data";
 
 /**
  * Get detailed API reference information for Vapi endpoints
@@ -9,140 +9,83 @@ export async function getApiReference(
   includeExamples: boolean = true
 ): Promise<string> {
   try {
-    // Get API documentation
-    const apiDocs = VapiDocumentation.getDocsByCategory("api");
-    const apiEndpoints = VapiDocumentation.getAllApiEndpoints();
+    // Get API documentation from real Vapi docs
+    const apiDocs = await getApiEndpoints();
     
     // Search for endpoint
     const searchTerm = endpoint.toLowerCase();
     
-    // Search in API endpoints
-    const relevantEndpoints = apiEndpoints.filter((ep: ApiEndpoint) =>
-      ep.path.toLowerCase().includes(searchTerm) ||
-      ep.description.toLowerCase().includes(searchTerm) ||
-      ep.id.toLowerCase().includes(searchTerm)
-    );
-    
-    // Filter by method if specified
-    let filteredEndpoints = relevantEndpoints;
-    if (method !== "all") {
-      filteredEndpoints = VapiDocumentation.getApiEndpointsByMethod(method);
-    }
-    
-    // Search in API docs
-    const relevantDocs = apiDocs.filter((doc: DocItem) =>
+    // Search in API documentation
+    const relevantDocs = apiDocs.filter(doc =>
       doc.title.toLowerCase().includes(searchTerm) ||
       doc.description.toLowerCase().includes(searchTerm) ||
-      doc.content.toLowerCase().includes(searchTerm) ||
-      doc.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+      doc.url.toLowerCase().includes(searchTerm)
     );
 
-    if (filteredEndpoints.length === 0 && relevantDocs.length === 0) {
+    if (relevantDocs.length === 0) {
       return `# 🔍 No API Reference Found
 
 No API reference found for "${endpoint}".
 
-## Available API Endpoints:
-${apiEndpoints.map((ep: ApiEndpoint) => `- **${ep.method} ${ep.path}** - ${ep.description}`).join('\n')}
-
 ## Available API Documentation:
-${apiDocs.map((doc: DocItem) => `- **${doc.title}** - ${doc.description}`).join('\n')}
+${apiDocs.slice(0, 15).map(doc => `- **${doc.title}** - ${doc.description}`).join('\n')}
 
-## Popular Endpoints:
+## Popular API Categories:
 - **assistants** - Create and manage voice assistants
 - **calls** - Make outbound phone calls  
 - **tools** - Manage custom functions
 - **phone-numbers** - Manage phone numbers
-- **webhooks** - Configure webhook endpoints
+- **campaigns** - Outbound call campaigns
+- **workflows** - Conversation flow management
+- **chats** - Text-based conversations
 
-Try searching for one of these!`;
+📚 **Complete API Reference:** https://docs.vapi.ai/api-reference
+
+Try searching for one of these categories!`;
     }
 
     let response = `# 🔧 Vapi API Reference\n\n`;
-    response += `API information for "${endpoint}"\n`;
+    response += `Found ${relevantDocs.length} API reference(s) for "${endpoint}"\n`;
     if (method !== "all") {
-      response += `**Method:** ${method}\n`;
+      response += `**Method Filter:** ${method}\n`;
     }
     response += `\n`;
 
-    // Show API endpoints first
-    if (filteredEndpoints.length > 0) {
-      response += `## 🚀 API Endpoints\n\n`;
+    // Show API documentation
+    relevantDocs.forEach((doc, index) => {
+      response += `## ${index + 1}. ${doc.title}\n\n`;
+      response += `${doc.description}\n\n`;
+      response += `**Category:** ${doc.category}\n`;
+      response += `**📖 View API Reference:** ${doc.url}\n\n`;
       
-      filteredEndpoints.forEach((ep: ApiEndpoint, index: number) => {
-        response += `### ${index + 1}. ${ep.method} ${ep.path}\n\n`;
-        response += `${ep.description}\n\n`;
-        
-        // Request body
-        if (ep.requestBody) {
-          response += `**Request Body:**\n`;
-          response += "```json\n";
-          response += JSON.stringify(ep.requestBody, null, 2) + "\n";
-          response += "```\n\n";
-        }
-        
-        // Parameters
-        if (ep.parameters) {
-          response += `**Parameters:**\n`;
-          Object.entries(ep.parameters).forEach(([key, value]) => {
-            response += `- **${key}**: ${value}\n`;
-          });
-          response += `\n`;
-        }
-        
-        // Examples
-        if (includeExamples && ep.examples) {
-          if (ep.examples.request) {
-            response += `**Example Request:**\n`;
-            response += "```json\n";
-            response += ep.examples.request + "\n";
-            response += "```\n\n";
-          }
-          
-          if (ep.examples.response) {
-            response += `**Example Response:**\n`;
-            response += "```json\n";
-            response += ep.examples.response + "\n";
-            response += "```\n\n";
-          }
-        }
-        
-        response += "---\n\n";
-      });
-    }
-
-    // Show relevant documentation
-    if (relevantDocs.length > 0) {
-      response += `## 📚 Related Documentation\n\n`;
+      // Extract method from title if possible
+      const methodMatch = doc.title.match(/^(GET|POST|PUT|DELETE|PATCH)/i);
+      if (methodMatch && methodMatch[1]) {
+        response += `**HTTP Method:** ${methodMatch[1].toUpperCase()}\n\n`;
+      }
       
-      relevantDocs.forEach((doc: DocItem, index: number) => {
-        response += `### ${index + 1}. ${doc.title}\n\n`;
-        response += `${doc.description}\n\n`;
-        
-        // Add content preview (first 500 chars)
-        if (doc.content && doc.content.length > 500) {
-          response += `**Preview:**\n${doc.content.substring(0, 500)}...\n\n`;
-        } else if (doc.content) {
-          response += doc.content + "\n\n";
-        }
-        
-        response += `**📖 Full Documentation:** ${doc.url}\n`;
-        response += `**📅 Last Updated:** ${doc.lastUpdated}\n\n`;
-        
-        response += "---\n\n";
-      });
-    }
+      response += "---\n\n";
+    });
 
-    response += `## 🛠️ Additional Resources\n\n`;
+    response += `## 🛠️ API Resources\n\n`;
     response += `- **[Complete API Reference](https://docs.vapi.ai/api-reference)** - Full API documentation\n`;
-    response += `- **[Postman Collection](https://postman.vapi.ai)** - Test APIs directly\n`;
-    response += `- **[OpenAPI Spec](https://api.vapi.ai/openapi.json)** - Machine-readable API spec\n`;
-    response += `- Use \`get_examples\` for code implementations\n`;
-    response += `- Use \`search_documentation\` for general information`;
+    response += `- **[API Authentication](https://docs.vapi.ai/api-reference)** - How to authenticate API requests\n`;
+    response += `- **[Rate Limits](https://docs.vapi.ai/api-reference)** - API usage limits\n`;
+    response += `- **[SDKs](https://docs.vapi.ai)** - Official client libraries\n\n`;
+    
+    if (includeExamples) {
+      response += `💡 **Need examples?** Visit the documentation links above for:\n`;
+      response += `- Complete request/response examples\n`;
+      response += `- Authentication samples\n`;
+      response += `- Error handling patterns\n`;
+      response += `- SDK usage examples\n\n`;
+    }
+    
+    response += `🔧 **For code examples**, use the \`get_examples\` tool with your specific use case.`;
 
     return response;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return `❌ Error fetching API reference: ${errorMessage}\n\nPlease try again or visit https://docs.vapi.ai/api-reference`;
+    return `❌ Error fetching API reference: ${errorMessage}\n\nPlease visit https://docs.vapi.ai/api-reference for complete API documentation`;
   }
 } 
