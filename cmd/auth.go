@@ -221,7 +221,9 @@ This is useful when working with multiple organizations or environments.`,
 		if len(accounts) == 1 {
 			// Only one account, just confirm it's active
 			for accountName := range accounts {
-				cfg.SetActiveAccount(accountName)
+				if err := cfg.SetActiveAccount(accountName); err != nil {
+					return fmt.Errorf("failed to set active account: %w", err)
+				}
 				if err := config.SaveConfig(cfg); err != nil {
 					return fmt.Errorf("failed to save config: %w", err)
 				}
@@ -249,7 +251,9 @@ This is useful when working with multiple organizations or environments.`,
 				fmt.Println()
 			}
 			fmt.Print("\nEnter account name to switch to: ")
-			fmt.Scanln(&targetAccount)
+			if _, err := fmt.Scanln(&targetAccount); err != nil {
+				return fmt.Errorf("failed to read input: %w", err)
+			}
 		}
 
 		if targetAccount == "" {
