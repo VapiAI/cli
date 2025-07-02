@@ -8,6 +8,11 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 
+# Node.js parameters for MCP server
+NPM=npm
+MCP_DIR=mcp-docs-server
+MCP_DIST=$(MCP_DIR)/dist
+
 # Binary details
 BINARY_NAME=vapi
 BUILD_DIR=build
@@ -21,20 +26,56 @@ GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 # Build flags - note the lowercase variable names to match main.go
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_TIME) -X main.builtBy=make"
 
-# Default target
-all: test build
+# Default target - build both CLI and MCP server
+all: test build build-mcp
 
 # Create build directory
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-# Build the binary
+# Build the CLI binary
 build: $(BUILD_DIR)
 	@echo "Building $(BINARY_NAME)..."
 	$(GOBUILD) $(LDFLAGS) -o $(BINARY_PATH) -v
 
+# Build MCP server
+build-mcp:
+	@echo "Building MCP docs server..."
+	@if [ ! -d "$(MCP_DIR)/node_modules" ]; then \
+		echo "Installing MCP server dependencies..."; \
+		cd $(MCP_DIR) && $(NPM) install; \
+	fi
+	@cd $(MCP_DIR) && $(NPM) run build
+	@echo "✅ MCP server built successfully"
+
+# Install MCP server dependencies
+mcp-deps:
+	@echo "Installing MCP server dependencies..."
+	@cd $(MCP_DIR) && $(NPM) install
+
+# Clean MCP server
+clean-mcp:
+	@echo "Cleaning MCP server..."
+	@rm -rf $(MCP_DIR)/dist
+	@rm -rf $(MCP_DIR)/node_modules
+
+# Test MCP server
+test-mcp:
+	@echo "Testing MCP server..."
+	@cd $(MCP_DIR) && $(NPM) test
+
+# Lint MCP server
+lint-mcp:
+	@echo "Linting MCP server..."
+	@cd $(MCP_DIR) && $(NPM) run lint
+
+# Publish MCP server to npm
+publish-mcp:
+	@echo "Publishing MCP server to npm..."
+	@cd $(MCP_DIR) && $(NPM) publish
+
 # Build for all platforms
-build-all: $(BUILD_DIR)
+build-all: $(BUILD_DIR) build-mcp
 	@echo "Building for all platforms..."
 	# macOS AMD64
 	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64
@@ -50,6 +91,9 @@ test:
 	@echo "Running tests..."
 	$(GOTEST) -v ./...
 
+# Run all tests (CLI + MCP server)
+test-all: test test-mcp
+
 # Run tests with coverage
 test-coverage:
 	@echo "Running tests with coverage..."
@@ -63,6 +107,9 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f coverage.out coverage.html
 
+# Clean everything (CLI + MCP server)
+clean-all: clean clean-mcp
+
 # Run go mod tidy
 tidy:
 	@echo "Tidying modules..."
@@ -73,10 +120,16 @@ deps:
 	@echo "Downloading dependencies..."
 	$(GOMOD) download
 
+# Install all dependencies (CLI + MCP server)
+deps-all: deps mcp-deps
+
 # Run linters
 lint:
 	@echo "Running linters..."
 	golangci-lint run
+
+# Run all linters (CLI + MCP server)
+lint-all: lint lint-mcp
 
 # Install the binary locally
 install: build
@@ -84,6 +137,15 @@ install: build
 	@mkdir -p $(HOME)/.local/bin
 	@cp $(BINARY_PATH) $(HOME)/.local/bin/
 	@echo "Installed to $(HOME)/.local/bin/$(BINARY_NAME)"
+
+# Install MCP server globally
+install-mcp: build-mcp
+	@echo "Installing MCP server globally..."
+	@cd $(MCP_DIR) && $(NPM) install -g .
+	@echo "✅ MCP server installed globally"
+
+# Install everything
+install-all: install install-mcp
 
 # Run the binary
 run: build
@@ -114,14 +176,33 @@ version-bump-patch:
 
 # Help target to show available commands
 help:
-	@echo "Available targets:"
+	@echo "🚀 Vapi CLI & MCP Server Build System"
+	@echo ""
+	@echo "📦 CLI Commands:"
 	@echo "  build              Build the CLI binary"
 	@echo "  install            Install the CLI to ~/.local/bin"
-	@echo "  test               Run all tests"
-	@echo "  lint               Run linters"
-	@echo "  clean              Clean build artifacts"
+	@echo "  test               Run CLI tests"
+	@echo "  lint               Run CLI linters"
+	@echo "  clean              Clean CLI build artifacts"
 	@echo ""
-	@echo "Version management:"
+	@echo "🔧 MCP Server Commands:"
+	@echo "  build-mcp          Build the MCP docs server"
+	@echo "  install-mcp        Install MCP server globally"
+	@echo "  test-mcp           Run MCP server tests"
+	@echo "  lint-mcp           Run MCP server linters" 
+	@echo "  clean-mcp          Clean MCP server artifacts"
+	@echo "  publish-mcp        Publish MCP server to npm"
+	@echo ""
+	@echo "🎯 Combined Commands:"
+	@echo "  all                Build both CLI and MCP server"
+	@echo "  build-all          Build CLI for all platforms + MCP server"
+	@echo "  test-all           Run all tests (CLI + MCP server)"
+	@echo "  lint-all           Run all linters (CLI + MCP server)"
+	@echo "  clean-all          Clean everything"
+	@echo "  deps-all           Install all dependencies"
+	@echo "  install-all        Install CLI and MCP server"
+	@echo ""
+	@echo "📋 Version management:"
 	@echo "  version            Show current version"
 	@echo "  version-set        Set version (requires VERSION=x.y.z)"
 	@echo "  version-bump-major Bump major version (1.2.3 -> 2.0.0)"
@@ -129,7 +210,9 @@ help:
 	@echo "  version-bump-patch Bump patch version (1.2.3 -> 1.2.4)"
 	@echo ""
 	@echo "Examples:"
+	@echo "  make all                    # Build everything"
+	@echo "  make install-all            # Install CLI + MCP server"
 	@echo "  make version-set VERSION=1.2.3"
-	@echo "  make version-bump-patch"
+	@echo "  make publish-mcp            # Publish MCP server to npm"
 
-.PHONY: all build build-all test test-coverage clean tidy deps lint install run help 
+.PHONY: all build build-mcp build-all test test-mcp test-all test-coverage clean clean-mcp clean-all tidy deps mcp-deps deps-all lint lint-mcp lint-all install install-mcp install-all run publish-mcp help 

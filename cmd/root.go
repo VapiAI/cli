@@ -124,7 +124,7 @@ func init() {
 		}
 
 		// Skip API key validation for commands that don't need it
-		skipAuthCommands := []string{"login", "config", "init", "completion", "help", "version", "update"}
+		skipAuthCommands := []string{"login", "config", "init", "completion", "help", "version", "update", "mcp"}
 		for _, skipCmd := range skipAuthCommands {
 			if cmd.Name() == skipCmd || (cmd.Parent() != nil && cmd.Parent().Name() == skipCmd) {
 				return nil
