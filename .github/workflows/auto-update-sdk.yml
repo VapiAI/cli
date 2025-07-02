@@ -1,0 +1,203 @@
+name: Auto-update Go SDK
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      force_update:
+        description: "Force update even if no new SDK version"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check-sdk-updates:
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.check-updates.outputs.has_updates }}
+      new_version: ${{ steps.check-updates.outputs.new_version }}
+      current_version: ${{ steps.check-updates.outputs.current_version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Check for SDK updates
+        id: check-updates
+        run: |
+          # Get current SDK version from go.mod
+          current_version=$(grep "github.com/VapiAI/server-sdk-go" go.mod | awk '{print $2}')
+          echo "Current SDK version: $current_version"
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+
+          # Get latest SDK version from GitHub API
+          latest_version=$(curl -s https://api.github.com/repos/VapiAI/server-sdk-go/releases/latest | jq -r '.tag_name')
+          echo "Latest SDK version: $latest_version"
+          echo "new_version=$latest_version" >> $GITHUB_OUTPUT
+
+          # Compare versions (remove 'v' prefix for comparison)
+          current_clean=$(echo $current_version | sed 's/^v//')
+          latest_clean=$(echo $latest_version | sed 's/^v//')
+
+          if [[ "$current_clean" != "$latest_clean" ]] || [[ "${{ github.event.inputs.force_update }}" == "true" ]]; then
+            echo "SDK update available: $current_version -> $latest_version"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+          else
+            echo "No SDK updates available"
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          fi
+
+  update-and-release:
+    runs-on: ubuntu-latest
+    needs: check-sdk-updates
+    if: needs.check-sdk-updates.outputs.has_updates == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Go SDK dependency
+        run: |
+          echo "Updating Go SDK to ${{ needs.check-sdk-updates.outputs.new_version }}"
+          go get github.com/VapiAI/server-sdk-go@${{ needs.check-sdk-updates.outputs.new_version }}
+          go mod tidy
+
+      - name: Run tests
+        run: |
+          echo "Running tests to ensure compatibility..."
+          make test
+
+      - name: Run linter
+        run: |
+          echo "Running linter to ensure code quality..."
+          make lint
+
+      - name: Bump CLI version
+        id: bump-version
+        run: |
+          # Read current CLI version
+          current_cli_version=$(cat VERSION | tr -d '\n')
+          echo "Current CLI version: $current_cli_version"
+
+          # Parse version components (assuming semantic versioning)
+          IFS='.' read -ra ADDR <<< "$current_cli_version"
+          major=${ADDR[0]}
+          minor=${ADDR[1]}
+          patch=${ADDR[2]}
+
+          # Increment patch version
+          new_patch=$((patch + 1))
+          new_cli_version="$major.$minor.$new_patch"
+
+          echo "New CLI version: $new_cli_version"
+          echo "$new_cli_version" > VERSION
+
+          echo "new_cli_version=$new_cli_version" >> $GITHUB_OUTPUT
+
+      - name: Update version references
+        run: |
+          # Update any hardcoded version references in the code
+          new_version="${{ steps.bump-version.outputs.new_cli_version }}"
+
+          # Update version in cmd/version.go if it exists
+          if [ -f "cmd/version.go" ]; then
+            sed -i "s/version = \"[^\"]*\"/version = \"$new_version\"/" cmd/version.go
+          fi
+
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "chore: update Go SDK to ${{ needs.check-sdk-updates.outputs.new_version }}
+
+          - Updated github.com/VapiAI/server-sdk-go from ${{ needs.check-sdk-updates.outputs.current_version }} to ${{ needs.check-sdk-updates.outputs.new_version }}
+          - Bumped CLI version to ${{ steps.bump-version.outputs.new_cli_version }}
+          - Updated dependencies with go mod tidy
+
+          This automated update ensures the CLI stays compatible with the latest API changes."
+
+      - name: Create Pull Request
+        id: create-pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: auto-update-sdk-${{ needs.check-sdk-updates.outputs.new_version }}
+          title: "chore: Auto-update Go SDK to ${{ needs.check-sdk-updates.outputs.new_version }}"
+          body: |
+            ## 🤖 Automated SDK Update
+
+            This PR automatically updates the Vapi Go SDK to the latest version to ensure CLI compatibility with recent API changes.
+
+            ### Changes
+            - **Go SDK**: `${{ needs.check-sdk-updates.outputs.current_version }}` → `${{ needs.check-sdk-updates.outputs.new_version }}`
+            - **CLI Version**: Bumped to `${{ steps.bump-version.outputs.new_cli_version }}`
+            - **Dependencies**: Updated with `go mod tidy`
+
+            ### Verification
+            - ✅ Tests passed (`make test`)
+            - ✅ Linting passed (`make lint`)
+            - ✅ Dependencies resolved (`go mod tidy`)
+
+            ### Next Steps
+            1. Review the changes in this PR
+            2. Merge when ready
+            3. A new release will be automatically created
+
+            ### SDK Release Notes
+            Check the [Go SDK releases](https://github.com/VapiAI/server-sdk-go/releases/tag/${{ needs.check-sdk-updates.outputs.new_version }}) for details on what changed.
+
+            ---
+            *This PR was created automatically by the SDK update workflow. Review and merge when ready.*
+          labels: |
+            dependencies
+            automation
+            sdk-update
+          assignees: |
+            ${{ github.actor }}
+
+      - name: Log PR creation
+        if: steps.create-pr.outputs.pull-request-number
+        run: |
+          echo "📋 SDK Update PR created: #${{ steps.create-pr.outputs.pull-request-number }}"
+          echo "🔗 PR URL: ${{ steps.create-pr.outputs.pull-request-url }}"
+          echo ""
+          echo "ℹ️  This PR requires manual review and approval."
+          echo "   Once merged, it will automatically trigger a new release."
+
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: [check-sdk-updates, update-and-release]
+    if: failure() && needs.check-sdk-updates.outputs.has_updates == 'true'
+
+    steps:
+      - name: Notify on failure
+        run: |
+          echo "❌ SDK update workflow failed!"
+          echo "Current SDK version: ${{ needs.check-sdk-updates.outputs.current_version }}"
+          echo "New SDK version: ${{ needs.check-sdk-updates.outputs.new_version }}"
+          echo "Manual intervention may be required."
+
+          # You can add Slack/Discord notifications here if needed
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 CLI SDK auto-update failed for version ${{ needs.check-sdk-updates.outputs.new_version }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}

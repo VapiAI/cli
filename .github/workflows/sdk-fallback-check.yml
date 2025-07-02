@@ -1,0 +1,69 @@
+name: SDK Fallback Check
+
+# Fallback safety net in case webhooks fail
+# Runs weekly to ensure we don't miss SDK updates
+on:
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: "0 3 * * 0"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  fallback-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check SDK versions
+        id: version-check
+        run: |
+          # Get current SDK version
+          current_version=$(grep "github.com/VapiAI/server-sdk-go" go.mod | awk '{print $2}')
+
+          # Get latest SDK version
+          latest_version=$(curl -s https://api.github.com/repos/VapiAI/server-sdk-go/releases/latest | jq -r '.tag_name')
+
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+          echo "latest_version=$latest_version" >> $GITHUB_OUTPUT
+
+          # Compare versions
+          current_clean=$(echo $current_version | sed 's/^v//')
+          latest_clean=$(echo $latest_version | sed 's/^v//')
+
+          if [ "$current_clean" != "$latest_clean" ]; then
+            echo "outdated=true" >> $GITHUB_OUTPUT
+            echo "⚠️ CLI is outdated! Current: $current_version, Latest: $latest_version"
+          else
+            echo "outdated=false" >> $GITHUB_OUTPUT
+            echo "✅ CLI is up to date with SDK version $current_version"
+          fi
+
+      - name: Trigger webhook update if outdated
+        if: steps.version-check.outputs.outdated == 'true'
+        run: |
+          echo "🚨 Webhook may have failed - triggering manual SDK update"
+
+          # Trigger the webhook-based update workflow
+          gh workflow run sdk-webhook-update.yml \
+            --field sdk_version="${{ steps.version-check.outputs.latest_version }}" \
+            --field force_update=true
+
+          echo "✅ Manual SDK update workflow triggered"
+          echo "📋 Check Actions tab for progress"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log status
+        run: |
+          echo "📊 Fallback Check Results:"
+          echo "   Current SDK: ${{ steps.version-check.outputs.current_version }}"
+          echo "   Latest SDK: ${{ steps.version-check.outputs.latest_version }}"
+          echo "   Outdated: ${{ steps.version-check.outputs.outdated }}"
+
+          if [ "${{ steps.version-check.outputs.outdated }}" = "false" ]; then
+            echo "✅ No action needed - webhooks are working correctly"
+          else
+            echo "🔧 Triggered manual update - webhooks may need attention"
+          fi

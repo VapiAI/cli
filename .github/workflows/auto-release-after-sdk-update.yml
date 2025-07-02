@@ -1,0 +1,113 @@
+name: Auto-release after SDK update
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  check-and-release:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'sdk-update')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get version from VERSION file
+        id: get-version
+        run: |
+          version=$(cat VERSION | tr -d '\n')
+          echo "version=v$version" >> $GITHUB_OUTPUT
+          echo "CLI version: v$version"
+
+      - name: Check if tag already exists
+        id: check-tag
+        run: |
+          if git rev-parse "refs/tags/${{ steps.get-version.outputs.version }}" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.get-version.outputs.version }} already exists"
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.get-version.outputs.version }} does not exist"
+          fi
+
+      - name: Create and push tag
+        if: steps.check-tag.outputs.tag_exists == 'false'
+        run: |
+          echo "Creating tag ${{ steps.get-version.outputs.version }}"
+          git tag -a "${{ steps.get-version.outputs.version }}" -m "Release ${{ steps.get-version.outputs.version }}
+
+          Automated release triggered by SDK update to maintain API compatibility.
+
+          This release includes:
+          - Updated Go SDK dependency
+          - Latest API data model definitions
+          - Compatibility improvements
+
+          SDK Update PR: ${{ github.event.pull_request.html_url }}"
+
+          git push origin "${{ steps.get-version.outputs.version }}"
+          echo "✅ Tag ${{ steps.get-version.outputs.version }} created and pushed"
+
+      - name: Create GitHub Release
+        if: steps.check-tag.outputs.tag_exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get-version.outputs.version }}
+          name: "CLI ${{ steps.get-version.outputs.version }}"
+          body: |
+            ## 🤖 Automated SDK Update Release
+
+            This release was automatically triggered by a Go SDK update to ensure the CLI remains compatible with the latest API changes.
+
+            ### What's Changed
+            - 📦 Updated Vapi Go SDK to latest version
+            - 🔄 Refreshed API data model definitions  
+            - 🛠️ Improved compatibility with recent API changes
+
+            ### Installation
+
+            #### Universal Install Script (Recommended)
+            ```bash
+            curl -sSL https://vapi.ai/install.sh | bash
+            ```
+
+            #### Package Managers
+            ```bash
+            # npm
+            npm install -g @vapi-ai/cli
+
+            # Homebrew (macOS/Linux)  
+            brew tap VapiAI/homebrew-tap && brew install vapi-cli
+
+            # Docker
+            docker run -it ghcr.io/vapiai/cli:${{ steps.get-version.outputs.version }} --help
+            ```
+
+            ### Related Changes
+            - 🔗 **SDK Update PR**: ${{ github.event.pull_request.html_url }}
+            - 📋 **SDK Changelog**: [Go SDK Releases](https://github.com/VapiAI/server-sdk-go/releases)
+
+            ---
+            *This release was created automatically to maintain API compatibility.*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log release info
+        run: |
+          echo "🎉 Release process completed!"
+          echo "Version: ${{ steps.get-version.outputs.version }}"
+          echo "Triggered by: SDK update PR #${{ github.event.pull_request.number }}"
+          echo "Release will be built by GoReleaser workflow..."

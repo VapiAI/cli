@@ -1,0 +1,215 @@
+name: SDK Webhook Update
+
+on:
+  repository_dispatch:
+    types: [sdk-release]
+  workflow_dispatch: # Allow manual trigger for testing
+    inputs:
+      sdk_version:
+        description: "SDK version to update to (e.g., v0.8.2)"
+        required: false
+        type: string
+      force_update:
+        description: "Force update even if already up to date"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  update-sdk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract SDK version info
+        id: sdk-info
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            # Webhook payload from SDK repository
+            new_version="${{ github.event.client_payload.tag_name }}"
+            release_url="${{ github.event.client_payload.html_url }}"
+            release_body="${{ github.event.client_payload.body }}"
+            echo "Triggered by webhook for SDK release: $new_version"
+          else
+            # Manual trigger
+            new_version="${{ github.event.inputs.sdk_version }}"
+            if [ -z "$new_version" ]; then
+              # Get latest if not specified
+              new_version=$(curl -s https://api.github.com/repos/VapiAI/server-sdk-go/releases/latest | jq -r '.tag_name')
+            fi
+            release_url="https://github.com/VapiAI/server-sdk-go/releases/tag/$new_version"
+            release_body="Manual update triggered"
+            echo "Manual trigger for SDK version: $new_version"
+          fi
+
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "release_url=$release_url" >> $GITHUB_OUTPUT
+          echo "release_body<<EOF" >> $GITHUB_OUTPUT
+          echo "$release_body" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Get current SDK version
+        id: current-version
+        run: |
+          current_version=$(grep "github.com/VapiAI/server-sdk-go" go.mod | awk '{print $2}')
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+          echo "Current SDK version: $current_version"
+
+      - name: Check if update needed
+        id: check-update
+        run: |
+          current="${{ steps.current-version.outputs.current_version }}"
+          new="${{ steps.sdk-info.outputs.new_version }}"
+
+          # Remove 'v' prefix for comparison
+          current_clean=$(echo $current | sed 's/^v//')
+          new_clean=$(echo $new | sed 's/^v//')
+
+          if [ "$current_clean" != "$new_clean" ] || [ "${{ github.event.inputs.force_update }}" = "true" ]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "✅ Update needed: $current -> $new"
+          else
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Already up to date: $current"
+          fi
+
+      - name: Update Go SDK dependency
+        if: steps.check-update.outputs.needs_update == 'true'
+        run: |
+          echo "🔄 Updating Go SDK to ${{ steps.sdk-info.outputs.new_version }}"
+          go get github.com/VapiAI/server-sdk-go@${{ steps.sdk-info.outputs.new_version }}
+          go mod tidy
+          echo "✅ SDK updated successfully"
+
+      - name: Run tests
+        if: steps.check-update.outputs.needs_update == 'true'
+        run: |
+          echo "🧪 Running tests to ensure compatibility..."
+          make test
+
+      - name: Run linter
+        if: steps.check-update.outputs.needs_update == 'true'
+        run: |
+          echo "🔍 Running linter to ensure code quality..."
+          make lint
+
+      - name: Bump CLI version
+        if: steps.check-update.outputs.needs_update == 'true'
+        id: bump-version
+        run: |
+          # Read current CLI version
+          current_cli_version=$(cat VERSION | tr -d '\n')
+          echo "Current CLI version: $current_cli_version"
+
+          # Parse version components
+          IFS='.' read -ra ADDR <<< "$current_cli_version"
+          major=${ADDR[0]}
+          minor=${ADDR[1]}
+          patch=${ADDR[2]}
+
+          # Increment patch version
+          new_patch=$((patch + 1))
+          new_cli_version="$major.$minor.$new_patch"
+
+          echo "New CLI version: $new_cli_version"
+          echo "$new_cli_version" > VERSION
+
+          echo "new_cli_version=$new_cli_version" >> $GITHUB_OUTPUT
+
+      - name: Update version references
+        if: steps.check-update.outputs.needs_update == 'true'
+        run: |
+          new_version="${{ steps.bump-version.outputs.new_cli_version }}"
+          if [ -f "cmd/version.go" ]; then
+            sed -i "s/version = \"[^\"]*\"/version = \"$new_version\"/" cmd/version.go
+            echo "Updated version reference in cmd/version.go"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check-update.outputs.needs_update == 'true'
+        id: create-pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: webhook-update-sdk-${{ steps.sdk-info.outputs.new_version }}
+          title: "🚀 Auto-update Go SDK to ${{ steps.sdk-info.outputs.new_version }}"
+          body: |
+            ## 🤖 Webhook-Triggered SDK Update
+
+            This PR was automatically created in response to a new SDK release.
+
+            ### 📦 Changes
+            - **Go SDK**: `${{ steps.current-version.outputs.current_version }}` → `${{ steps.sdk-info.outputs.new_version }}`
+            - **CLI Version**: Bumped to `${{ steps.bump-version.outputs.new_cli_version }}`
+            - **Dependencies**: Updated with `go mod tidy`
+
+            ### ✅ Verification
+            - ✅ Tests passed (`make test`)
+            - ✅ Linting passed (`make lint`)
+            - ✅ Dependencies resolved
+
+            ### 🔗 SDK Release Information
+            **Release**: [${{ steps.sdk-info.outputs.new_version }}](${{ steps.sdk-info.outputs.release_url }})
+
+            **Release Notes**:
+            ```
+            ${{ steps.sdk-info.outputs.release_body }}
+            ```
+
+            ### 🚀 Next Steps
+            1. Review the SDK changes above
+            2. Test locally if needed: `./scripts/check-sdk-update.sh --update`
+            3. Merge when ready - this will automatically create a new CLI release
+
+            ---
+            *This PR was created automatically via webhook when the SDK was released.*
+          labels: |
+            dependencies
+            automation
+            sdk-update
+            webhook-triggered
+          assignees: |
+            ${{ github.actor }}
+
+      - name: Log results
+        run: |
+          if [ "${{ steps.check-update.outputs.needs_update }}" = "true" ]; then
+            echo "🎉 SDK update PR created!"
+            echo "📋 PR: #${{ steps.create-pr.outputs.pull-request-number }}"
+            echo "🔗 URL: ${{ steps.create-pr.outputs.pull-request-url }}"
+            echo "📦 SDK: ${{ steps.current-version.outputs.current_version }} → ${{ steps.sdk-info.outputs.new_version }}"
+            echo "🏷️ CLI: ${{ steps.bump-version.outputs.new_cli_version }}"
+          else
+            echo "ℹ️ No update needed - CLI is already using the latest SDK version"
+          fi
+
+  notify-failure:
+    runs-on: ubuntu-latest
+    needs: update-sdk
+    if: failure()
+
+    steps:
+      - name: Notify on failure
+        run: |
+          echo "❌ Webhook SDK update failed!"
+          echo "🔍 Check the workflow logs for details"
+          echo "🛠️ Manual intervention may be required"
+
+          # Optional: Add Slack/Discord notifications
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 CLI webhook SDK update failed - check GitHub Actions"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
