@@ -2,8 +2,8 @@ github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkk
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2/go.mod h1:HBCaDeC1lPdgDeDbhX8XFpy1jqjK0IBG8W5K+xYqA0w=
-github.com/VapiAI/server-sdk-go v0.8.1 h1:LhMj5CHj9DIZR0SWIQ/F4+zsmDZESHofc7HNWDx1Sbw=
-github.com/VapiAI/server-sdk-go v0.8.1/go.mod h1:iLrUDuX2ejNvylKCMgYYJcCkTILKGvHUfmP/1HRwtzQ=
+github.com/VapiAI/server-sdk-go v0.9.0 h1:ymq93QRiPbrF69Suy3Q6dXZ9ss70odSZoDPXzZ1WsxE=
+github.com/VapiAI/server-sdk-go v0.9.0/go.mod h1:iLrUDuX2ejNvylKCMgYYJcCkTILKGvHUfmP/1HRwtzQ=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/charmbracelet/colorprofile v0.3.1 h1:k8dTHMd7fgw4bnFd7jXTLZrSU/CQrKnL3m+AxCzDz40=

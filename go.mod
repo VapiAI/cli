@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/VapiAI/server-sdk-go v0.8.1
+	github.com/VapiAI/server-sdk-go v0.9.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/posthog/posthog-go v1.5.12
 	github.com/spf13/cobra v1.9.1

@@ -44,11 +44,12 @@ var campaignListCmd = &cobra.Command{
 		ctx := context.Background()
 
 		// Fetch all campaigns from the API
-		campaigns, err := vapiClient.GetClient().Campaigns.CampaignControllerFindAll(ctx, &vapi.CampaignControllerFindAllRequest{})
+		campaignsResponse, err := vapiClient.GetClient().Campaigns.CampaignControllerFindAll(ctx, &vapi.CampaignControllerFindAllRequest{})
 		if err != nil {
 			return fmt.Errorf("failed to list campaigns: %w", err)
 		}
 
+		campaigns := campaignsResponse.Results
 		if len(campaigns) == 0 {
 			fmt.Println("No campaigns found. Create one with 'vapi campaign create'")
 			return nil
