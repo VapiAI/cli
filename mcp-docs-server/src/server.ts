@@ -105,7 +105,7 @@ export class VapiDocsServer {
               description: "HTTP method (optional)",
               default: "all",
             },
-            include_examples: {
+            includeExamples: {
               type: "boolean",
               description: "Include request/response examples",
               default: true,
@@ -214,7 +214,7 @@ export class VapiDocsServer {
           result = await getApiReference(
             args.endpoint as string,
             args.method as string,
-            args.include_examples as boolean
+            args.includeExamples as boolean
           );
           break;
 

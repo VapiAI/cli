@@ -1,4 +1,6 @@
-import { getExamples as getExampleDocs } from "../utils/documentation-data";
+import { DocsFetcher } from "../utils/docs-fetcher.js";
+
+const docsFetcher = new DocsFetcher();
 
 /**
  * Get code examples for specific Vapi features or use cases
@@ -9,68 +11,140 @@ export async function getExamples(
   framework: string = "all"
 ): Promise<string> {
   try {
-    // Get example documentation pages from Vapi docs
-    const exampleDocs = await getExampleDocs(framework !== "all" ? framework : undefined);
+    // Get all examples first
+    const allExamples = await docsFetcher.getExamples();
     
     // Filter by feature
     const searchTerm = feature.toLowerCase();
-    const filteredExamples = exampleDocs.filter(doc => 
-      doc.title.toLowerCase().includes(searchTerm) ||
-      doc.description.toLowerCase().includes(searchTerm) ||
-      doc.url.toLowerCase().includes(searchTerm)
+    const filteredExamples = allExamples.filter(page => 
+      page.title.toLowerCase().includes(searchTerm) ||
+      page.section.toLowerCase().includes(searchTerm) ||
+      page.url.toLowerCase().includes(searchTerm)
     );
 
     if (filteredExamples.length === 0) {
-      return `# 📝 No Examples Found
+      // If no direct matches, try a broader search
+      const broadSearchResults = await docsFetcher.searchDocumentation(feature + " example");
+      const exampleResults = broadSearchResults.slice(0, 3);
+      
+      if (exampleResults.length === 0) {
+        return `# 📝 No Examples Found
 
-No examples found for "${feature}" with framework "${framework}".
+No examples found for "${feature}".
 
-## Available Example Categories:
-${exampleDocs.slice(0, 10).map(ex => `- **${ex.title}** - ${ex.description}`).join('\n')}
+## 📚 Available Example Categories:
 
-## Popular Features:
-- **assistants** - Create and manage voice assistants  
-- **calls** - Make outbound phone calls
-- **workflows** - Build conversation flows
-- **tools** - Add custom function calling
-- **webhooks** - Handle real-time events
-- **campaigns** - Outbound call campaigns
+${allExamples.slice(0, 8).map(ex => `- **${ex.title}** - ${ex.section}`).join('\n')}
 
-Try searching for one of these features!
+## 🎯 Popular Example Topics:
 
-📚 **Full Examples:** https://docs.vapi.ai/guides`;
+- **Phone calls** - Making and receiving calls
+- **Assistants** - Creating voice assistants  
+- **Workflows** - Building conversation flows
+- **Tools** - Custom function calling
+- **Webhooks** - Real-time event handling
+- **Voice widget** - Embedding voice in web apps
+- **Appointment scheduling** - Calendar integration
+- **Lead qualification** - Sales automation
+
+## 💡 Tips:
+- Try searching for broader terms (e.g., "phone" instead of "telephone")
+- Use the \`search_documentation\` tool for more general searches
+- Check the **Guides** section for step-by-step tutorials
+
+Try searching for one of the popular topics above!`;
+      }
+      
+      // Use broader search results
+      return await formatExamplesResponse(exampleResults, feature, language, framework, true);
     }
 
-    let response = `# 💻 Vapi Code Examples\n\n`;
-    response += `Found ${filteredExamples.length} example(s) for "${feature}"\n`;
-    if (framework !== "all") {
-      response += `**Framework:** ${framework}\n`;
-    }
-    response += `**Language:** ${language}\n\n`;
-
-    filteredExamples.forEach((doc, index) => {
-      response += `## ${index + 1}. ${doc.title}\n\n`;
-      response += `${doc.description}\n\n`;
-      response += `**Category:** ${doc.category}\n`;
-      response += `**📖 View Example:** ${doc.url}\n\n`;
-      response += "---\n\n";
-    });
-
-    response += `💡 **Getting Started:**\n`;
-    response += `- **Quickstart Guide:** https://docs.vapi.ai/quickstart/introduction\n`;
-    response += `- **Phone Calls:** https://docs.vapi.ai/quickstart/phone\n`;
-    response += `- **Web Calls:** https://docs.vapi.ai/quickstart/web\n`;
-    response += `- **All Guides:** https://docs.vapi.ai/guides\n\n`;
+    return await formatExamplesResponse(filteredExamples, feature, language, framework, false);
     
-    response += `🔧 **Need specific ${language} examples?** Visit the documentation links above for:\n`;
-    response += `- Complete, working code samples\n`;
-    response += `- Step-by-step implementation guides\n`;
-    response += `- Best practices and tips\n`;
-    response += `- Framework-specific integrations`;
+      } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return `# ❌ Examples Error
 
-    return response;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return `❌ Error fetching examples: ${errorMessage}\n\nPlease visit https://docs.vapi.ai/guides for examples`;
+Failed to fetch examples: ${errorMessage}
+
+## 🛠️ Troubleshooting:
+- The documentation server might be temporarily unavailable
+- Try again in a few moments
+- Check your internet connection
+
+## 📋 Manual Resources:
+- **Examples Gallery:** https://docs.vapi.ai/guides
+- **Quickstart Guide:** https://docs.vapi.ai/quickstart/introduction
+- **GitHub Examples:** https://github.com/VapiAI/docs
+
+## 🎯 Popular Examples:
+- **Phone Calls:** https://docs.vapi.ai/quickstart/phone
+- **Web Integration:** https://docs.vapi.ai/quickstart/web
+- **Workflows:** https://docs.vapi.ai/workflows/quickstart`;
   }
+}
+
+async function formatExamplesResponse(
+  examples: any[],
+  feature: string,
+  language: string,
+  framework: string,
+  isBroadSearch: boolean
+): Promise<string> {
+  const responseTitle = isBroadSearch ? 
+    `# 🔍 Related Examples for "${feature}"` : 
+    `# 💻 Examples for "${feature}"`;
+  
+  let response = `${responseTitle}\n\n`;
+  
+  if (isBroadSearch) {
+    response += `No direct examples found for "${feature}", but here are related examples:\n\n`;
+  } else {
+    response += `Found ${examples.length} example(s) for "${feature}"\n\n`;
+  }
+  
+  if (framework !== "all") {
+    response += `**Framework:** ${framework}\n`;
+  }
+  response += `**Language:** ${language}\n\n`;
+
+  // Fetch and return actual content for each example
+  for (let i = 0; i < Math.min(examples.length, 3); i++) {
+    const example = examples[i];
+    if (!example) continue;
+    
+    try {
+      const content = await docsFetcher.fetchPageContent(example);
+      
+      response += `## 📄 ${i + 1}. ${example.title}\n\n`;
+      response += `**Section:** ${example.section}\n`;
+      response += `**Category:** ${example.category}\n`;
+      response += `**URL:** ${example.url}\n\n`;
+      
+      // Add the actual content
+      response += `### Content:\n\n${content}\n\n`;
+      response += `---\n\n`;
+      
+    } catch (error) {
+      response += `## 📄 ${i + 1}. ${example.title}\n\n`;
+      response += `**Section:** ${example.section}\n`;
+      response += `**URL:** ${example.url}\n\n`;
+      response += `⚠️ Content temporarily unavailable. Please visit the URL above.\n\n`;
+      response += `---\n\n`;
+    }
+  }
+
+  response += `## 🎯 Next Steps\n\n`;
+  response += `- Use \`get_guides\` for step-by-step implementation guides\n`;
+  response += `- Use \`get_api_reference\` for detailed API documentation\n`;
+  response += `- Visit the URLs above for interactive code examples\n`;
+  response += `- Check the **Quickstart** guides for basic setup\n\n`;
+  
+  response += `## 🔗 Additional Resources\n\n`;
+  response += `- **All Examples:** https://docs.vapi.ai/guides\n`;
+  response += `- **Quickstart:** https://docs.vapi.ai/quickstart/introduction\n`;
+  response += `- **GitHub:** https://github.com/VapiAI/docs\n`;
+  response += `- **Discord Community:** https://discord.gg/vapi`;
+
+  return response;
 } 
