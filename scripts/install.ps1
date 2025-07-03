@@ -1,7 +1,22 @@
 # Vapi CLI installation script for Windows
 # Usage: iex ((New-Object System.Net.WebClient).DownloadString('https://vapi.ai/install.ps1'))
 
+[CmdletBinding()]
+param()
+
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"  # Suppress progress bars for faster downloads
+
+# Check if running on Windows
+if (-not $IsWindows) {
+    Write-Host "[ERROR] This installer is for Windows only." -ForegroundColor Red
+    Write-Host ""
+    if ($IsMacOS -or $IsLinux) {
+        Write-Host "For macOS/Linux, use the shell script instead:" -ForegroundColor Yellow
+        Write-Host "  curl -sSL https://vapi.ai/install.sh | bash" -ForegroundColor White
+    }
+    exit 1
+}
 
 # Configuration
 $Repo = "VapiAI/cli"
@@ -29,7 +44,14 @@ function Get-Platform {
     switch ($arch) {
         "AMD64" { return "Windows_x86_64" }
         "ARM64" { return "Windows_arm64" }
-        default { Write-Error "Unsupported architecture: $arch" }
+        default { 
+            # Also check PROCESSOR_ARCHITEW6432 for 32-bit processes on 64-bit systems
+            $arch64 = $env:PROCESSOR_ARCHITEW6432
+            if ($arch64 -eq "AMD64") {
+                return "Windows_x86_64"
+            }
+            Write-Error "Unsupported architecture: $arch" 
+        }
     }
 }
 
@@ -38,7 +60,11 @@ function Get-LatestVersion {
     Write-Info "Fetching latest version..."
     
     try {
-        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
+        $headers = @{}
+        # Add User-Agent for better GitHub API compatibility
+        $headers["User-Agent"] = "Vapi-CLI-Installer/1.0"
+        
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $headers
         $version = $response.tag_name
         
         if (-not $version) {
@@ -49,7 +75,7 @@ function Get-LatestVersion {
         return $version
     }
     catch {
-        Write-Error "Failed to fetch latest version: $_"
+        Write-Error "Failed to fetch latest version: $($_.Exception.Message)"
     }
 }
 
@@ -66,16 +92,20 @@ function Install-Vapi($Version, $Platform) {
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
     
     try {
-        # Download the file
-        Invoke-WebRequest -Uri $url -OutFile $tarFile
+        # Download the file with progress
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("User-Agent", "Vapi-CLI-Installer/1.0")
+        $webClient.DownloadFile($url, $tarFile)
+        $webClient.Dispose()
         
         Write-Info "Extracting..."
         
-        # Extract tar.gz (requires tar.exe available in Windows 10+)
-        if (Get-Command tar -ErrorAction SilentlyContinue) {
+        # Check for tar.exe (available in Windows 10 1803+)
+        $tarCmd = Get-Command tar -ErrorAction SilentlyContinue
+        if ($tarCmd) {
             tar -xzf $tarFile -C $tempDir
         } else {
-            Write-Error "tar command not found. Please update to Windows 10 version 1803 or later."
+            Write-Error "tar command not found. Please update to Windows 10 version 1803 or later, or install a compatible extraction tool."
         }
         
         # Create install directory
@@ -90,20 +120,20 @@ function Install-Vapi($Version, $Platform) {
         }
         
         if (Test-Path $binaryPath) {
-            Move-Item $binaryPath "$InstallDir\$BinaryName" -Force
+            Copy-Item $binaryPath "$InstallDir\$BinaryName" -Force
         } else {
             Write-Error "Binary not found after extraction"
         }
         
-        Write-Info "Vapi CLI installed successfully!"
+        Write-Info "Vapi CLI installed successfully to: $InstallDir"
     }
     catch {
-        Write-Error "Installation failed: $_"
+        Write-Error "Installation failed: $($_.Exception.Message)"
     }
     finally {
         # Cleanup
         if (Test-Path $tempDir) {
-            Remove-Item $tempDir -Recurse -Force
+            Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 }
@@ -114,7 +144,11 @@ function Add-ToPath {
     
     if ($currentPath -notlike "*$InstallDir*") {
         Write-Info "Adding Vapi CLI to PATH..."
+        
+        # Clean up PATH before adding (remove trailing semicolons)
+        $currentPath = $currentPath.TrimEnd(';')
         $newPath = "$currentPath;$InstallDir"
+        
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
         
         # Update current session PATH
@@ -133,23 +167,28 @@ function Test-Installation {
     if (Test-Path $vapiPath) {
         # Test if vapi command works
         try {
-            $version = & $vapiPath --version 2>$null
-            Write-Info "Verification: $version"
-            Write-Host ""
-            Write-Info "Installation complete! 🎉"
-            Write-Host ""
-            Write-Host "Get started with:"
-            Write-Host "  vapi login"
-            Write-Host "  vapi --help"
-            Write-Host ""
-            Write-Warning "Please restart your terminal or PowerShell session to use 'vapi' command globally."
+            $output = & $vapiPath --version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Info "Verification successful: $output"
+                Write-Host ""
+                Write-Info "Installation complete! 🎉"
+                Write-Host ""
+                Write-Host "Get started with:" -ForegroundColor Cyan
+                Write-Host "  vapi login" -ForegroundColor White
+                Write-Host "  vapi --help" -ForegroundColor White
+                Write-Host ""
+                Write-Warning "Please restart your terminal or PowerShell session to use 'vapi' command globally."
+            } else {
+                Write-Warning "Vapi CLI was installed but verification failed (exit code: $LASTEXITCODE)"
+                Write-Warning "You may need to restart your terminal"
+            }
         }
         catch {
-            Write-Warning "Vapi CLI was installed but verification failed"
+            Write-Warning "Vapi CLI was installed but verification failed: $($_.Exception.Message)"
             Write-Warning "You may need to restart your terminal"
         }
     } else {
-        Write-Error "Installation verification failed - binary not found"
+        Write-Error "Installation verification failed - binary not found at: $vapiPath"
     }
 }
 
@@ -159,6 +198,12 @@ function Main {
     Write-Host "    Vapi CLI Installer" -ForegroundColor Cyan
     Write-Host "===================================" -ForegroundColor Cyan
     Write-Host ""
+    
+    # Check Windows version
+    $osVersion = [System.Environment]::OSVersion.Version
+    if ($osVersion.Major -lt 10) {
+        Write-Warning "Windows 10 or later is recommended for best compatibility"
+    }
     
     $platform = Get-Platform
     Write-Info "Detected platform: $platform"
