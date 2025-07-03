@@ -23,35 +23,19 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 ## Installation
 
-### Universal Install Script (Recommended)
+### Unix/Linux/macOS
 
 ```bash
 curl -sSL https://vapi.ai/install.sh | bash
 ```
 
-This script automatically detects your platform and installs the latest version.
-
-### Package Managers
-
-#### npm (Cross-platform)
-
-```bash
-npm install -g @vapi-ai/cli
-```
-
-#### Homebrew (macOS/Linux)
-
-```bash
-brew tap VapiAI/homebrew-tap
-brew install vapi-cli
-```
-
-#### Scoop (Windows)
+### Windows
 
 ```powershell
-scoop bucket add vapi https://github.com/VapiAI/scoop-bucket
-scoop install vapi-cli
+iex ((New-Object System.Net.WebClient).DownloadString('https://vapi.ai/install.ps1'))
 ```
+
+Both scripts automatically detect your platform and install the latest version.
 
 ### Docker
 
