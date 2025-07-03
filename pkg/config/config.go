@@ -42,10 +42,10 @@ type Config struct {
 
 // Account represents a single authenticated account/organization
 type Account struct {
-	APIKey       string `mapstructure:"api_key"`
+	APIKey       string `mapstructure:"apikey"`
 	Organization string `mapstructure:"organization,omitempty"` // Organization name if available
 	Environment  string `mapstructure:"environment,omitempty"`  // Per-account environment override
-	LoginTime    string `mapstructure:"login_time,omitempty"`   // When this account was last authenticated
+	LoginTime    string `mapstructure:"logintime,omitempty"`    // When this account was last authenticated
 }
 
 // Environment configuration
@@ -273,9 +273,15 @@ func (c *Config) AddAccount(accountKey, apiKey, organization string) {
 
 // SetActiveAccount switches to the specified account
 func (c *Config) SetActiveAccount(accountKey string) error {
-	if c.Accounts == nil || c.Accounts[accountKey].APIKey == "" {
+	if c.Accounts == nil {
+		return fmt.Errorf("no accounts configured")
+	}
+
+	// Check if account exists (regardless of whether it has an API key)
+	if _, exists := c.Accounts[accountKey]; !exists {
 		return fmt.Errorf("account '%s' not found", accountKey)
 	}
+
 	c.ActiveAccount = accountKey
 	return nil
 }

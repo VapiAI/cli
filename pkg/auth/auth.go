@@ -427,8 +427,30 @@ func GetStatus() (*AuthStatus, error) {
 	apiKeySource := cfg.GetAPIKeySource()
 
 	status.APIKeySet = apiKey != ""
-	status.IsAuthenticated = status.APIKeySet
 	status.APIKeySource = apiKeySource
+
+	// Determine if authenticated:
+	// 1. If API key from environment variable, always authenticated if not empty
+	// 2. If from account, authenticated if active account exists and has valid API key
+	// 3. If from legacy config, authenticated if API key is not empty
+	if apiKey != "" {
+		if apiKeySource == "environment variable" {
+			status.IsAuthenticated = true
+		} else if status.TotalAccounts > 0 && status.ActiveAccount != "" {
+			// Check if active account actually exists and has API key
+			if activeAccount := cfg.GetActiveAccount(); activeAccount != nil && activeAccount.APIKey != "" {
+				status.IsAuthenticated = true
+			} else {
+				status.IsAuthenticated = false
+			}
+		} else if apiKeySource == "config file (legacy)" {
+			status.IsAuthenticated = true
+		} else {
+			status.IsAuthenticated = false
+		}
+	} else {
+		status.IsAuthenticated = false
+	}
 
 	return status, nil
 }

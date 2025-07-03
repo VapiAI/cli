@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/analytics"
@@ -179,13 +180,38 @@ which account you're currently using.`,
 				}
 				fmt.Println()
 			}
+
+			// Additional diagnostics if not authenticated but accounts exist
+			if !status.IsAuthenticated && status.TotalAccounts > 0 {
+				fmt.Println()
+				fmt.Println("🔍 Diagnostic Information:")
+				if status.ActiveAccount == "" {
+					fmt.Println("   • No active account is set")
+					fmt.Println("   • Run 'vapi auth switch' to activate an account")
+				} else {
+					if _, exists := status.Accounts[status.ActiveAccount]; !exists {
+						fmt.Printf("   • Active account '%s' does not exist in stored accounts\n", status.ActiveAccount)
+						fmt.Println("   • Run 'vapi auth switch' to select a valid account")
+					} else if status.Accounts[status.ActiveAccount].APIKey == "" {
+						fmt.Printf("   • Active account '%s' has no API key stored\n", status.ActiveAccount)
+						fmt.Println("   • Run 'vapi auth login' to re-authenticate this account")
+					}
+				}
+			}
 		}
 
 		fmt.Println()
 
 		// Action suggestions
 		if !status.IsAuthenticated {
-			fmt.Println("💡 To authenticate, run: vapi auth login")
+			if status.TotalAccounts == 0 {
+				fmt.Println("💡 To get started, run: vapi auth login")
+			} else {
+				fmt.Println("💡 To fix authentication:")
+				fmt.Println("   • Switch accounts: vapi auth switch")
+				fmt.Println("   • Re-authenticate: vapi auth login")
+				fmt.Println("   • Check accounts: vapi auth status")
+			}
 		} else {
 			if status.TotalAccounts > 1 {
 				fmt.Println("💡 To switch accounts, run: vapi auth switch")
@@ -237,8 +263,48 @@ This is useful when working with multiple organizations or environments.`,
 		if len(args) > 0 {
 			targetAccount = args[0]
 		} else {
-			// Interactive selection
-			fmt.Println("Available accounts:")
+			// Interactive selection using survey
+			var accountOptions []string
+			var accountMap = make(map[string]string) // display name -> account key
+
+			for accountName, account := range accounts {
+				displayName := accountName
+				if account.Organization != "" {
+					displayName = fmt.Sprintf("%s (%s)", accountName, account.Organization)
+				}
+				if accountName == cfg.ActiveAccount {
+					displayName += " ✓ (currently active)"
+				}
+				accountOptions = append(accountOptions, displayName)
+				accountMap[displayName] = accountName
+			}
+
+			var selectedDisplay string
+			prompt := &survey.Select{
+				Message:  "Select account to switch to:",
+				Options:  accountOptions,
+				PageSize: 10,
+			}
+
+			if err := survey.AskOne(prompt, &selectedDisplay); err != nil {
+				if err.Error() == "interrupt" {
+					fmt.Println("\nAccount switching canceled.")
+					return nil
+				}
+				return fmt.Errorf("account selection canceled: %w", err)
+			}
+
+			targetAccount = accountMap[selectedDisplay]
+		}
+
+		if targetAccount == "" {
+			return fmt.Errorf("no account specified")
+		}
+
+		// Validate account exists
+		if _, exists := accounts[targetAccount]; !exists {
+			fmt.Printf("❌ Account '%s' not found.\n", targetAccount)
+			fmt.Println("\nAvailable accounts:")
 			for accountName, account := range accounts {
 				active := ""
 				if accountName == cfg.ActiveAccount {
@@ -250,14 +316,7 @@ This is useful when working with multiple organizations or environments.`,
 				}
 				fmt.Println()
 			}
-			fmt.Print("\nEnter account name to switch to: ")
-			if _, err := fmt.Scanln(&targetAccount); err != nil {
-				return fmt.Errorf("failed to read input: %w", err)
-			}
-		}
-
-		if targetAccount == "" {
-			return fmt.Errorf("no account specified")
+			return fmt.Errorf("account '%s' not found", targetAccount)
 		}
 
 		if err := cfg.SetActiveAccount(targetAccount); err != nil {
@@ -268,7 +327,12 @@ This is useful when working with multiple organizations or environments.`,
 			return fmt.Errorf("failed to save config: %w", err)
 		}
 
-		fmt.Printf("✅ Switched to account '%s'\n", targetAccount)
+		account := accounts[targetAccount]
+		fmt.Printf("✅ Switched to account '%s'", targetAccount)
+		if account.Organization != "" {
+			fmt.Printf(" (%s)", account.Organization)
+		}
+		fmt.Println()
 		return nil
 	}),
 }
