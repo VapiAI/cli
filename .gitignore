@@ -58,3 +58,4 @@ Thumbs.db
 npm-wrapper/bin/
 npm-wrapper/node_modules/
 npm-wrapper/*.tgz
+**/node_modules/
