@@ -82,13 +82,13 @@ github_repo="$GITHUB/VapiAI/cli"
 
 # Get latest version
 if [[ $# = 0 ]]; then
-    version=$(curl -s "$github_repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    version=$(curl -s "https://api.github.com/repos/VapiAI/cli/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -z $version ]]; then
         error "Failed to fetch latest version"
     fi
-    vapi_uri="$github_repo/releases/download/$version/vapi_$target.tar.gz"
+    vapi_uri="$github_repo/releases/download/$version/cli_$target.tar.gz"
 else
-    vapi_uri="$github_repo/releases/download/$1/vapi_$target.tar.gz"
+    vapi_uri="$github_repo/releases/download/$1/cli_$target.tar.gz"
 fi
 
 install_env=VAPI_INSTALL
@@ -264,4 +264,4 @@ if [[ $refresh_command ]]; then
     info_bold "  $refresh_command"
 fi
 
-info_bold "  vapi --help" 
+info_bold "  vapi --help"
