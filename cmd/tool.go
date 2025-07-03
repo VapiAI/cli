@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	vapi "github.com/VapiAI/server-sdk-go"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/output"
@@ -67,9 +68,22 @@ var listToolCmd = &cobra.Command{
 			return fmt.Errorf("failed to list tools: %w", err)
 		}
 
-		// Display as formatted JSON for complete details
-		if err := output.PrintJSON(tools); err != nil {
-			return fmt.Errorf("failed to display tools: %w", err)
+		if len(tools) == 0 {
+			fmt.Println("No tools found. Create one with 'vapi tool create'")
+			return nil
+		}
+
+		// Display in a readable table format
+		fmt.Printf("\nFound %d tool(s):\n\n", len(tools))
+		fmt.Printf("%-36s %-30s %-20s %-20s\n", "ID", "Name", "Type", "Created")
+		fmt.Printf("%-36s %-30s %-20s %-20s\n", "----", "----", "----", "-------")
+
+		for _, tool := range tools {
+			// Extract common fields from the union type
+			id, name, toolType, createdAt := extractToolFields(*tool)
+
+			fmt.Printf("%-36s %-30s %-20s %-20s\n",
+				id, name, toolType, createdAt)
 		}
 
 		return nil
@@ -275,6 +289,276 @@ var listToolTypesCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+// extractToolFields extracts common fields from the union type tool
+func extractToolFields(tool vapi.ToolsListResponseItem) (id, name, toolType, createdAt string) {
+	// Handle FunctionTool
+	if funcTool := tool.GetFunctionTool(); funcTool != nil {
+		id = funcTool.GetId()
+		name = "Unknown"
+		if function := funcTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Function"
+		createdAt = funcTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle EndCallTool
+	if endCallTool := tool.GetEndCallTool(); endCallTool != nil {
+		id = endCallTool.GetId()
+		name = "Unknown"
+		if function := endCallTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "End Call"
+		createdAt = endCallTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle TransferCallTool
+	if transferTool := tool.GetTransferCallTool(); transferTool != nil {
+		id = transferTool.GetId()
+		name = "Unknown"
+		if function := transferTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Transfer Call"
+		createdAt = transferTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle DtmfTool
+	if dtmfTool := tool.GetDtmfTool(); dtmfTool != nil {
+		id = dtmfTool.GetId()
+		name = "Unknown"
+		if function := dtmfTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "DTMF"
+		createdAt = dtmfTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle ApiRequestTool
+	if apiTool := tool.GetApiRequestTool(); apiTool != nil {
+		id = apiTool.GetId()
+		name = "Unknown"
+		if function := apiTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "API Request"
+		createdAt = apiTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle OutputTool
+	if outputTool := tool.GetOutputTool(); outputTool != nil {
+		id = outputTool.GetId()
+		name = "Unknown"
+		if function := outputTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Output"
+		createdAt = outputTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle McpTool
+	if mcpTool := tool.GetMcpTool(); mcpTool != nil {
+		id = mcpTool.GetId()
+		name = "Unknown"
+		if function := mcpTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "MCP"
+		createdAt = mcpTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle BashTool
+	if bashTool := tool.GetBashTool(); bashTool != nil {
+		id = bashTool.GetId()
+		name = "Unknown"
+		if function := bashTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Bash"
+		createdAt = bashTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle ComputerTool
+	if computerTool := tool.GetComputerTool(); computerTool != nil {
+		id = computerTool.GetId()
+		name = "Unknown"
+		if function := computerTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Computer"
+		createdAt = computerTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle TextEditorTool
+	if textTool := tool.GetTextEditorTool(); textTool != nil {
+		id = textTool.GetId()
+		name = "Unknown"
+		if function := textTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Text Editor"
+		createdAt = textTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle QueryTool
+	if queryTool := tool.GetQueryTool(); queryTool != nil {
+		id = queryTool.GetId()
+		name = "Unknown"
+		if function := queryTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Query"
+		createdAt = queryTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle SlackSendMessageTool
+	if slackTool := tool.GetSlackSendMessageTool(); slackTool != nil {
+		id = slackTool.GetId()
+		name = "Unknown"
+		if function := slackTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Slack"
+		createdAt = slackTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle SmsTool
+	if smsTool := tool.GetSmsTool(); smsTool != nil {
+		id = smsTool.GetId()
+		name = "Unknown"
+		if function := smsTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "SMS"
+		createdAt = smsTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle GhlTool
+	if ghlTool := tool.GetGhlTool(); ghlTool != nil {
+		id = ghlTool.GetId()
+		name = "Unknown"
+		if function := ghlTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "GoHighLevel"
+		createdAt = ghlTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle MakeTool
+	if makeTool := tool.GetMakeTool(); makeTool != nil {
+		id = makeTool.GetId()
+		name = "Unknown"
+		if function := makeTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Make"
+		createdAt = makeTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle Google Calendar tools
+	if calTool := tool.GetGoogleCalendarCreateEventTool(); calTool != nil {
+		id = calTool.GetId()
+		name = "Unknown"
+		if function := calTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Google Calendar"
+		createdAt = calTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle Google Calendar Check Availability
+	if calAvailTool := tool.GetGoogleCalendarCheckAvailabilityTool(); calAvailTool != nil {
+		id = calAvailTool.GetId()
+		name = "Unknown"
+		if function := calAvailTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Google Calendar"
+		createdAt = calAvailTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle Google Sheets tools
+	if sheetsTool := tool.GetGoogleSheetsRowAppendTool(); sheetsTool != nil {
+		id = sheetsTool.GetId()
+		name = "Unknown"
+		if function := sheetsTool.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "Google Sheets"
+		createdAt = sheetsTool.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle GoHighLevel Calendar Availability
+	if ghlCalAvail := tool.GetGoHighLevelCalendarAvailabilityTool(); ghlCalAvail != nil {
+		id = ghlCalAvail.GetId()
+		name = "Unknown"
+		if function := ghlCalAvail.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "GHL Calendar"
+		createdAt = ghlCalAvail.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle GoHighLevel Calendar Event Create
+	if ghlCalEvent := tool.GetGoHighLevelCalendarEventCreateTool(); ghlCalEvent != nil {
+		id = ghlCalEvent.GetId()
+		name = "Unknown"
+		if function := ghlCalEvent.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "GHL Calendar"
+		createdAt = ghlCalEvent.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle GoHighLevel Contact Create
+	if ghlContactCreate := tool.GetGoHighLevelContactCreateTool(); ghlContactCreate != nil {
+		id = ghlContactCreate.GetId()
+		name = "Unknown"
+		if function := ghlContactCreate.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "GHL Contact"
+		createdAt = ghlContactCreate.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle GoHighLevel Contact Get
+	if ghlContactGet := tool.GetGoHighLevelContactGetTool(); ghlContactGet != nil {
+		id = ghlContactGet.GetId()
+		name = "Unknown"
+		if function := ghlContactGet.GetFunction(); function != nil {
+			name = function.GetName()
+		}
+		toolType = "GHL Contact"
+		createdAt = ghlContactGet.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Fallback if no tool type is set
+	return "Unknown", "Unknown", "Unknown", "Unknown"
 }
 
 func init() {

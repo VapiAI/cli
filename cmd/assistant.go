@@ -159,11 +159,35 @@ use the Vapi dashboard at https://dashboard.vapi.ai`,
 		}
 
 		fmt.Println("\n🔄 Creating assistant...")
-		fmt.Println("Note: Full assistant creation with model/voice configuration is available in the Vapi dashboard.")
-		fmt.Printf("\nCreated assistant would have:\n")
-		fmt.Printf("- Name: %s\n", config.Name)
-		fmt.Printf("- First Message: %s\n", config.FirstMessage)
-		fmt.Println("\nVisit https://dashboard.vapi.ai to create and configure assistants.")
+
+		ctx := context.Background()
+
+		// Create the assistant via API
+		createRequest := &vapi.CreateAssistantDto{
+			Name:         &config.Name,
+			FirstMessage: &config.FirstMessage,
+			Voice: &vapi.CreateAssistantDtoVoice{
+				VapiVoice: &vapi.VapiVoice{
+					VoiceId: vapi.VapiVoiceVoiceIdElliot,
+				},
+			},
+		}
+
+		assistant, err := vapiClient.GetClient().Assistants.Create(ctx, createRequest)
+		if err != nil {
+			return fmt.Errorf("failed to create assistant: %w", err)
+		}
+
+		fmt.Println("✅ Assistant created successfully!")
+		fmt.Printf("ID: %s\n", assistant.Id)
+		fmt.Printf("Name: %s\n", config.Name)
+		fmt.Printf("First Message: %s\n", config.FirstMessage)
+		fmt.Println("\nYour assistant is now available in the dashboard for advanced configuration:")
+		fmt.Printf("https://dashboard.vapi.ai/assistants/%s\n", assistant.Id)
+
+		analytics.TrackEvent("assistant_create_success", map[string]interface{}{
+			"assistant_id": assistant.Id,
+		})
 
 		return nil
 	}),

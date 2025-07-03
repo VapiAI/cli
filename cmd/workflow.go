@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	vapi "github.com/VapiAI/server-sdk-go"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/output"
@@ -146,11 +147,45 @@ use the Vapi dashboard at https://dashboard.vapi.ai`,
 		}
 
 		fmt.Println("\n🔄 Creating workflow...")
-		fmt.Println("Note: Full workflow creation with visual builder is available in the Vapi dashboard.")
-		fmt.Printf("\nCreated workflow would have:\n")
-		fmt.Printf("- Name: %s\n", config.Name)
-		fmt.Printf("- Description: %s\n", config.Description)
-		fmt.Println("\nVisit https://dashboard.vapi.ai/workflows to create and configure workflows visually.")
+
+		ctx := context.Background()
+
+		// Create a basic workflow with a simple conversation node
+		isStart := true
+		startNodeName := "start"
+
+		conversationNode := &vapi.ConversationNode{
+			Name:    startNodeName,
+			IsStart: &isStart,
+			Prompt:  &config.Description,
+		}
+
+		// Wrap the conversation node in the union type
+		startNode := &vapi.CreateWorkflowDtoNodesItem{
+			ConversationNode: conversationNode,
+		}
+
+		// Create the workflow via API
+		createRequest := &vapi.CreateWorkflowDto{
+			Name:  config.Name,
+			Nodes: []*vapi.CreateWorkflowDtoNodesItem{startNode},
+			Edges: []*vapi.Edge{}, // Empty edges for a single-node workflow
+		}
+
+		workflow, err := vapiClient.GetClient().Workflow.WorkflowControllerCreate(ctx, createRequest)
+		if err != nil {
+			return fmt.Errorf("failed to create workflow: %w", err)
+		}
+
+		fmt.Println("✅ Workflow created successfully!")
+		fmt.Printf("ID: %s\n", workflow.Id)
+		fmt.Printf("Name: %s\n", config.Name)
+		fmt.Printf("Description: %s\n", config.Description)
+		fmt.Println()
+		fmt.Println("Your workflow is now available in the dashboard for visual editing:")
+		fmt.Printf("https://dashboard.vapi.ai/workflows/%s\n", workflow.Id)
+		fmt.Println()
+		fmt.Println("💡 Tip: Use the visual builder to add more nodes, conditions, and connections!")
 
 		return nil
 	},

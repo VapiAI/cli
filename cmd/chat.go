@@ -71,9 +71,31 @@ var listChatCmd = &cobra.Command{
 			return fmt.Errorf("failed to list chats: %w", err)
 		}
 
-		// Display as formatted JSON for complete details, similar to calls
-		if err := output.PrintJSON(chats); err != nil {
-			return fmt.Errorf("failed to display chats: %w", err)
+		chatResults := chats.Results
+		if len(chatResults) == 0 {
+			fmt.Println("No chat conversations found. Create one with 'vapi chat create'")
+			return nil
+		}
+
+		// Display in a readable table format
+		fmt.Printf("\nFound %d chat conversation(s):\n\n", len(chatResults))
+		fmt.Printf("%-36s %-30s %-36s %-20s\n", "ID", "Name", "Assistant ID", "Created")
+		fmt.Printf("%-36s %-30s %-36s %-20s\n", "----", "----", "------------", "-------")
+
+		for _, chat := range chatResults {
+			name := "Unnamed"
+			if chat.Name != nil && *chat.Name != "" {
+				name = *chat.Name
+			}
+
+			assistantId := "None"
+			if chat.AssistantId != nil && *chat.AssistantId != "" {
+				assistantId = *chat.AssistantId
+			}
+
+			created := chat.CreatedAt.Format("2006-01-02 15:04")
+
+			fmt.Printf("%-36s %-30s %-36s %-20s\n", chat.Id, name, assistantId, created)
 		}
 
 		return nil

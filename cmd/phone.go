@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	vapi "github.com/VapiAI/server-sdk-go"
 	"github.com/spf13/cobra"
 
 	"github.com/VapiAI/cli/pkg/output"
@@ -65,9 +66,27 @@ var listPhoneCmd = &cobra.Command{
 			return fmt.Errorf("failed to list phone numbers: %w", err)
 		}
 
-		// Display as formatted JSON for complete details
-		if err := output.PrintJSON(phoneNumbers); err != nil {
-			return fmt.Errorf("failed to display phone numbers: %w", err)
+		if len(phoneNumbers) == 0 {
+			fmt.Println("No phone numbers found. Create one with 'vapi phone create'")
+			return nil
+		}
+
+		// Display in a readable table format
+		fmt.Printf("\nFound %d phone number(s):\n\n", len(phoneNumbers))
+		fmt.Printf("%-36s %-16s %-25s %-8s %-20s\n", "ID", "Number", "Name", "Status", "Created")
+		fmt.Printf("%-36s %-16s %-25s %-8s %-20s\n", "----", "------", "----", "------", "-------")
+
+		for _, phoneNumber := range phoneNumbers {
+			// Extract common fields from the union type
+			id, number, name, status, assistantId, createdAt := extractPhoneNumberFields(*phoneNumber)
+
+			// Show assistant ID in a separate line if it exists
+			fmt.Printf("%-36s %-16s %-25s %-8s %-20s\n",
+				id, number, name, status, createdAt)
+
+			if assistantId != "None" {
+				fmt.Printf("  └─ Assistant: %s\n", assistantId)
+			}
 		}
 
 		return nil
@@ -182,6 +201,90 @@ var deletePhoneCmd = &cobra.Command{
 		fmt.Println("Note: Billing for this number will stop within 24 hours")
 		return nil
 	},
+}
+
+// extractPhoneNumberFields extracts common fields from the union type phone number
+func extractPhoneNumberFields(phoneNumber vapi.PhoneNumbersListResponseItem) (id, number, name, status, assistantId, createdAt string) {
+	// Handle VapiPhoneNumber
+	if vapiPhone := phoneNumber.GetVapiPhoneNumber(); vapiPhone != nil {
+		id = vapiPhone.GetId()
+		number = getStringValue(vapiPhone.GetNumber())
+		name = getStringValue(vapiPhone.GetName())
+		status = "Unknown"
+		if vapiPhone.GetStatus() != nil {
+			status = string(*vapiPhone.GetStatus())
+		}
+		assistantId = getStringValue(vapiPhone.GetAssistantId())
+		createdAt = vapiPhone.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle TwilioPhoneNumber
+	if twilioPhone := phoneNumber.GetTwilioPhoneNumber(); twilioPhone != nil {
+		id = twilioPhone.GetId()
+		number = twilioPhone.GetNumber()
+		name = getStringValue(twilioPhone.GetName())
+		status = "Unknown"
+		if twilioPhone.GetStatus() != nil {
+			status = string(*twilioPhone.GetStatus())
+		}
+		assistantId = getStringValue(twilioPhone.GetAssistantId())
+		createdAt = twilioPhone.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle VonagePhoneNumber
+	if vonagePhone := phoneNumber.GetVonagePhoneNumber(); vonagePhone != nil {
+		id = vonagePhone.GetId()
+		number = vonagePhone.GetNumber()
+		name = getStringValue(vonagePhone.GetName())
+		status = "Unknown"
+		if vonagePhone.GetStatus() != nil {
+			status = string(*vonagePhone.GetStatus())
+		}
+		assistantId = getStringValue(vonagePhone.GetAssistantId())
+		createdAt = vonagePhone.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle TelnyxPhoneNumber
+	if telnyxPhone := phoneNumber.GetTelnyxPhoneNumber(); telnyxPhone != nil {
+		id = telnyxPhone.GetId()
+		number = telnyxPhone.GetNumber()
+		name = getStringValue(telnyxPhone.GetName())
+		status = "Unknown"
+		if telnyxPhone.GetStatus() != nil {
+			status = string(*telnyxPhone.GetStatus())
+		}
+		assistantId = getStringValue(telnyxPhone.GetAssistantId())
+		createdAt = telnyxPhone.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Handle ByoPhoneNumber
+	if byoPhone := phoneNumber.GetByoPhoneNumber(); byoPhone != nil {
+		id = byoPhone.GetId()
+		number = getStringValue(byoPhone.GetNumber())
+		name = getStringValue(byoPhone.GetName())
+		status = "Unknown"
+		if byoPhone.GetStatus() != nil {
+			status = string(*byoPhone.GetStatus())
+		}
+		assistantId = getStringValue(byoPhone.GetAssistantId())
+		createdAt = byoPhone.GetCreatedAt().Format("2006-01-02 15:04")
+		return
+	}
+
+	// Fallback if no phone number type is set
+	return "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown"
+}
+
+// getStringValue safely extracts string from pointer or returns fallback
+func getStringValue(ptr *string) string {
+	if ptr != nil && *ptr != "" {
+		return *ptr
+	}
+	return "None"
 }
 
 func init() {

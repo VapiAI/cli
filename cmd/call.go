@@ -57,19 +57,50 @@ var listCallsCmd = &cobra.Command{
 		if err != nil {
 			// Check if this is a deserialization error related to new features
 			if strings.Contains(err.Error(), "cannot be deserialized") {
-				fmt.Println("⚠️  Warning: The Vapi API returned data in a format not yet supported by this CLI version.")
-				fmt.Println("   This usually happens when new features are added to Vapi.")
-				fmt.Println("   Please check for CLI updates: https://github.com/VapiAI/cli/releases")
+				fmt.Println("⚠️  Unable to display calls due to API version mismatch")
 				fmt.Println()
-				fmt.Printf("   Technical details: %v\n", err)
-				return fmt.Errorf("incompatible API response format")
+				fmt.Println("🔍 What happened:")
+				fmt.Println("   The Vapi API returned call data with newer features that this CLI version")
+				fmt.Println("   doesn't support yet (like new tool types or model configurations).")
+				fmt.Println()
+				fmt.Println("🔧 Workarounds:")
+				fmt.Println("   • View your calls in the Vapi Dashboard: https://dashboard.vapi.ai/calls")
+				fmt.Println("   • Use the latest Vapi SDKs for programmatic access")
+				fmt.Println("   • Check for CLI updates: https://github.com/VapiAI/cli/releases")
+				fmt.Println()
+				fmt.Println("💡 Technical details:")
+				if strings.Contains(err.Error(), "transferCall") {
+					fmt.Println("   • Your calls contain advanced transfer functionality")
+				}
+				if strings.Contains(err.Error(), "CreateAssistantDtoModel") {
+					fmt.Println("   • Your calls use newer model configurations")
+				}
+				fmt.Printf("   • SDK error: %s\n", extractErrorSummary(err.Error()))
+				fmt.Println()
+				fmt.Println("📞 Your calls are working fine - this is just a display issue in the CLI.")
+				return nil
 			}
 			return fmt.Errorf("failed to list calls: %w", err)
 		}
 
-		// Display as formatted JSON for complete details
-		if err := output.PrintJSON(calls); err != nil {
-			return fmt.Errorf("failed to display calls: %w", err)
+		if len(calls) == 0 {
+			fmt.Println("No calls found.")
+			return nil
+		}
+
+		// Display call summary instead of full JSON to avoid overwhelming output
+		fmt.Printf("Found %d call(s):\n\n", len(calls))
+		for i, call := range calls {
+			fmt.Printf("Call %d:\n", i+1)
+			fmt.Printf("  ID: %s\n", call.Id)
+			if call.Status != nil {
+				fmt.Printf("  Status: %s\n", *call.Status)
+			}
+			fmt.Printf("  Created: %s\n", call.CreatedAt.Format("2006-01-02 15:04:05"))
+			if call.EndedAt != nil {
+				fmt.Printf("  Ended: %s\n", call.EndedAt.Format("2006-01-02 15:04:05"))
+			}
+			fmt.Println()
 		}
 
 		return nil
@@ -173,6 +204,29 @@ var getCallCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+// extractErrorSummary extracts a cleaner error message from deserialization errors
+func extractErrorSummary(errorMsg string) string {
+	// Extract the key part of the error message
+	if strings.Contains(errorMsg, "cannot be deserialized as") {
+		// Find the part before "cannot be deserialized"
+		parts := strings.Split(errorMsg, " cannot be deserialized")
+		if len(parts) > 0 {
+			// Get the last part which contains the data that failed
+			data := strings.TrimSpace(parts[0])
+			// Extract just the type or first part to avoid overwhelming output
+			if len(data) > 100 {
+				return data[:100] + "..."
+			}
+			return data
+		}
+	}
+	// Fallback to showing just the error type
+	if len(errorMsg) > 150 {
+		return errorMsg[:150] + "..."
+	}
+	return errorMsg
 }
 
 func init() {
