@@ -4,7 +4,7 @@ The official command-line interface for [Vapi](https://vapi.ai) - Voice AI for d
 
 ## Features
 
-- 🔐 **Browser-based Authentication** - Secure OAuth-style login flow
+- 🔐 **Authentication Management** - Secure OAuth login, logout, and account switching
 - 🤖 **Assistant Management** - List, create, update, and delete voice assistants
 - 💬 **Chat Management** - Text-based conversations and chat history
 - 📞 **Enhanced Call Management** - Full call lifecycle control and monitoring
@@ -118,6 +118,40 @@ vapi login
 
 This will open your browser for secure authentication. Your API key will be saved locally.
 
+#### Managing Authentication
+
+For users who work with multiple organizations or need to switch accounts:
+
+```bash
+# Check current authentication status and list all accounts
+vapi auth status
+
+# Switch between multiple authenticated accounts
+vapi auth switch [account-name]
+
+# View current API key and source
+vapi auth token
+
+# View current user and organization info
+vapi auth whoami
+
+# Add another account (keeping existing ones)
+vapi auth login
+
+# Logout from current account
+vapi auth logout
+
+# Logout from all accounts
+vapi auth logout --all
+```
+
+The CLI supports **multiple accounts** simultaneously, similar to GitHub CLI. This is perfect for:
+
+- Working with multiple Vapi organizations
+- Switching between production and staging environments
+- Managing different client accounts
+- Team collaboration with role-specific access
+
 ### Assistant Management
 
 ```bash
@@ -191,6 +225,45 @@ The `init` command will:
 - Install the appropriate Vapi SDK
 - Generate example code and components
 - Create environment configuration templates
+
+### MCP Integration - Turn Your IDE into a Vapi Expert
+
+Set up Model Context Protocol (MCP) integration to give your IDE's AI assistant complete knowledge about Vapi:
+
+```bash
+# Auto-detect and configure all IDEs
+vapi mcp setup
+
+# Configure a specific IDE
+vapi mcp setup cursor   # For Cursor
+vapi mcp setup windsurf # For Windsurf
+vapi mcp setup vscode   # For VSCode
+
+# Check configuration status
+vapi mcp status
+```
+
+Once configured, your IDE's AI assistant will have access to:
+
+- **Complete Vapi Documentation** - No more hallucinated API info
+- **Code Examples & Templates** - Real working examples
+- **Best Practices & Guides** - Expert-level implementation patterns
+- **Latest Features** - Always up-to-date with new releases
+
+**Supported IDEs:**
+
+- [Cursor](https://cursor.sh) - AI-powered code editor
+- [Windsurf](https://codeium.com/windsurf) - Codeium's AI IDE
+- [VSCode](https://code.visualstudio.com) - With GitHub Copilot
+
+**What this does:**
+
+- Configures your IDE to use the Vapi MCP docs server
+- Creates appropriate configuration files (`.cursor/mcp.json`, etc.)
+- Eliminates AI hallucination about Vapi features and APIs
+- Enables intelligent code suggestions specific to Vapi
+
+Try asking your IDE's AI: _"How do I create a voice assistant with Vapi?"_ and watch it provide accurate, up-to-date information!
 
 ### Configuration
 
@@ -422,35 +495,75 @@ The CLI will automatically check for updates periodically and notify you when a 
 
 ## Project Structure
 
+This is a **monorepo** containing both the Go CLI and the TypeScript MCP server:
+
 ```
-cli/
-├── cmd/                    # Command implementations
-│   ├── root.go            # Main CLI setup
-│   ├── assistant.go       # Assistant commands
-│   ├── workflow.go        # Workflow commands
-│   ├── campaign.go        # Campaign commands
-│   ├── call.go           # Call commands
-│   ├── config.go         # Configuration commands
-│   ├── init.go           # Project initialization
-│   └── login.go          # Authentication
-├── pkg/                   # Core packages
-│   ├── auth/             # Authentication logic
-│   ├── client/           # Vapi API client
-│   ├── config/           # Configuration management
-│   ├── integrations/     # Framework integrations
-│   └── output/           # Output formatting
-├── build/                # Build artifacts (git-ignored)
-├── main.go              # Entry point
-├── Makefile             # Build automation
-└── README.md            # This file
+vapi-cli/                          # 🏠 Main repository
+├── cmd/                           # Go CLI command implementations
+│   ├── root.go                   # Main CLI setup & auth
+│   ├── assistant.go              # Assistant management
+│   ├── workflow.go               # Workflow commands
+│   ├── campaign.go               # Campaign management
+│   ├── call.go                   # Call operations
+│   ├── config.go                 # Configuration
+│   ├── init.go                   # Project integration
+│   ├── mcp.go                    # MCP server setup ✨
+│   └── login.go                  # Authentication
+├── pkg/                          # Go core packages
+│   ├── auth/                     # Authentication logic
+│   ├── client/                   # Vapi API client
+│   ├── config/                   # Configuration management
+│   ├── integrations/             # Framework detection
+│   └── output/                   # Output formatting
+├── mcp-docs-server/              # 📦 MCP Server (TypeScript)
+│   ├── src/                      # TypeScript source
+│   │   ├── index.ts              # MCP server entry point
+│   │   ├── server.ts             # Core server logic
+│   │   ├── tools/                # MCP tools (5 tools)
+│   │   ├── resources/            # MCP resources
+│   │   └── utils/                # Utilities & data
+│   ├── dist/                     # Built JavaScript
+│   ├── package.json              # npm package config
+│   └── README.md                 # MCP server docs
+├── build/                        # Build artifacts (git-ignored)
+├── main.go                       # Go CLI entry point
+├── Makefile                      # Unified build system ⚡
+└── README.md                     # This file
 ```
+
+### Monorepo Benefits
+
+- **🔄 Synchronized Development** - CLI and MCP server stay in sync
+- **📦 Single Source of Truth** - All Vapi tooling in one place
+- **🚀 Unified Build System** - `make all` builds everything
+- **🎯 Consistent Versioning** - CLI and MCP server versions aligned
 
 ## Development
 
-### Building
+This monorepo includes both Go (CLI) and TypeScript (MCP server) components. The unified Makefile handles both.
+
+### Quick Start
 
 ```bash
-# Build for current platform
+# Build everything (CLI + MCP server)
+make all
+
+# Install everything locally
+make install-all
+
+# Test everything
+make test-all
+
+# Clean everything
+make clean-all
+```
+
+### Building
+
+#### CLI (Go)
+
+```bash
+# Build CLI only
 make build
 
 # Build for all platforms
@@ -458,6 +571,34 @@ make build-all
 
 # Run without building
 go run main.go
+```
+
+#### MCP Server (TypeScript)
+
+```bash
+# Build MCP server only
+make build-mcp
+
+# Install MCP server globally
+make install-mcp
+
+# Publish to npm
+make publish-mcp
+```
+
+### Development Requirements
+
+- **Go 1.21+** - [Install Go](https://golang.org/doc/install)
+- **Node.js 18+** - [Install Node.js](https://nodejs.org/)
+- **golangci-lint** - For Go code linting
+- **npm** - For MCP server dependencies
+
+```bash
+# macOS
+brew install go node golangci-lint
+
+# Install dependencies for both projects
+make deps-all
 ```
 
 ### Testing

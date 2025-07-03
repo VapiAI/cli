@@ -301,6 +301,11 @@ func openBrowser(targetURL string) error {
 
 // Login performs the browser-based authentication flow
 func Login() error {
+	return LoginWithAccountName("")
+}
+
+// LoginWithAccountName performs authentication and optionally saves with a specific account name
+func LoginWithAccountName(accountName string) error {
 	authManager := NewAuthManager()
 
 	apiKey, err := authManager.Authenticate()
@@ -314,12 +319,116 @@ func Login() error {
 		cfg = &config.Config{}
 	}
 
-	cfg.APIKey = apiKey
+	// Generate account name if not provided
+	if accountName == "" {
+		// Try to extract organization info from API key or use timestamp
+		accountName = fmt.Sprintf("account-%d", time.Now().Unix())
+	}
+
+	// Add as new account (supports multiple accounts)
+	cfg.AddAccount(accountName, apiKey, "") // Organization will be filled later if available
+
+	// For backward compatibility, also set legacy APIKey field if it's the first account
+	if len(cfg.Accounts) == 1 {
+		cfg.APIKey = apiKey
+	}
 
 	if err := config.SaveConfig(cfg); err != nil {
 		return fmt.Errorf("failed to save API key: %w", err)
 	}
 
-	fmt.Println("\n✅ Successfully authenticated! Your API key has been saved.")
+	fmt.Printf("\n✅ Successfully authenticated as '%s'! Your API key has been saved.\n", accountName)
+	if len(cfg.Accounts) > 1 {
+		fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
+	}
 	return nil
+}
+
+// Logout clears the stored authentication credentials
+func Logout() error {
+	return LogoutAccount("")
+}
+
+// LogoutAccount logs out from a specific account, or all accounts if accountName is empty
+func LogoutAccount(accountName string) error {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		cfg = &config.Config{}
+	}
+
+	if accountName == "" {
+		// Logout from all accounts
+		cfg.Accounts = make(map[string]config.Account)
+		cfg.ActiveAccount = ""
+		cfg.APIKey = "" // Also clear legacy API key
+
+		if err := config.SaveConfig(cfg); err != nil {
+			return fmt.Errorf("failed to clear API keys: %w", err)
+		}
+
+		fmt.Println("🔓 Successfully logged out from all accounts!")
+		return nil
+	}
+
+	// Logout from specific account
+	if err := cfg.RemoveAccount(accountName); err != nil {
+		return fmt.Errorf("failed to remove account: %w", err)
+	}
+
+	if err := config.SaveConfig(cfg); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	fmt.Printf("🔓 Successfully logged out from account '%s'!\n", accountName)
+
+	// Show remaining accounts
+	remaining := cfg.ListAccounts()
+	if len(remaining) > 0 {
+		fmt.Printf("Active account: %s\n", cfg.ActiveAccount)
+		fmt.Printf("Remaining accounts: %d\n", len(remaining))
+	} else {
+		fmt.Println("No accounts remaining. Use 'vapi auth login' to authenticate.")
+	}
+
+	return nil
+}
+
+// AuthStatus represents the current authentication status
+type AuthStatus struct {
+	IsAuthenticated bool
+	APIKeySet       bool
+	APIKeySource    string
+	Environment     string
+	BaseURL         string
+	DashboardURL    string
+	ActiveAccount   string
+	TotalAccounts   int
+	Accounts        map[string]config.Account
+}
+
+// GetStatus returns the current authentication status
+func GetStatus() (*AuthStatus, error) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	status := &AuthStatus{
+		Environment:   cfg.GetEnvironment(),
+		BaseURL:       cfg.GetAPIBaseURL(),
+		DashboardURL:  cfg.GetDashboardURL(),
+		ActiveAccount: cfg.ActiveAccount,
+		TotalAccounts: len(cfg.ListAccounts()),
+		Accounts:      cfg.ListAccounts(),
+	}
+
+	// Check if API key is set from various sources
+	apiKey := cfg.GetActiveAPIKey()
+	apiKeySource := cfg.GetAPIKeySource()
+
+	status.APIKeySet = apiKey != ""
+	status.IsAuthenticated = status.APIKeySet
+	status.APIKeySource = apiKeySource
+
+	return status, nil
 }

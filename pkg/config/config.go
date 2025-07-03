@@ -24,17 +24,28 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	APIKey           string `mapstructure:"api_key"`
-	BaseURL          string `mapstructure:"base_url"`
-	DashboardURL     string `mapstructure:"dashboard_url"`
-	Environment      string `mapstructure:"environment"`
-	Timeout          int    `mapstructure:"timeout"`
-	DisableAnalytics bool   `mapstructure:"disable_analytics"`
+	APIKey           string             `mapstructure:"api_key"` // Legacy single API key (for backward compatibility)
+	BaseURL          string             `mapstructure:"base_url"`
+	DashboardURL     string             `mapstructure:"dashboard_url"`
+	Environment      string             `mapstructure:"environment"`
+	Timeout          int                `mapstructure:"timeout"`
+	DisableAnalytics bool               `mapstructure:"disable_analytics"`
+	Accounts         map[string]Account `mapstructure:"accounts"`       // Multiple accounts support
+	ActiveAccount    string             `mapstructure:"active_account"` // Which account is currently active
+}
+
+// Account represents a single authenticated account/organization
+type Account struct {
+	APIKey       string `mapstructure:"api_key"`
+	Organization string `mapstructure:"organization,omitempty"` // Organization name if available
+	Environment  string `mapstructure:"environment,omitempty"`  // Per-account environment override
+	LoginTime    string `mapstructure:"login_time,omitempty"`   // When this account was last authenticated
 }
 
 // Environment configuration
@@ -200,6 +211,8 @@ func SaveConfig(config *Config) error {
 	viper.Set("environment", config.Environment)
 	viper.Set("timeout", config.Timeout)
 	viper.Set("disable_analytics", config.DisableAnalytics)
+	viper.Set("accounts", config.Accounts)
+	viper.Set("active_account", config.ActiveAccount)
 
 	// Save to home directory for persistence
 	home, err := os.UserHomeDir()
@@ -209,6 +222,117 @@ func SaveConfig(config *Config) error {
 
 	configPath := filepath.Join(home, ".vapi-cli.yaml")
 	return viper.WriteConfigAs(configPath)
+}
+
+// GetActiveAPIKey returns the API key for the currently active account
+func (c *Config) GetActiveAPIKey() string {
+	// Check environment variable first (always takes precedence)
+	if envKey := os.Getenv("VAPI_API_KEY"); envKey != "" {
+		return envKey
+	}
+
+	// If we have multiple accounts and an active account is set
+	if c.Accounts != nil && c.ActiveAccount != "" {
+		if account, exists := c.Accounts[c.ActiveAccount]; exists {
+			return account.APIKey
+		}
+	}
+
+	// Fall back to legacy single API key
+	return c.APIKey
+}
+
+// GetActiveAccount returns the currently active account
+func (c *Config) GetActiveAccount() *Account {
+	if c.Accounts != nil && c.ActiveAccount != "" {
+		if account, exists := c.Accounts[c.ActiveAccount]; exists {
+			return &account
+		}
+	}
+	return nil
+}
+
+// AddAccount adds a new account or updates an existing one
+func (c *Config) AddAccount(accountKey, apiKey, organization string) {
+	if c.Accounts == nil {
+		c.Accounts = make(map[string]Account)
+	}
+
+	c.Accounts[accountKey] = Account{
+		APIKey:       apiKey,
+		Organization: organization,
+		Environment:  c.Environment, // Use current environment as default
+		LoginTime:    time.Now().Format(time.RFC3339),
+	}
+
+	// Set as active account if it's the first one or no active account is set
+	if c.ActiveAccount == "" || len(c.Accounts) == 1 {
+		c.ActiveAccount = accountKey
+	}
+}
+
+// SetActiveAccount switches to the specified account
+func (c *Config) SetActiveAccount(accountKey string) error {
+	if c.Accounts == nil || c.Accounts[accountKey].APIKey == "" {
+		return fmt.Errorf("account '%s' not found", accountKey)
+	}
+	c.ActiveAccount = accountKey
+	return nil
+}
+
+// ListAccounts returns all configured accounts
+func (c *Config) ListAccounts() map[string]Account {
+	if c.Accounts == nil {
+		return make(map[string]Account)
+	}
+	return c.Accounts
+}
+
+// RemoveAccount removes an account
+func (c *Config) RemoveAccount(accountKey string) error {
+	if c.Accounts == nil {
+		return fmt.Errorf("no accounts configured")
+	}
+
+	if _, exists := c.Accounts[accountKey]; !exists {
+		return fmt.Errorf("account '%s' not found", accountKey)
+	}
+
+	delete(c.Accounts, accountKey)
+
+	// If we removed the active account, pick a new one or clear it
+	if c.ActiveAccount == accountKey {
+		if len(c.Accounts) > 0 {
+			// Pick the first remaining account
+			for key := range c.Accounts {
+				c.ActiveAccount = key
+				break
+			}
+		} else {
+			c.ActiveAccount = ""
+		}
+	}
+
+	return nil
+}
+
+// GetAPIKeySource returns where the current API key comes from
+func (c *Config) GetAPIKeySource() string {
+	if os.Getenv("VAPI_API_KEY") != "" {
+		return "environment variable"
+	}
+
+	if c.Accounts != nil && c.ActiveAccount != "" {
+		if _, exists := c.Accounts[c.ActiveAccount]; exists {
+			return fmt.Sprintf("account '%s'", c.ActiveAccount)
+		}
+	}
+
+	if c.APIKey != "" {
+		return "config file (legacy)"
+	}
+
+	return "not set"
 }
 
 var globalConfig *Config

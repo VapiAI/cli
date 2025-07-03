@@ -118,7 +118,7 @@ release:
     _Built with ❤️ by the Vapi team_
 
 # Homebrew tap configuration
-homebrew_casks:
+brews:
   - repository:
       owner: VapiAI
       name: homebrew-tap
@@ -127,6 +127,10 @@ homebrew_casks:
     homepage: "https://vapi.ai"
     description: "Voice AI for developers - Vapi CLI"
     license: "MIT"
+    test: |
+      system "#{bin}/vapi", "--version"
+    install: |
+      bin.install "vapi"
     skip_upload: false
 
 # Scoop bucket configuration (for Windows users)
