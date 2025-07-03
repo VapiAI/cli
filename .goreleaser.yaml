@@ -82,21 +82,14 @@ release:
     
     ### Installation
     
-    #### Universal Install Script (Recommended)
+    #### Unix/Linux/macOS
     ```bash
     curl -sSL https://vapi.ai/install.sh | bash
     ```
     
-    #### Package Managers
-    ```bash
-    # npm
-    npm install -g @vapi-ai/cli
-    
-    # Homebrew (macOS/Linux)
-    brew tap VapiAI/homebrew-tap && brew install vapi-cli
-    
-    # Scoop (Windows)  
-    scoop bucket add vapi https://github.com/VapiAI/scoop-bucket && scoop install vapi-cli
+    #### Windows
+    ```powershell
+    iex ((New-Object System.Net.WebClient).DownloadString('https://vapi.ai/install.ps1'))
     ```
     
     #### Docker
@@ -117,34 +110,7 @@ release:
     
     _Built with ❤️ by the Vapi team_
 
-# Homebrew tap configuration
-brews:
-  - repository:
-      owner: VapiAI
-      name: homebrew-tap
-      branch: main
-    name: vapi-cli
-    homepage: "https://vapi.ai"
-    description: "Voice AI for developers - Vapi CLI"
-    license: "MIT"
-    test: |
-      system "#{bin}/vapi", "--version"
-    install: |
-      bin.install "vapi"
-    skip_upload: false
-
-# Scoop bucket configuration (for Windows users)
-scoops:
-  - repository:
-      owner: VapiAI
-      name: scoop-bucket
-      branch: main
-    directory: bucket
-    name: vapi-cli
-    homepage: "https://vapi.ai"
-    description: "Voice AI for developers - Vapi CLI"
-    license: MIT
-    skip_upload: false
+# Package managers removed - using install scripts instead
 
 # Docker images (containerized usage)
 dockers:
@@ -169,10 +135,9 @@ announce:
     message_template: |
       🚀 **Vapi CLI {{.Tag}} Released!**
       
-      📦 **Distribution:**
-      • Universal: `curl -sSL https://vapi.ai/install.sh | bash`
-      • npm: `npm install -g @vapi-ai/cli`
-      • Homebrew: `brew tap VapiAI/homebrew-tap && brew install vapi-cli`
+      📦 **Installation:**
+      • Unix/Linux/macOS: `curl -sSL https://vapi.ai/install.sh | bash`
+      • Windows: `iex ((New-Object System.Net.WebClient).DownloadString('https://vapi.ai/install.ps1'))`
       • Docker: `docker run -it ghcr.io/vapiai/cli:{{.Tag}} --help`
       
       🔗 **Links:**
