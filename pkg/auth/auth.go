@@ -434,19 +434,22 @@ func GetStatus() (*AuthStatus, error) {
 	// 2. If from account, authenticated if active account exists and has valid API key
 	// 3. If from legacy config, authenticated if API key is not empty
 	if apiKey != "" {
-		if apiKeySource == "environment variable" {
+		switch apiKeySource {
+		case "environment variable":
 			status.IsAuthenticated = true
-		} else if status.TotalAccounts > 0 && status.ActiveAccount != "" {
-			// Check if active account actually exists and has API key
-			if activeAccount := cfg.GetActiveAccount(); activeAccount != nil && activeAccount.APIKey != "" {
-				status.IsAuthenticated = true
+		case "config file (legacy)": // #nosec G101 - This is not a hardcoded credential but a source description
+			status.IsAuthenticated = true
+		default:
+			// From account - check if active account exists and has API key
+			if status.TotalAccounts > 0 && status.ActiveAccount != "" {
+				if activeAccount := cfg.GetActiveAccount(); activeAccount != nil && activeAccount.APIKey != "" {
+					status.IsAuthenticated = true
+				} else {
+					status.IsAuthenticated = false
+				}
 			} else {
 				status.IsAuthenticated = false
 			}
-		} else if apiKeySource == "config file (legacy)" {
-			status.IsAuthenticated = true
-		} else {
-			status.IsAuthenticated = false
 		}
 	} else {
 		status.IsAuthenticated = false

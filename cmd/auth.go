@@ -265,7 +265,7 @@ This is useful when working with multiple organizations or environments.`,
 		} else {
 			// Interactive selection using survey
 			var accountOptions []string
-			var accountMap = make(map[string]string) // display name -> account key
+			accountMap := make(map[string]string) // display name -> account key
 
 			for accountName, account := range accounts {
 				displayName := accountName

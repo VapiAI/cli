@@ -78,14 +78,14 @@ var listPhoneCmd = &cobra.Command{
 
 		for _, phoneNumber := range phoneNumbers {
 			// Extract common fields from the union type
-			id, number, name, status, assistantId, createdAt := extractPhoneNumberFields(*phoneNumber)
+			fields := extractPhoneNumberFields(*phoneNumber)
 
 			// Show assistant ID in a separate line if it exists
 			fmt.Printf("%-36s %-16s %-25s %-8s %-20s\n",
-				id, number, name, status, createdAt)
+				fields.ID, fields.Number, fields.Name, fields.Status, fields.CreatedAt)
 
-			if assistantId != "None" {
-				fmt.Printf("  └─ Assistant: %s\n", assistantId)
+			if fields.AssistantID != "None" {
+				fmt.Printf("  └─ Assistant: %s\n", fields.AssistantID)
 			}
 		}
 
@@ -203,80 +203,107 @@ var deletePhoneCmd = &cobra.Command{
 	},
 }
 
+// PhoneNumberFields represents the common fields of a phone number
+type PhoneNumberFields struct {
+	ID          string
+	Number      string
+	Name        string
+	Status      string
+	AssistantID string
+	CreatedAt   string
+}
+
 // extractPhoneNumberFields extracts common fields from the union type phone number
-func extractPhoneNumberFields(phoneNumber vapi.PhoneNumbersListResponseItem) (id, number, name, status, assistantId, createdAt string) {
+func extractPhoneNumberFields(phoneNumber vapi.PhoneNumbersListResponseItem) PhoneNumberFields {
 	// Handle VapiPhoneNumber
 	if vapiPhone := phoneNumber.GetVapiPhoneNumber(); vapiPhone != nil {
-		id = vapiPhone.GetId()
-		number = getStringValue(vapiPhone.GetNumber())
-		name = getStringValue(vapiPhone.GetName())
-		status = "Unknown"
+		status := "Unknown"
 		if vapiPhone.GetStatus() != nil {
 			status = string(*vapiPhone.GetStatus())
 		}
-		assistantId = getStringValue(vapiPhone.GetAssistantId())
-		createdAt = vapiPhone.GetCreatedAt().Format("2006-01-02 15:04")
-		return
+		return PhoneNumberFields{
+			ID:          vapiPhone.GetId(),
+			Number:      getStringValue(vapiPhone.GetNumber()),
+			Name:        getStringValue(vapiPhone.GetName()),
+			Status:      status,
+			AssistantID: getStringValue(vapiPhone.GetAssistantId()),
+			CreatedAt:   vapiPhone.GetCreatedAt().Format("2006-01-02 15:04"),
+		}
 	}
 
 	// Handle TwilioPhoneNumber
 	if twilioPhone := phoneNumber.GetTwilioPhoneNumber(); twilioPhone != nil {
-		id = twilioPhone.GetId()
-		number = twilioPhone.GetNumber()
-		name = getStringValue(twilioPhone.GetName())
-		status = "Unknown"
+		status := "Unknown"
 		if twilioPhone.GetStatus() != nil {
 			status = string(*twilioPhone.GetStatus())
 		}
-		assistantId = getStringValue(twilioPhone.GetAssistantId())
-		createdAt = twilioPhone.GetCreatedAt().Format("2006-01-02 15:04")
-		return
+		return PhoneNumberFields{
+			ID:          twilioPhone.GetId(),
+			Number:      twilioPhone.GetNumber(),
+			Name:        getStringValue(twilioPhone.GetName()),
+			Status:      status,
+			AssistantID: getStringValue(twilioPhone.GetAssistantId()),
+			CreatedAt:   twilioPhone.GetCreatedAt().Format("2006-01-02 15:04"),
+		}
 	}
 
 	// Handle VonagePhoneNumber
 	if vonagePhone := phoneNumber.GetVonagePhoneNumber(); vonagePhone != nil {
-		id = vonagePhone.GetId()
-		number = vonagePhone.GetNumber()
-		name = getStringValue(vonagePhone.GetName())
-		status = "Unknown"
+		status := "Unknown"
 		if vonagePhone.GetStatus() != nil {
 			status = string(*vonagePhone.GetStatus())
 		}
-		assistantId = getStringValue(vonagePhone.GetAssistantId())
-		createdAt = vonagePhone.GetCreatedAt().Format("2006-01-02 15:04")
-		return
+		return PhoneNumberFields{
+			ID:          vonagePhone.GetId(),
+			Number:      vonagePhone.GetNumber(),
+			Name:        getStringValue(vonagePhone.GetName()),
+			Status:      status,
+			AssistantID: getStringValue(vonagePhone.GetAssistantId()),
+			CreatedAt:   vonagePhone.GetCreatedAt().Format("2006-01-02 15:04"),
+		}
 	}
 
 	// Handle TelnyxPhoneNumber
 	if telnyxPhone := phoneNumber.GetTelnyxPhoneNumber(); telnyxPhone != nil {
-		id = telnyxPhone.GetId()
-		number = telnyxPhone.GetNumber()
-		name = getStringValue(telnyxPhone.GetName())
-		status = "Unknown"
+		status := "Unknown"
 		if telnyxPhone.GetStatus() != nil {
 			status = string(*telnyxPhone.GetStatus())
 		}
-		assistantId = getStringValue(telnyxPhone.GetAssistantId())
-		createdAt = telnyxPhone.GetCreatedAt().Format("2006-01-02 15:04")
-		return
+		return PhoneNumberFields{
+			ID:          telnyxPhone.GetId(),
+			Number:      telnyxPhone.GetNumber(),
+			Name:        getStringValue(telnyxPhone.GetName()),
+			Status:      status,
+			AssistantID: getStringValue(telnyxPhone.GetAssistantId()),
+			CreatedAt:   telnyxPhone.GetCreatedAt().Format("2006-01-02 15:04"),
+		}
 	}
 
 	// Handle ByoPhoneNumber
 	if byoPhone := phoneNumber.GetByoPhoneNumber(); byoPhone != nil {
-		id = byoPhone.GetId()
-		number = getStringValue(byoPhone.GetNumber())
-		name = getStringValue(byoPhone.GetName())
-		status = "Unknown"
+		status := "Unknown"
 		if byoPhone.GetStatus() != nil {
 			status = string(*byoPhone.GetStatus())
 		}
-		assistantId = getStringValue(byoPhone.GetAssistantId())
-		createdAt = byoPhone.GetCreatedAt().Format("2006-01-02 15:04")
-		return
+		return PhoneNumberFields{
+			ID:          byoPhone.GetId(),
+			Number:      getStringValue(byoPhone.GetNumber()),
+			Name:        getStringValue(byoPhone.GetName()),
+			Status:      status,
+			AssistantID: getStringValue(byoPhone.GetAssistantId()),
+			CreatedAt:   byoPhone.GetCreatedAt().Format("2006-01-02 15:04"),
+		}
 	}
 
 	// Fallback if no phone number type is set
-	return "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown"
+	return PhoneNumberFields{
+		ID:          "Unknown",
+		Number:      "Unknown",
+		Name:        "Unknown",
+		Status:      "Unknown",
+		AssistantID: "Unknown",
+		CreatedAt:   "Unknown",
+	}
 }
 
 // getStringValue safely extracts string from pointer or returns fallback

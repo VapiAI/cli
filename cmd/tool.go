@@ -80,7 +80,7 @@ var listToolCmd = &cobra.Command{
 
 		for _, tool := range tools {
 			// Extract common fields from the union type
-			id, name, toolType, createdAt := extractToolFields(*tool)
+			id, name, toolType, createdAt := extractToolFields(tool)
 
 			fmt.Printf("%-36s %-30s %-20s %-20s\n",
 				id, name, toolType, createdAt)
@@ -292,7 +292,7 @@ var listToolTypesCmd = &cobra.Command{
 }
 
 // extractToolFields extracts common fields from the union type tool
-func extractToolFields(tool vapi.ToolsListResponseItem) (id, name, toolType, createdAt string) {
+func extractToolFields(tool *vapi.ToolsListResponseItem) (id, name, toolType, createdAt string) {
 	// Handle FunctionTool
 	if funcTool := tool.GetFunctionTool(); funcTool != nil {
 		id = funcTool.GetId()

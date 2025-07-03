@@ -302,19 +302,145 @@ func installUpdate(release *GitHubRelease) error {
 		return fmt.Errorf("binary not found in downloaded archive")
 	}
 
-	// Get current executable path
+	// Check if we need to migrate to new installation directory
 	currentPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get current executable path: %w", err)
 	}
 
-	// Replace the current binary
-	fmt.Println("🔄 Installing update...")
-	if err := replaceExecutable(binaryPath, currentPath); err != nil {
-		return fmt.Errorf("failed to replace executable: %w", err)
+	newInstallDir := getNewInstallDirectory()
+	newBinaryPath := newInstallDir + "/vapi"
+	if runtime.GOOS == "windows" {
+		newBinaryPath += ".exe"
+	}
+
+	// Check if we're migrating from old installation
+	shouldMigrate := !strings.Contains(currentPath, "/.vapi/") && !strings.Contains(currentPath, "\\.vapi\\")
+
+	if shouldMigrate {
+		fmt.Println("🔄 Migrating to new installation directory...")
+		if err := migrateInstallation(binaryPath, newBinaryPath, currentPath); err != nil {
+			return fmt.Errorf("failed to migrate installation: %w", err)
+		}
+	} else {
+		// Normal update in current location
+		fmt.Println("🔄 Installing update...")
+		if err := replaceExecutable(binaryPath, currentPath); err != nil {
+			return fmt.Errorf("failed to replace executable: %w", err)
+		}
 	}
 
 	return nil
+}
+
+// getNewInstallDirectory returns the new standard installation directory
+func getNewInstallDirectory() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return os.Getenv("HOME") + "/.vapi/bin"
+	}
+	return homeDir + "/.vapi/bin"
+}
+
+// migrateInstallation handles migration from old installation paths to new standard path
+func migrateInstallation(newBinary, targetPath, oldPath string) error {
+	// Create new installation directory
+	targetDir := strings.TrimSuffix(targetPath, "/vapi")
+	if runtime.GOOS == "windows" {
+		targetDir = strings.TrimSuffix(targetPath, "\\vapi.exe")
+	}
+
+	if err := os.MkdirAll(targetDir, 0o750); err != nil {
+		return fmt.Errorf("failed to create installation directory: %w", err)
+	}
+
+	// Copy new binary to target location
+	if err := replaceExecutable(newBinary, targetPath); err != nil {
+		return fmt.Errorf("failed to install binary: %w", err)
+	}
+
+	// Clean up old installation if it's in a system directory
+	if strings.Contains(oldPath, "/usr/local/bin") || strings.Contains(oldPath, "/usr/bin") {
+		fmt.Printf("⚠️  Note: Old installation remains at %s\n", oldPath)
+		fmt.Printf("   You may want to remove it manually: sudo rm %s\n", oldPath)
+	} else if strings.Contains(oldPath, "/.local/bin/") {
+		// Try to remove old installation from ~/.local/bin
+		if err := os.Remove(oldPath); err != nil {
+			fmt.Printf("⚠️  Could not remove old installation at %s: %v\n", oldPath, err)
+		} else {
+			fmt.Printf("✅ Removed old installation from %s\n", oldPath)
+		}
+	}
+
+	// Update PATH in shell configs
+	fmt.Println("🔄 Updating shell configuration...")
+	if err := updateShellConfig(targetDir); err != nil {
+		fmt.Printf("⚠️  Could not automatically update shell config: %v\n", err)
+		fmt.Printf("   Please add %s to your PATH manually\n", targetDir)
+	}
+
+	fmt.Printf("✅ Migrated installation to %s\n", targetPath)
+	fmt.Println("🔄 Please restart your terminal to use the new installation path")
+
+	return nil
+}
+
+// updateShellConfig adds the new installation directory to shell config files
+func updateShellConfig(binDir string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	// Determine shell and config file
+	shell := os.Getenv("SHELL")
+	var configFiles []string
+	var pathExport string
+
+	switch {
+	case strings.Contains(shell, "fish"):
+		configFiles = []string{homeDir + "/.config/fish/config.fish"}
+		pathExport = fmt.Sprintf("set -gx PATH %s $PATH", binDir)
+	case strings.Contains(shell, "zsh"):
+		configFiles = []string{homeDir + "/.zshrc"}
+		pathExport = fmt.Sprintf("export PATH=\"%s:$PATH\"", binDir)
+	case strings.Contains(shell, "bash"):
+		configFiles = []string{homeDir + "/.bashrc", homeDir + "/.bash_profile"}
+		pathExport = fmt.Sprintf("export PATH=\"%s:$PATH\"", binDir)
+	default:
+		configFiles = []string{homeDir + "/.profile"}
+		pathExport = fmt.Sprintf("export PATH=\"%s:$PATH\"", binDir)
+	}
+
+	// Try to add to the first writable config file
+	for _, configFile := range configFiles {
+		// Check if PATH entry already exists
+		// #nosec G304 - configFile is constructed from known safe paths
+		if content, err := os.ReadFile(configFile); err == nil {
+			if strings.Contains(string(content), binDir) {
+				return nil // Already in PATH
+			}
+		}
+
+		// #nosec G304 - configFile is constructed from known safe paths
+		if file, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0o600); err == nil {
+			// Add to config file
+			if _, err := fmt.Fprintf(file, "\n# vapi\n%s\n", pathExport); err == nil {
+				// Close file before printing success message
+				if closeErr := file.Close(); closeErr != nil {
+					fmt.Printf("Warning: failed to close config file: %v\n", closeErr)
+				}
+				fmt.Printf("✅ Added %s to PATH in %s\n", binDir, configFile)
+				return nil
+			}
+			// Close file if write failed
+			if closeErr := file.Close(); closeErr != nil {
+				fmt.Printf("Warning: failed to close config file: %v\n", closeErr)
+			}
+		}
+	}
+
+	return fmt.Errorf("no writable shell config file found")
 }
 
 func getOSName() string {
