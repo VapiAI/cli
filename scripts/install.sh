@@ -96,6 +96,7 @@ bin_env=\$$install_env/bin
 
 install_dir=${!install_env:-$HOME/.vapi}
 bin_dir=$install_dir/bin
+man_dir=$install_dir/share/man/man1
 exe=$bin_dir/vapi
 
 if [[ ! -d $bin_dir ]]; then
@@ -103,17 +104,27 @@ if [[ ! -d $bin_dir ]]; then
         error "Failed to create install directory \"$bin_dir\""
 fi
 
+# Create man page directory for Unix systems
+if [[ $platform != MINGW64* ]]; then
+    if [[ ! -d $man_dir ]]; then
+        mkdir -p "$man_dir" ||
+            info "Warning: Failed to create man directory \"$man_dir\""
+    fi
+fi
+
 curl --fail --location --progress-bar --output "$exe.tar.gz" "$vapi_uri" ||
     error "Failed to download vapi from \"$vapi_uri\""
 
-tar -xzf "$exe.tar.gz" -C "$bin_dir" ||
+# Extract to a temporary directory first to examine contents
+temp_extract_dir=$(mktemp -d)
+tar -xzf "$exe.tar.gz" -C "$temp_extract_dir" ||
     error 'Failed to extract vapi'
 
-# Handle different possible binary names
-if [[ -f "$bin_dir/vapi.exe" ]]; then
-    mv "$bin_dir/vapi.exe" "$exe"
-elif [[ -f "$bin_dir/vapi" ]]; then
-    mv "$bin_dir/vapi" "$exe"
+# Find and move the binary
+if [[ -f "$temp_extract_dir/vapi.exe" ]]; then
+    mv "$temp_extract_dir/vapi.exe" "$exe"
+elif [[ -f "$temp_extract_dir/vapi" ]]; then
+    mv "$temp_extract_dir/vapi" "$exe"
 else
     error 'Failed to find vapi binary in extracted files'
 fi
@@ -121,6 +132,31 @@ fi
 chmod +x "$exe" ||
     error 'Failed to set permissions on vapi executable'
 
+# Install man pages if available and on Unix systems
+if [[ $platform != MINGW64* ]]; then
+    man_pages_found=0
+    for man_file in "$temp_extract_dir"/man/*.1 2>/dev/null; do
+        if [[ -f "$man_file" ]]; then
+            cp "$man_file" "$man_dir/" 2>/dev/null || true
+            man_pages_found=$((man_pages_found + 1))
+        fi
+    done
+    
+    # Also check for man pages in root of archive
+    for man_file in "$temp_extract_dir"/*.1 2>/dev/null; do
+        if [[ -f "$man_file" ]]; then
+            cp "$man_file" "$man_dir/" 2>/dev/null || true
+            man_pages_found=$((man_pages_found + 1))
+        fi
+    done
+    
+    if [[ $man_pages_found -gt 0 ]]; then
+        info "Installed $man_pages_found manual page(s)"
+    fi
+fi
+
+# Cleanup
+rm -rf "$temp_extract_dir"
 rm "$exe.tar.gz"
 
 tildify() {
@@ -142,6 +178,7 @@ fi
 refresh_command=''
 
 tilde_bin_dir=$(tildify "$bin_dir")
+tilde_man_dir=$(tildify "$man_dir")
 quoted_install_dir=\"${install_dir//\"/\\\"}\"
 
 if [[ $quoted_install_dir = \"$HOME/* ]]; then
@@ -157,6 +194,11 @@ fish)
         "set --export PATH $bin_env \$PATH"
     )
 
+    # Add MANPATH for manual pages on Unix systems
+    if [[ $platform != MINGW64* ]]; then
+        commands+=("set --export MANPATH $quoted_install_dir/share/man \$MANPATH")
+    fi
+
     fish_config=$HOME/.config/fish/config.fish
     tilde_fish_config=$(tildify "$fish_config")
 
@@ -169,6 +211,9 @@ fish)
         } >>"$fish_config"
 
         info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_fish_config\""
+        if [[ $platform != MINGW64* ]]; then
+            info "Added \"$tilde_man_dir\" to \$MANPATH in \"$tilde_fish_config\""
+        fi
         refresh_command="source $tilde_fish_config"
     else
         echo "Manually add the directory to $tilde_fish_config (or similar):"
@@ -183,6 +228,11 @@ zsh)
         "export PATH=\"$bin_env:\$PATH\""
     )
 
+    # Add MANPATH for manual pages on Unix systems
+    if [[ $platform != MINGW64* ]]; then
+        commands+=("export MANPATH=\"$quoted_install_dir/share/man:\$MANPATH\"")
+    fi
+
     zsh_config=$HOME/.zshrc
     tilde_zsh_config=$(tildify "$zsh_config")
 
@@ -195,6 +245,9 @@ zsh)
         } >>"$zsh_config"
 
         info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_zsh_config\""
+        if [[ $platform != MINGW64* ]]; then
+            info "Added \"$tilde_man_dir\" to \$MANPATH in \"$tilde_zsh_config\""
+        fi
         refresh_command="exec $SHELL"
     else
         echo "Manually add the directory to $tilde_zsh_config (or similar):"
@@ -208,6 +261,11 @@ bash)
         "export $install_env=$quoted_install_dir"
         "export PATH=\"$bin_env:\$PATH\""
     )
+
+    # Add MANPATH for manual pages on Unix systems
+    if [[ $platform != MINGW64* ]]; then
+        commands+=("export MANPATH=\"$quoted_install_dir/share/man:\$MANPATH\"")
+    fi
 
     bash_configs=(
         "$HOME/.bashrc"
@@ -236,6 +294,9 @@ bash)
             } >>"$bash_config"
 
             info "Added \"$tilde_bin_dir\" to \$PATH in \"$tilde_bash_config\""
+            if [[ $platform != MINGW64* ]]; then
+                info "Added \"$tilde_man_dir\" to \$MANPATH in \"$tilde_bash_config\""
+            fi
             refresh_command="source $bash_config"
             set_manually=false
             break
@@ -253,6 +314,9 @@ bash)
     echo 'Manually add the directory to ~/.bashrc (or similar):'
     info_bold "  export $install_env=$quoted_install_dir"
     info_bold "  export PATH=\"$bin_env:\$PATH\""
+    if [[ $platform != MINGW64* ]]; then
+        info_bold "  export MANPATH=\"$quoted_install_dir/share/man:\$MANPATH\""
+    fi
     ;;
 esac
 
@@ -265,3 +329,12 @@ if [[ $refresh_command ]]; then
 fi
 
 info_bold "  vapi --help"
+
+# Display manual page information for Unix systems
+if [[ $platform != MINGW64* ]]; then
+    echo
+    info "Manual pages available:"
+    info_bold "  man vapi"
+    info_bold "  man vapi-assistant"
+    info_bold "  man vapi-call"
+fi

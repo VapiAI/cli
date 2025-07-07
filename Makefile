@@ -105,6 +105,7 @@ clean:
 	@echo "Cleaning..."
 	$(GOCLEAN)
 	rm -rf $(BUILD_DIR)
+	rm -rf man
 	rm -f coverage.out coverage.html
 
 # Clean everything (CLI + MCP server)
@@ -131,11 +132,22 @@ lint:
 # Run all linters (CLI + MCP server)
 lint-all: lint lint-mcp
 
-# Install the binary locally
-install: build
+# Generate manual pages
+man-pages: build
+	@echo "Generating manual pages..."
+	@mkdir -p man
+	@$(BINARY_PATH) manual --output ./man
+	@echo "✅ Manual pages generated in ./man/"
+
+# Install the binary and manual pages locally
+install: build man-pages
 	@echo "Installing $(BINARY_NAME)..."
 	@mkdir -p $(HOME)/.local/bin
 	@cp $(BINARY_PATH) $(HOME)/.local/bin/
+	@echo "Installing manual pages..."
+	@mkdir -p $(HOME)/.local/share/man/man1
+	@cp ./man/*.1 $(HOME)/.local/share/man/man1/ 2>/dev/null || true
+	@command -v mandb >/dev/null 2>&1 && mandb -q $(HOME)/.local/share/man || true
 	@echo "Installed to $(HOME)/.local/bin/$(BINARY_NAME)"
 
 # Install MCP server globally
@@ -180,7 +192,8 @@ help:
 	@echo ""
 	@echo "📦 CLI Commands:"
 	@echo "  build              Build the CLI binary"
-	@echo "  install            Install the CLI to ~/.local/bin"
+	@echo "  man-pages          Generate Unix manual pages"
+	@echo "  install            Install the CLI and manual pages to ~/.local/"
 	@echo "  test               Run CLI tests"
 	@echo "  lint               Run CLI linters"
 	@echo "  clean              Clean CLI build artifacts"
@@ -215,4 +228,4 @@ help:
 	@echo "  make version-set VERSION=1.2.3"
 	@echo "  make publish-mcp            # Publish MCP server to npm"
 
-.PHONY: all build build-mcp build-all test test-mcp test-all test-coverage clean clean-mcp clean-all tidy deps mcp-deps deps-all lint lint-mcp lint-all install install-mcp install-all run publish-mcp help 
+.PHONY: all build build-mcp build-all test test-mcp test-all test-coverage clean clean-mcp clean-all tidy deps mcp-deps deps-all lint lint-mcp lint-all man-pages install install-mcp install-all run publish-mcp help 

@@ -3,6 +3,9 @@
 /vapi
 *.exe
 
+# Generated manual pages
+/man/
+
 # Test artifacts
 coverage.out
 coverage.html

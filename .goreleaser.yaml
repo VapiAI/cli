@@ -7,6 +7,9 @@ before:
   hooks:
     - go mod tidy
     - go test ./...
+    # Generate manual pages for distribution
+    - mkdir -p man
+    - go run main.go manual --output ./man
 
 builds:
   - id: vapi
@@ -46,6 +49,7 @@ archives:
     files:
       - README.md
       - LICENSE
+      - man/*.1
 
 checksum:
   name_template: 'checksums.txt'

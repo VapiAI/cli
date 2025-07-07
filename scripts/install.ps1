@@ -22,6 +22,7 @@ if (-not $IsWindows) {
 $Repo = "VapiAI/cli"
 $BinaryName = "vapi.exe"
 $InstallDir = "$env:LOCALAPPDATA\Programs\Vapi"
+$ManDir = "$InstallDir\docs\man"
 
 # Helper functions
 function Write-Info($Message) {
@@ -81,7 +82,7 @@ function Get-LatestVersion {
 
 # Download and install
 function Install-Vapi($Version, $Platform) {
-    $url = "https://github.com/$Repo/releases/download/$Version/vapi_$Platform.tar.gz"
+    $url = "https://github.com/$Repo/releases/download/$Version/cli_$Platform.tar.gz"
     $tempDir = [System.IO.Path]::GetTempPath() + [System.Guid]::NewGuid().ToString()
     $tarFile = "$tempDir\vapi.tar.gz"
     
@@ -113,6 +114,11 @@ function Install-Vapi($Version, $Platform) {
             New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
         }
         
+        # Create man page directory
+        if (-not (Test-Path $ManDir)) {
+            New-Item -ItemType Directory -Path $ManDir -Force | Out-Null
+        }
+        
         # Move binary to install directory
         $binaryPath = "$tempDir\vapi.exe"
         if (-not (Test-Path $binaryPath)) {
@@ -123,6 +129,34 @@ function Install-Vapi($Version, $Platform) {
             Copy-Item $binaryPath "$InstallDir\$BinaryName" -Force
         } else {
             Write-Error "Binary not found after extraction"
+        }
+        
+        # Extract man pages if available
+        $manPagesFound = 0
+        $manFiles = @()
+        
+        # Check for man pages in man/ subdirectory
+        $manSubdir = "$tempDir\man"
+        if (Test-Path $manSubdir) {
+            $manFiles += Get-ChildItem "$manSubdir\*.1" -ErrorAction SilentlyContinue
+        }
+        
+        # Check for man pages in root directory
+        $manFiles += Get-ChildItem "$tempDir\*.1" -ErrorAction SilentlyContinue
+        
+        foreach ($manFile in $manFiles) {
+            try {
+                Copy-Item $manFile.FullName $ManDir -Force
+                $manPagesFound++
+            }
+            catch {
+                # Continue on error - man pages are not critical for Windows
+            }
+        }
+        
+        if ($manPagesFound -gt 0) {
+            Write-Info "Extracted $manPagesFound manual page(s) to $ManDir"
+            Write-Info "Note: Manual pages are primarily for Unix systems. On Windows, use 'vapi --help' for documentation."
         }
         
         Write-Info "Vapi CLI installed successfully to: $InstallDir"
@@ -177,6 +211,15 @@ function Test-Installation {
                 Write-Host "  vapi login" -ForegroundColor White
                 Write-Host "  vapi --help" -ForegroundColor White
                 Write-Host ""
+                
+                # Check if man pages were installed
+                if (Test-Path "$ManDir\vapi.1") {
+                    Write-Host "Documentation:" -ForegroundColor Cyan
+                    Write-Host "  Manual pages are available in: $ManDir" -ForegroundColor White
+                    Write-Host "  Use 'vapi --help' for command-line help" -ForegroundColor White
+                    Write-Host ""
+                }
+                
                 Write-Warning "Please restart your terminal or PowerShell session to use 'vapi' command globally."
             } else {
                 Write-Warning "Vapi CLI was installed but verification failed (exit code: $LASTEXITCODE)"
