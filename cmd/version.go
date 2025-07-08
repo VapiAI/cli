@@ -50,20 +50,45 @@ func SetVersion(v, c, d, b string) {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
-	Long:  `Print detailed version information about the Vapi CLI.`,
+	Long:  `Print detailed version information about the Vapi CLI including MCP server compatibility.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("vapi version %s\n", version)
-		fmt.Printf("  commit: %s\n", commit)
-		fmt.Printf("  built at: %s\n", date)
-		fmt.Printf("  built by: %s\n", builtBy)
-		fmt.Printf("  go version: %s\n", runtime.Version())
-		fmt.Printf("  platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+		fmt.Printf("🔧 Vapi CLI v%s\n", version)
+		fmt.Printf("\n📊 Build Information:\n")
+		fmt.Printf("  Commit: %s\n", commit)
+		fmt.Printf("  Built at: %s\n", date)
+		fmt.Printf("  Built by: %s\n", builtBy)
+		fmt.Printf("  Go version: %s\n", runtime.Version())
+		fmt.Printf("  Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+
+		// Show MCP server compatibility
+		fmt.Printf("\n🧠 MCP Integration:\n")
+		fmt.Printf("  Compatible MCP server: @vapi-ai/mcp-docs-server@%s\n", version)
+		fmt.Printf("  MCP setup: vapi mcp setup\n")
+		fmt.Printf("  MCP status: vapi mcp status\n")
 
 		// Show environment information for developers
 		if cfg, err := config.LoadConfig(); err == nil {
 			if !cfg.IsProduction() {
-				fmt.Printf("  environment: %s\n", cfg.GetEnvironment())
-				fmt.Printf("  api url: %s\n", cfg.GetAPIBaseURL())
+				fmt.Printf("\n🛠️  Development Environment:\n")
+				fmt.Printf("  Environment: %s\n", cfg.GetEnvironment())
+				fmt.Printf("  API URL: %s\n", cfg.GetAPIBaseURL())
+			}
+		}
+
+		// Show installation info
+		fmt.Printf("\n📦 Installation:\n")
+		execPath, err := os.Executable()
+		if err == nil {
+			fmt.Printf("  Executable: %s\n", execPath)
+		}
+
+		// Check if man pages are available
+		if runtime.GOOS != "windows" {
+			fmt.Printf("  Manual pages: ")
+			if isManPageInstalled() {
+				fmt.Printf("✅ Available (man vapi)\n")
+			} else {
+				fmt.Printf("❌ Not installed (run 'vapi install-man-pages')\n")
 			}
 		}
 
@@ -71,8 +96,10 @@ var versionCmd = &cobra.Command{
 		go func() {
 			if shouldCheckForUpdates() {
 				if release, hasUpdate, err := checkForUpdates(); err == nil && hasUpdate {
-					fmt.Printf("\n🚀 Update available: %s → %s\n", version, release.TagName)
-					fmt.Printf("   Run 'vapi update' to upgrade\n")
+					fmt.Printf("\n🚀 Update Available:\n")
+					fmt.Printf("  Current: v%s\n", version)
+					fmt.Printf("  Latest: %s\n", release.TagName)
+					fmt.Printf("  Run: vapi update\n")
 
 					// Update last check time
 					updateLastCheckTime()
@@ -130,6 +157,25 @@ func getConfigDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(homeDir, ".vapi-cli"), nil
+}
+
+// isManPageInstalled checks if the vapi man page is installed
+func isManPageInstalled() bool {
+	// Check common man page locations
+	manDirs := []string{
+		"/usr/local/share/man/man1",
+		"/usr/share/man/man1",
+		"/opt/homebrew/share/man/man1",
+	}
+
+	for _, dir := range manDirs {
+		manFile := filepath.Join(dir, "vapi.1")
+		if _, err := os.Stat(manFile); err == nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func init() {

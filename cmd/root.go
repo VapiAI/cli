@@ -84,11 +84,30 @@ func displayBanner() {
 	fmt.Println()
 }
 
-// The main CLI command that displays help when run without subcommands
+// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vapi",
-	Short: "Voice AI for developers - Vapi CLI",
-	Long:  `The official CLI for Vapi - build voice AI agents that make phone calls`,
+	Short: "Official Vapi CLI - Build voice AI applications with ease",
+	Long: `🎤 Vapi CLI - The official command-line interface for Vapi
+
+Build, deploy, and manage voice AI applications with the power of Vapi's platform.
+From simple voice assistants to complex phone call workflows, the Vapi CLI provides
+everything you need to create production-ready voice AI solutions.
+
+🚀 Getting Started:
+  vapi login                    # Authenticate with your Vapi account
+  vapi init                     # Initialize Vapi in your project
+  vapi mcp setup                # Set up IDE integration for better development
+
+🎯 Common Tasks:
+  vapi assistant list           # View your voice assistants
+  vapi call create             # Make outbound calls programmatically  
+  vapi phone list              # Manage phone numbers
+  vapi logs                    # View call logs and system events
+
+📚 Documentation: https://docs.vapi.ai
+💬 Community: https://discord.gg/vapi
+🐛 Issues: https://github.com/VapiAI/cli/issues`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Track command execution
 		startTime := time.Now()

@@ -371,36 +371,43 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// Framework-specific instructions
-	switch project.ProjectType {
-	case integrations.ProjectTypeWeb:
-		fmt.Printf("%d. Import and use Vapi in your application\n", stepNum)
-		fmt.Println("   - Check the generated components in your project")
-		fmt.Println("   - Use the VapiButton component or useVapi hook")
-	case integrations.ProjectTypeBackend:
-		fmt.Printf("%d. Run the example code:\n", stepNum)
+	if project.ProjectType != integrations.ProjectTypeUnknown {
+		fmt.Printf("%d. Framework-specific setup:\n", stepNum)
+
 		switch project.Framework {
-		case integrations.FrameworkPython:
-			fmt.Println("   python vapi_examples/basic_example.py")
-		case integrations.FrameworkGolang:
-			fmt.Println("   go run examples/vapi/basic_example.go")
+		case integrations.FrameworkReact:
+			fmt.Println("   - Add the Vapi component to your app")
+			fmt.Println("   - Configure the voice interface in your main component")
+		case integrations.FrameworkNext:
+			fmt.Println("   - Add Vapi to your Next.js pages or components")
+			fmt.Println("   - Consider using the useVapi hook for state management")
 		case integrations.FrameworkNode:
-			if project.IsTypeScript {
-				fmt.Println("   npx tsx vapi-examples/basic-example.ts")
-			} else {
-				fmt.Println("   node vapi-examples/basic-example.js")
-			}
-		case integrations.FrameworkReact, integrations.FrameworkVue, integrations.FrameworkAngular,
-			integrations.FrameworkSvelte, integrations.FrameworkNext, integrations.FrameworkNuxt,
-			integrations.FrameworkRemix, integrations.FrameworkVanilla, integrations.FrameworkReactNative,
-			integrations.FrameworkFlutter, integrations.FrameworkRuby, integrations.FrameworkJava,
-			integrations.FrameworkCSharp, integrations.FrameworkUnknown:
-			fmt.Println("   Check the generated example code")
+			fmt.Println("   - Set up webhook endpoints for call events")
+			fmt.Println("   - Create assistant configuration and call management routes")
+		case integrations.FrameworkPython:
+			fmt.Println("   - Configure webhook handlers for call events")
+			fmt.Println("   - Set up assistant and call management endpoints")
 		}
-	case integrations.ProjectTypeMobile:
-		fmt.Printf("%d. Check the generated example code\n", stepNum)
-	case integrations.ProjectTypeUnknown:
-		fmt.Printf("%d. Check the Vapi documentation for integration instructions\n", stepNum)
+		fmt.Println()
+		stepNum++
 	}
+
+	// MCP Integration recommendation (v0.1.9 feature)
+	fmt.Printf("%d. 🧠 Set up IDE Integration (Recommended):\n", stepNum)
+	fmt.Println("   vapi mcp setup")
+	fmt.Println("   This turns your IDE into a Vapi expert with:")
+	fmt.Println("   • Real-time access to 138+ documentation pages")
+	fmt.Println("   • Smart code suggestions and examples")
+	fmt.Println("   • No more hallucinated API information")
+	fmt.Println("   • Works with Cursor, Windsurf, and VSCode")
+	fmt.Println()
+	stepNum++
+
+	// Testing and deployment
+	fmt.Printf("%d. Test and deploy:\n", stepNum)
+	fmt.Println("   - Test your voice integration locally")
+	fmt.Println("   - Set up webhooks for production")
+	fmt.Println("   - Deploy with your API keys configured")
 	fmt.Println()
 
 	// Offer to open documentation

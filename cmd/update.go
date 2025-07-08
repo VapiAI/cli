@@ -25,12 +25,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	versionpkg "github.com/VapiAI/cli/pkg/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
 // GitHubRelease represents a GitHub release
@@ -76,11 +79,11 @@ func runUpdateCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if !hasUpdate {
-		fmt.Printf("✅ You're already running the latest version: %s\n", version)
+		fmt.Printf("✅ You're already running the latest version: %s\n", versionpkg.Get())
 		return nil
 	}
 
-	fmt.Printf("🆕 New version available: %s (current: %s)\n", latestRelease.TagName, version)
+	fmt.Printf("🆕 New version available: %s (current: %s)\n", latestRelease.TagName, versionpkg.Get())
 	fmt.Printf("📅 Released: %s\n", formatReleaseDate(latestRelease.PublishedAt))
 
 	if latestRelease.Body != "" {
@@ -104,6 +107,18 @@ func runUpdateCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✅ Successfully updated to version %s!\n", latestRelease.TagName)
+
+	// Auto-install man pages for users updating from old versions (v0.1.8 feature)
+	if shouldAutoInstallManPages() {
+		fmt.Println("📚 Installing manual pages...")
+		if err := autoInstallManPages(); err != nil {
+			fmt.Printf("⚠️  Could not auto-install manual pages: %v\n", err)
+			fmt.Println("💡 You can install them manually with: vapi install-man-pages")
+		} else {
+			fmt.Println("✅ Manual pages installed! Try 'man vapi' for help.")
+		}
+	}
+
 	fmt.Println("🔄 Please restart your terminal or run 'hash -r' to use the new version.")
 
 	return nil
@@ -118,11 +133,11 @@ func runCheckUpdateCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if !hasUpdate {
-		fmt.Printf("✅ You're running the latest version: %s\n", version)
+		fmt.Printf("✅ You're running the latest version: %s\n", versionpkg.Get())
 		return nil
 	}
 
-	fmt.Printf("🆕 New version available: %s (current: %s)\n", latestRelease.TagName, version)
+	fmt.Printf("🆕 New version available: %s (current: %s)\n", latestRelease.TagName, versionpkg.Get())
 	fmt.Printf("📅 Released: %s\n", formatReleaseDate(latestRelease.PublishedAt))
 
 	if latestRelease.Body != "" {
@@ -174,7 +189,7 @@ func checkForUpdates() (*GitHubRelease, bool, error) {
 	}
 
 	// Compare versions using semantic version comparison
-	currentVersion := strings.TrimPrefix(version, "v")
+	currentVersion := strings.TrimPrefix(versionpkg.Get(), "v")
 	latestVersion := strings.TrimPrefix(release.TagName, "v")
 
 	// Skip if current version is "dev" (development build)
@@ -554,6 +569,98 @@ func formatReleaseDate(dateStr string) string {
 }
 
 func init() {
-	rootCmd.AddCommand(updateCmd)
 	updateCmd.AddCommand(checkUpdateCmd)
+	rootCmd.AddCommand(updateCmd)
+}
+
+// shouldAutoInstallManPages determines if man pages should be auto-installed
+func shouldAutoInstallManPages() bool {
+	// Only auto-install on Unix-like systems
+	if runtime.GOOS == "windows" {
+		return false
+	}
+
+	// Check if man pages are already installed
+	if isManPageInstalled() {
+		return false
+	}
+
+	// Only auto-install if we have appropriate permissions or can get them
+	return true
+}
+
+// autoInstallManPages attempts to install man pages automatically
+func autoInstallManPages() error {
+	// Import the manual.go functions we need
+	tmpDir := os.TempDir() + "/vapi-auto-man-pages"
+	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Generate man pages (simplified version of the manual command)
+	if err := generateManPagesTo(tmpDir); err != nil {
+		return fmt.Errorf("failed to generate man pages: %w", err)
+	}
+
+	// Find installation directory
+	manDir := getManPageInstallDir()
+	if manDir == "" {
+		return fmt.Errorf("no suitable man page directory found")
+	}
+
+	// Try to install with current permissions
+	if err := installManPagesTo(tmpDir, manDir); err != nil {
+		return fmt.Errorf("failed to install man pages: %w", err)
+	}
+
+	// Try to update man database
+	updateManDatabase()
+
+	return nil
+}
+
+// generateManPagesTo generates man pages to a specific directory
+func generateManPagesTo(outputDir string) error {
+	header := &doc.GenManHeader{
+		Title:   "VAPI",
+		Section: "1",
+		Source:  fmt.Sprintf("Vapi CLI %s", versionpkg.Get()),
+		Manual:  "Vapi CLI Manual",
+		Date:    &[]time.Time{time.Now()}[0],
+	}
+
+	return doc.GenManTree(rootCmd, header, outputDir)
+}
+
+// installManPagesTo copies man pages from source to destination directory
+func installManPagesTo(sourceDir, destDir string) error {
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// Find all .1 files in source directory
+	files, err := filepath.Glob(filepath.Join(sourceDir, "*.1"))
+	if err != nil {
+		return fmt.Errorf("failed to find man pages: %w", err)
+	}
+
+	// Copy each file
+	for _, file := range files {
+		fileName := filepath.Base(file)
+		destPath := filepath.Join(destDir, fileName)
+
+		if err := copyFile(file, destPath); err != nil {
+			return fmt.Errorf("failed to copy %s: %w", fileName, err)
+		}
+
+		// Set appropriate permissions
+		if err := os.Chmod(destPath, 0o644); err != nil {
+			// Don't fail on permission errors, just warn
+			fmt.Printf("Warning: failed to set permissions on %s\n", fileName)
+		}
+	}
+
+	return nil
 }

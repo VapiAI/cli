@@ -4,6 +4,7 @@ import { getExamples } from "./tools/examples.js";
 import { getGuides } from "./tools/guides.js";
 import { handleApiReference } from './tools/api-reference.js';
 import { getChangelog } from "./tools/changelog.js";
+import { forceReindex } from "./tools/force-reindex.js";
 import { DocumentationSource } from "./resources/documentation.js";
 
 export class VapiDocsServer {
@@ -138,6 +139,25 @@ export class VapiDocsServer {
           },
         },
       },
+      {
+        name: "force_reindex",
+        description: "Force a complete re-index of documentation for testing purposes",
+        inputSchema: {
+          type: "object",
+          properties: {
+            clearCache: {
+              type: "boolean",
+              description: "Whether to clear existing cache before reindexing",
+              default: true,
+            },
+            skipVectorIndex: {
+              type: "boolean",
+              description: "Whether to skip vector index rebuilding",
+              default: false,
+            },
+          },
+        },
+      },
     ];
   }
 
@@ -222,6 +242,13 @@ export class VapiDocsServer {
           );
           break;
 
+        case "force_reindex":
+          result = await forceReindex(
+            args.clearCache as boolean,
+            args.skipVectorIndex as boolean
+          );
+          break;
+
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
@@ -253,7 +280,7 @@ export class VapiDocsServer {
   async readResource(uri: string): Promise<{ contents: Array<{ type: string; text: string }> }> {
     try {
       const content = await this.documentationSource.getResource(uri);
-      
+
       return {
         contents: [
           {

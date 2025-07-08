@@ -67,14 +67,22 @@ Visit the official changelog link above for the complete list of updates!`;
       if (!changelogPage) continue;
       
       try {
-        const content = await docsFetcher.fetchPageContent(changelogPage);
-        
-        response += `## 📄 ${changelogPage.title}\n\n`;
-        response += `**Section:** ${changelogPage.section}\n`;
+        response += `## 📅 ${i + 1}. ${changelogPage.title}\n\n`;
         response += `**URL:** ${changelogPage.url}\n\n`;
         
-        // Add the actual content
-        response += `### Content:\n\n${content}\n\n`;
+        // Use the already-extracted content
+        if (changelogPage.content && changelogPage.content.length > 50) {
+          // Truncate very long content for readability
+          let contentToShow = changelogPage.content;
+          if (contentToShow.length > 1500) {
+            contentToShow = contentToShow.substring(0, 1500) + '...\n\n*[Content truncated - visit URL for complete changelog]*';
+          }
+          
+          response += `### Changes:\n\n${contentToShow}\n\n`;
+        } else {
+          response += `*Content extraction in progress - visit URL for complete changelog*\n\n`;
+        }
+        
         response += `---\n\n`;
         
       } catch (error) {

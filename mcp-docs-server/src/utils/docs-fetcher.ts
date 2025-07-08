@@ -1,20 +1,21 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import yaml from 'yaml';
-import axios from 'axios';
 import os from 'os';
+import { execSync } from 'child_process';
 import { VectorSearch } from './vector-search.js';
 
 export interface DocPage {
   title: string;
   path: string;
   icon?: string;
-  content?: string;
+  content: string;
   url: string;
   category: string;
   section: string;
   subsection?: string;
   level: number;
+  rawMdxPath: string;
 }
 
 export interface DocStructure {
@@ -23,23 +24,54 @@ export interface DocStructure {
   categories: Map<string, DocPage[]>;
   lastUpdated: Date;
   version: string;
+  repoPath: string;
 }
 
 interface CacheEntry {
   data: DocStructure;
   timestamp: number;
-  etag?: string;
+  gitHash?: string;
 }
 
 export class DocsFetcher {
   private docsCache: DocStructure | null = null;
-  private readonly GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/VapiAI/docs/main';
-  private readonly DOCS_YML_URL = 'https://raw.githubusercontent.com/VapiAI/docs/main/fern/docs.yml';
+  private readonly VAPI_DOCS_REPO = 'https://github.com/VapiAI/docs.git';
   private readonly CACHE_TTL = 1000 * 60 * 60; // 1 hour
   private readonly CACHE_FILE_PATH = path.join(os.tmpdir(), 'vapi-docs-cache.json');
+  private readonly REPO_PATH = path.join(os.tmpdir(), 'vapi-docs-repo');
   private backgroundRefreshPromise: Promise<void> | null = null;
   private vectorSearch: VectorSearch = new VectorSearch();
   private vectorIndexingPromise: Promise<void> | null = null;
+  private refreshInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    // Start automatic hourly refresh
+    this.startAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    // Refresh every hour
+    this.refreshInterval = setInterval(async () => {
+      try {
+        console.log('⏰ Starting scheduled hourly refresh...');
+        await this.invalidateCache();
+        await this.getDocumentationStructure();
+        console.log('✅ Scheduled refresh completed');
+      } catch (error) {
+        console.error('❌ Scheduled refresh failed:', error);
+      }
+    }, this.CACHE_TTL);
+    
+    console.log('⏰ Automatic hourly refresh scheduled');
+  }
+
+  public stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+      console.log('⏰ Automatic refresh stopped');
+    }
+  }
 
   async getDocumentationStructure(): Promise<DocStructure> {
     // Check memory cache first
@@ -66,23 +98,30 @@ export class DocsFetcher {
     }
 
     // Fetch fresh data
-    console.log('🔄 Fetching fresh documentation from Vapi...');
+    console.log('🔄 Fetching fresh documentation from VapiAI/docs repo...');
     return await this.fetchFreshDocumentation();
   }
 
   private async fetchFreshDocumentation(): Promise<DocStructure> {
     try {
-      // Fetch docs.yml structure from the official source
-      const response = await axios.get(this.DOCS_YML_URL, {
-        headers: {
-          'User-Agent': 'Vapi-MCP-Docs-Server/1.0'
-        }
-      });
+      // Clone or update the repo
+      await this.ensureRepoCloned();
       
-      const docsConfig = yaml.parse(response.data);
+      // Get current git hash for cache validation
+      const gitHash = this.getGitHash();
       
-      // Parse the navigation structure
+      // Parse docs.yml to get the navigation structure
+      const docsYmlPath = path.join(this.REPO_PATH, 'fern', 'docs.yml');
+      const docsYmlContent = await fs.readFile(docsYmlPath, 'utf-8');
+      const docsConfig = yaml.parse(docsYmlContent);
+      
+      console.log('📖 Parsing documentation structure from docs.yml...');
+      
+      // Parse the navigation structure and extract real content
       const pages = await this.parseNavigationStructure(docsConfig.navigation);
+      
+      // Extract actual content from MDX files
+      await this.extractRealMdxContent(pages);
       
       // Organize into sections and categories
       const sections = new Map<string, DocPage[]>();
@@ -107,7 +146,8 @@ export class DocsFetcher {
         sections,
         categories,
         lastUpdated: new Date(),
-        version: 'live'
+        version: gitHash.substring(0, 8),
+        repoPath: this.REPO_PATH
       };
 
       // Save to memory and disk cache
@@ -115,13 +155,13 @@ export class DocsFetcher {
       await this.saveToDiskCache({
         data: docStructure,
         timestamp: Date.now(),
-        etag: response.headers.etag
+        gitHash
       });
 
       // Start vector indexing in background
       this.ensureVectorIndexing();
 
-      console.log(`✅ Fetched ${pages.length} documentation pages`);
+      console.log(`✅ Fetched ${pages.length} documentation pages with real content`);
       return docStructure;
       
     } catch (error) {
@@ -139,6 +179,226 @@ export class DocsFetcher {
     }
   }
 
+  private async ensureRepoCloned(): Promise<void> {
+    try {
+      // Check if git is available
+      try {
+        execSync('git --version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('Git is not installed or not available in PATH. Please install git to use this MCP server.');
+      }
+
+      // Check if repo exists and is up to date
+      if (await this.isRepoCloned()) {
+        console.log('🔄 Updating existing repo...');
+        try {
+          execSync('git fetch origin main', { 
+            cwd: this.REPO_PATH, 
+            stdio: 'pipe',
+            timeout: 30000 // 30 second timeout
+          });
+          
+          execSync('git reset --hard origin/main', { 
+            cwd: this.REPO_PATH, 
+            stdio: 'pipe',
+            timeout: 10000 // 10 second timeout
+          });
+        } catch (error) {
+          console.warn('⚠️  Failed to update repo, will re-clone:', error);
+          // If update fails, remove and re-clone
+          await fs.rm(this.REPO_PATH, { recursive: true, force: true });
+          await this.cloneRepo();
+        }
+      } else {
+        await this.cloneRepo();
+      }
+      
+      console.log('✅ Repository ready');
+    } catch (error) {
+      console.error('❌ Failed to clone/update repository:', error);
+      throw new Error(`Git operation failed: ${error}`);
+    }
+  }
+
+  private async cloneRepo(): Promise<void> {
+    console.log('📥 Cloning VapiAI/docs repository...');
+    
+    // Remove any existing incomplete clone
+    try {
+      await fs.rm(this.REPO_PATH, { recursive: true, force: true });
+    } catch {}
+    
+    try {
+      execSync(`git clone --depth 1 ${this.VAPI_DOCS_REPO} ${this.REPO_PATH}`, { 
+        stdio: 'pipe',
+        timeout: 60000 // 60 second timeout for cloning
+      });
+    } catch (error) {
+      // Try without depth limit if shallow clone fails
+      console.warn('⚠️  Shallow clone failed, trying full clone...');
+      try {
+        await fs.rm(this.REPO_PATH, { recursive: true, force: true });
+      } catch {}
+      
+      execSync(`git clone ${this.VAPI_DOCS_REPO} ${this.REPO_PATH}`, { 
+        stdio: 'pipe',
+        timeout: 120000 // 2 minute timeout for full clone
+      });
+    }
+  }
+
+  private async isRepoCloned(): Promise<boolean> {
+    try {
+      const gitDir = path.join(this.REPO_PATH, '.git');
+      await fs.access(gitDir);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private getGitHash(): string {
+    try {
+      return execSync('git rev-parse HEAD', { 
+        cwd: this.REPO_PATH, 
+        encoding: 'utf-8' 
+      }).trim();
+    } catch {
+      return 'unknown';
+    }
+  }
+
+  private async parseNavigationStructure(navigation: any[]): Promise<DocPage[]> {
+    const pages: DocPage[] = [];
+    
+    for (const tab of navigation) {
+      if (tab.layout) {
+        // Process all tabs that have layout, not just 'documentation'
+        await this.parseLayoutSection(tab.layout, pages, tab.tab, '', 0);
+      }
+    }
+    
+    return pages;
+  }
+
+  private async parseLayoutSection(
+    layout: any[], 
+    pages: DocPage[], 
+    category: string, 
+    parentSection: string, 
+    level: number
+  ): Promise<void> {
+    for (const item of layout) {
+      if (item.section) {
+        // This is a section
+        const sectionName = item.section;
+        const currentSection = parentSection ? `${parentSection} > ${sectionName}` : sectionName;
+        
+        if (item.contents) {
+          await this.parseLayoutSection(item.contents, pages, category, currentSection, level + 1);
+        }
+      } else if (item.page && item.path) {
+        // This is a page
+        const rawMdxPath = path.join(this.REPO_PATH, 'fern', item.path);
+        
+        const docPage: DocPage = {
+          title: item.page,
+          path: item.path,
+          icon: item.icon,
+          content: '', // Will be filled by extractRealMdxContent
+          url: `https://docs.vapi.ai/${item.path.replace('.mdx', '')}`,
+          category,
+          section: parentSection || 'General',
+          level,
+          rawMdxPath
+        };
+        
+        pages.push(docPage);
+      } else if (item.link) {
+        // This is an external link - skip for now since we want real content
+        console.log(`⏭️  Skipping external link: ${item.link}`);
+      }
+    }
+  }
+
+  private async extractRealMdxContent(pages: DocPage[]): Promise<void> {
+    console.log(`🔍 Extracting real content from ${pages.length} MDX files...`);
+    
+    let extractedCount = 0;
+    
+    for (const page of pages) {
+      try {
+        if (!page.rawMdxPath) continue;
+        
+        // Check if file exists
+        try {
+          await fs.access(page.rawMdxPath);
+        } catch {
+          console.warn(`⚠️  File not found: ${page.rawMdxPath}`);
+          continue;
+        }
+        
+        // Read the MDX file
+        const mdxContent = await fs.readFile(page.rawMdxPath, 'utf-8');
+        
+        // Extract real content from MDX
+        const extractedContent = this.extractMDXContent(mdxContent);
+        
+        if (extractedContent && extractedContent.length > 50) {
+          page.content = extractedContent;
+          extractedCount++;
+        } else {
+          console.warn(`⚠️  No substantial content found in ${page.path}`);
+          page.content = `# ${page.title}\n\nNo content available. Visit ${page.url} for more information.`;
+        }
+        
+      } catch (error) {
+        console.warn(`⚠️  Failed to extract content from ${page.path}:`, error);
+        page.content = `# ${page.title}\n\nContent extraction failed. Visit ${page.url} for more information.`;
+      }
+    }
+    
+    console.log(`✅ Successfully extracted content from ${extractedCount}/${pages.length} files`);
+  }
+
+  private extractMDXContent(mdxContent: string): string {
+    try {
+      // Remove frontmatter
+      let content = mdxContent.replace(/^---[\s\S]*?---\n?/m, '');
+      
+      // Remove import statements
+      content = content.replace(/^import\s+.*$/gm, '');
+      
+      // Handle common MDX components while preserving content
+      content = content
+        // Remove JSX components but keep their text content
+        .replace(/<([A-Z][A-Za-z0-9]*)[^>]*>([\s\S]*?)<\/\1>/g, '$2')
+        // Remove self-closing JSX components
+        .replace(/<[A-Z][A-Za-z0-9]*[^>]*\/>/g, '')
+        // Remove remaining JSX tags but preserve content
+        .replace(/<([a-z][a-z0-9]*)[^>]*>([\s\S]*?)<\/\1>/g, '$2')
+        // Remove JSX expressions - but try to extract useful content
+        .replace(/\{[^}]*\}/g, '')
+        // Handle code blocks properly
+        .replace(/```([a-z]*)\n([\s\S]*?)\n```/g, '```$1\n$2\n```')
+        // Clean up extra whitespace
+        .replace(/^\s*$/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      
+      // If we still have substantial content, return it
+      if (content.length > 100) {
+        return content;
+      }
+      
+      return '';
+      
+    } catch (error) {
+      console.warn('Failed to parse MDX content:', error);
+      return '';
+    }
+  }
+
   private ensureVectorIndexing(): void {
     if (this.vectorIndexingPromise || !this.docsCache) {
       return;
@@ -151,12 +411,13 @@ export class DocsFetcher {
     try {
       if (!this.docsCache) return;
 
-      console.log('🧠 Starting vector indexing...');
+      console.log('🧠 Starting vector indexing with real content...');
       await this.vectorSearch.initialize();
       
       // Only reindex if we don't have embeddings or docs have changed
       if (!this.vectorSearch.isReady()) {
-        await this.vectorSearch.indexDocuments(this.docsCache.pages);
+        const pagesWithContent = this.docsCache.pages.filter(p => p.content && p.content.length > 50);
+        await this.vectorSearch.indexDocuments(pagesWithContent);
       }
       
       console.log('✅ Vector indexing completed');
@@ -219,405 +480,93 @@ export class DocsFetcher {
     await this.vectorSearch.invalidateIndex();
     try {
       await fs.unlink(this.CACHE_FILE_PATH);
-      console.log('🗑️  Cache invalidated');
+      await fs.rm(this.REPO_PATH, { recursive: true, force: true });
+      console.log('🗑️  Cache and repo invalidated');
     } catch (error) {
       // Cache file doesn't exist, that's fine
     }
   }
 
-  private async parseNavigationStructure(navigation: any[]): Promise<DocPage[]> {
-    const pages: DocPage[] = [];
-    
-    for (const tab of navigation) {
-      if (tab.tab === 'documentation' && tab.layout) {
-        await this.parseLayoutSection(tab.layout, pages, tab.tab, '', 0);
-      }
-    }
-    
-    return pages;
-  }
-
-  private async parseLayoutSection(
-    layout: any[], 
-    pages: DocPage[], 
-    category: string, 
-    parentSection: string, 
-    level: number
-  ): Promise<void> {
-    for (const item of layout) {
-      if (item.section) {
-        // This is a section
-        const sectionName = item.section;
-        const currentSection = parentSection ? `${parentSection} > ${sectionName}` : sectionName;
-        
-        if (item.contents) {
-          await this.parseLayoutSection(item.contents, pages, category, currentSection, level + 1);
-        }
-      } else if (item.page && item.path) {
-        // This is a page
-        const docPage: DocPage = {
-          title: item.page,
-          path: item.path,
-          icon: item.icon,
-          url: `https://docs.vapi.ai/${item.path.replace('.mdx', '')}`,
-          category,
-          section: parentSection || 'General',
-          level
-        };
-        
-        pages.push(docPage);
-      } else if (item.link) {
-        // This is an external link
-        const docPage: DocPage = {
-          title: item.link,
-          path: '',
-          url: item.href,
-          category,
-          section: parentSection || 'External',
-          level
-        };
-        
-        pages.push(docPage);
-      }
-    }
-  }
-
-  async fetchPageContent(docPage: DocPage): Promise<string> {
-    if (!docPage.path) {
-      return `# ${docPage.title}\n\nExternal link: ${docPage.url}`;
-    }
-
-    try {
-      // Try to fetch from GitHub raw content
-      const contentUrl = `${this.GITHUB_RAW_BASE}/fern/docs/${docPage.path}`;
-      const response = await axios.get(contentUrl, {
-        timeout: 5000,
-        headers: {
-          'User-Agent': 'Vapi-MCP-Docs-Server/1.0'
-        }
-      });
-      
-      // Parse MDX content and extract meaningful text
-      let content = this.parseMDXContent(response.data);
-      
-      // If content is too short or looks like it failed, provide contextual summary
-      if (content.length < 100 || content.includes('This documentation covers')) {
-        content = this.generateContextualSummary(docPage);
-      }
-      
-      // Cache the content
-      docPage.content = content;
-      
-      return content;
-      
-          } catch (error: any) {
-        // Return contextual summary instead of generic error
-        console.warn(`⚠️  Failed to fetch content for ${docPage.path}:`, error.response?.status || error.message);
-        return this.generateContextualSummary(docPage);
-      }
-  }
-
-  private parseMDXContent(mdxContent: string): string {
-    try {
-      // Remove frontmatter
-      let content = mdxContent.replace(/^---[\s\S]*?---\n/, '');
-      
-      // Remove import statements
-      content = content.replace(/^import.*$/gm, '');
-      
-      // Remove JSX components but preserve their content
-      content = content
-        .replace(/<([A-Z][A-Za-z0-9]*)[^>]*>([\s\S]*?)<\/\1>/g, '$2')
-        .replace(/<[^>]*\/>/g, '')
-        .replace(/<[^>]*>/g, '');
-      
-      // Remove JSX expressions but keep useful content
-      content = content.replace(/\{[^}]*\}/g, '');
-      
-      // Clean up excessive whitespace and newlines
-      content = content
-        .replace(/^\s*$/gm, '')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-      
-      // If we have substantial content, return it
-      if (content.length > 100 && !content.startsWith('This documentation covers')) {
-        return content;
-      }
-      
-      return '';
-      
-    } catch (error) {
-      console.warn('Failed to parse MDX content:', error);
-      return '';
-    }
-  }
-
-  private generateContextualSummary(docPage: DocPage): string {
-    const { title, url, section, category, path } = docPage;
-    
-    let summary = `# ${title}\n\n`;
-    
-    // Generate specific content based on the page path and title
-    if (path?.includes('mcp') || title.toLowerCase().includes('mcp')) {
-      summary += this.generateMCPSpecificContent(title, path);
-    } else if (path?.includes('tools/') || title.toLowerCase().includes('tool')) {
-      summary += this.generateToolsContent(title);
-    } else if (path?.includes('assistants/') || title.toLowerCase().includes('assistant')) {
-      summary += this.generateAssistantsContent(title);
-    } else if (path?.includes('quickstart/') || section.toLowerCase().includes('quickstart')) {
-      summary += this.generateQuickstartContent(title);
-    } else if (path?.includes('phone') || title.toLowerCase().includes('phone')) {
-      summary += this.generatePhoneContent(title);
-    } else {
-      summary += this.generateGenericContent(title, category);
-    }
-    
-    summary += `\n\n**Section:** ${section}\n`;
-    summary += `**Category:** ${category}\n\n`;
-    
-    summary += `## 📖 Complete Documentation\n\n`;
-    summary += `For detailed instructions, code examples, and interactive content, visit:\n`;
-    summary += `**${url}**\n\n`;
-    
-    summary += `This official documentation includes:\n`;
-    summary += `- Step-by-step tutorials\n`;
-    summary += `- Complete code examples\n`;
-    summary += `- API reference details\n`;
-    summary += `- Troubleshooting guides\n`;
-    summary += `- Interactive demos\n\n`;
-    
-    summary += `💡 **Pro Tip:** Use the CLI to generate code templates:\n`;
-    summary += `\`\`\`bash\nvapi init  # Set up a new project\nvapi assistant create  # Create an assistant\n\`\`\``;
-    
-    return summary;
-  }
-
-  private generateMCPSpecificContent(title: string, path?: string): string {
-    if (title.toLowerCase().includes('client') || path?.includes('tools/mcp')) {
-      return `Connect your assistant to dynamic tools through MCP servers for enhanced capabilities.\n\n` +
-        `The Model Context Protocol (MCP) integration allows your Vapi assistant to:\n` +
-        `- Connect to any MCP-compatible server\n` +
-        `- Access tools dynamically at runtime\n` +
-        `- Execute actions through the MCP server\n\n` +
-        `## Setup Steps\n` +
-        `1. Obtain MCP Server URL from your provider (e.g., Zapier, Composio)\n` +
-        `2. Create and configure MCP Tool in Vapi Dashboard\n` +
-        `3. Add tool to your assistant\n\n` +
-        `## Popular MCP Providers\n` +
-        `- **Zapier MCP** - Access to 7,000+ apps and 30,000+ actions\n` +
-        `- **Composio MCP** - Developer-focused integrations\n` +
-        `- **Custom MCP Servers** - Build your own integrations\n\n`;
-    } else if (title.toLowerCase().includes('server') || path?.includes('sdk/mcp-server')) {
-      return `Vapi provides its own MCP server that exposes Vapi APIs as callable tools.\n\n` +
-        `The Vapi MCP Server allows you to:\n` +
-        `- Use Vapi APIs directly from Claude Desktop\n` +
-        `- Create assistants and manage calls from any MCP client\n` +
-        `- Access phone numbers, tools, and analytics\n` +
-        `- Build custom applications with MCP integration\n\n` +
-        `## Installation\n` +
-        `\`\`\`bash\nnpm install @vapi-ai/mcp-server\n\`\`\`\n\n` +
-        `## Configuration\n` +
-        `Add to your MCP client configuration:\n` +
-        `\`\`\`json\n{\n  "mcpServers": {\n    "vapi": {\n      "command": "npx",\n      "args": ["@vapi-ai/mcp-server"]\n    }\n  }\n}\n\`\`\`\n\n`;
-    }
-    return `Model Context Protocol (MCP) integration for Vapi voice AI platform.\n\n`;
-  }
-
-  private generateToolsContent(title: string): string {
-    return `Tools in Vapi allow your assistant to perform actions and access external systems.\n\n` +
-      `Available tool types:\n` +
-      `- **Function Tools** - Custom server-side functions\n` +
-      `- **Transfer Tools** - Call forwarding and routing\n` +
-      `- **End Call Tools** - Programmatic call termination\n` +
-      `- **DTMF Tools** - Touch-tone digit collection\n` +
-      `- **Make Tools** - Integration with Make.com\n` +
-      `- **GoHighLevel Tools** - CRM integrations\n` +
-      `- **MCP Tools** - Dynamic tool discovery via Model Context Protocol\n\n` +
-      `## Key Features\n` +
-      `- Real-time tool execution during calls\n` +
-      `- Custom message templates for user feedback\n` +
-      `- Conditional tool availability\n` +
-      `- Webhook-based tool responses\n\n`;
-  }
-
-  private generateAssistantsContent(title: string): string {
-    return `Assistants are the core of Vapi - they define how your voice AI behaves and responds.\n\n` +
-      `## Key Configuration Areas\n` +
-      `- **Model Settings** - Choose LLM provider and model\n` +
-      `- **Voice Configuration** - Select voice provider and voice\n` +
-      `- **Transcriber Settings** - Configure speech-to-text\n` +
-      `- **System Messages** - Define personality and behavior\n` +
-      `- **Tools Integration** - Add custom functions and actions\n` +
-      `- **First Message** - Set the opening greeting\n\n` +
-      `## Advanced Features\n` +
-      `- Background noise filtering\n` +
-      `- Conversation recording\n` +
-      `- Real-time analytics\n` +
-      `- Custom webhooks and callbacks\n` +
-      `- Multi-language support\n\n`;
-  }
-
-  private generateQuickstartContent(title: string): string {
-    return `Get started with Vapi voice AI platform quickly and easily.\n\n` +
-      `## Getting Started Steps\n` +
-      `1. **Sign up** for a Vapi account at https://dashboard.vapi.ai\n` +
-      `2. **Get your API key** from the dashboard\n` +
-      `3. **Install the SDK** for your preferred language\n` +
-      `4. **Create your first assistant** with basic configuration\n` +
-      `5. **Make your first call** and test the setup\n\n` +
-      `## Quick Setup Commands\n` +
-      `\`\`\`bash\n# Install Vapi CLI\nnpm install -g @vapi-ai/cli\n\n# Initialize new project\nvapi init\n\n# Create assistant\nvapi assistant create\n\`\`\`\n\n` +
-      `## Popular Use Cases\n` +
-      `- Customer support automation\n` +
-      `- Appointment scheduling\n` +
-      `- Lead qualification\n` +
-      `- Survey and feedback collection\n\n`;
-  }
-
-  private generatePhoneContent(title: string): string {
-    return `Phone number management and telephony integration with Vapi.\n\n` +
-      `## Phone Number Options\n` +
-      `- **Vapi Numbers** - Free numbers provided by Vapi\n` +
-      `- **Twilio Integration** - Use your own Twilio numbers\n` +
-      `- **Vonage Integration** - Connect Vonage phone numbers\n` +
-      `- **Telnyx Integration** - Enterprise-grade telephony\n` +
-      `- **Bring Your Own (BYO)** - Use any SIP-compatible provider\n\n` +
-      `## Features\n` +
-      `- Inbound and outbound calling\n` +
-      `- Call forwarding and routing\n` +
-      `- Voicemail detection\n` +
-      `- Call recording and transcription\n` +
-      `- Real-time call analytics\n\n` +
-      `## Setup Process\n` +
-      `1. Choose your telephony provider\n` +
-      `2. Configure phone number in dashboard\n` +
-      `3. Assign assistant to phone number\n` +
-      `4. Test incoming and outgoing calls\n\n`;
-  }
-
-  private generateGenericContent(title: string, category: string): string {
-    switch (category) {
-      case 'workflows':
-        return `Visual workflow builder for creating complex conversation flows with branching logic.\n\n`;
-      case 'guides':
-        return `Practical implementation guide with code examples and step-by-step instructions.\n\n`;
-      case 'webhooks':
-        return `Real-time event notifications and webhook configuration for call events.\n\n`;
-      case 'analytics':
-        return `Call analytics, performance metrics, and detailed reporting capabilities.\n\n`;
-      default:
-        return `This documentation covers ${title.toLowerCase()} in Vapi voice AI platform.\n\n`;
-    }
-  }
-
   async searchDocumentation(query: string, category?: string): Promise<{results: DocPage[], usedVectorSearch: boolean}> {
-    const docs = await this.getDocumentationStructure();
-    
-    // Wait for vector indexing to complete if it's in progress
-    if (this.vectorIndexingPromise) {
-      console.log('⏳ Waiting for vector indexing to complete...');
-      await this.vectorIndexingPromise;
+    if (!this.docsCache) {
+      await this.getDocumentationStructure();
     }
-    
-    // Try vector search first if available
-          if (this.vectorSearch.isReady()) {
-        try {
-          const vectorResults = await this.vectorSearch.search(query, 10, 0.15); // Lower threshold for better matches
-        
-        // Filter by category if specified
-        let filteredResults = vectorResults;
-        if (category && category !== 'all') {
-          filteredResults = vectorResults.filter(page => page.category === category);
-        }
-        
-        if (filteredResults.length > 0) {
-          console.log(`🧠 Vector search returned ${filteredResults.length} results`);
-          return {results: filteredResults, usedVectorSearch: true};
-        } else {
-          console.log(`🔍 Vector search found no matches above threshold, falling back to text search`);
+
+    // Try vector search first (semantic search on actual content)
+    if (this.vectorSearch.isReady()) {
+      try {
+        const vectorResults = await this.vectorSearch.search(query, 5);
+        if (vectorResults.length > 0) {
+          console.log(`🧠 Vector search found ${vectorResults.length} results for "${query}"`);
+          let filteredResults = vectorResults;
+          
+          if (category) {
+            filteredResults = vectorResults.filter(doc => doc.category.toLowerCase().includes(category.toLowerCase()));
+          }
+          
+          return { results: filteredResults, usedVectorSearch: true };
         }
       } catch (error) {
-        console.warn('⚠️  Vector search failed, falling back to text search:', error);
+        console.error('Vector search failed, falling back to text search:', error);
       }
-    } else {
-      console.log(`📝 Vector search not ready (${this.vectorSearch.getIndexSize()} embeddings), using text search`);
     }
 
     // Fallback to text search
-    const textResults = this.textSearchDocumentation(query, category, docs);
-    return {results: textResults, usedVectorSearch: false};
-  }
-
-  // Keep the old method for backward compatibility, but mark it as deprecated
-  async searchDocumentationLegacy(query: string, category?: string): Promise<DocPage[]> {
-    const result = await this.searchDocumentation(query, category);
-    return result.results;
+    console.log(`🔍 Using text search for "${query}"`);
+    const textResults = this.textSearchDocumentation(query, category, this.docsCache!);
+    return { results: textResults, usedVectorSearch: false };
   }
 
   private textSearchDocumentation(query: string, category: string | undefined, docs: DocStructure): DocPage[] {
     const searchTerm = query.toLowerCase();
     
-    let searchPages = docs.pages;
-    
-    // Filter by category if specified
-    if (category && category !== 'all') {
-      searchPages = docs.categories.get(category) || [];
-    }
-    
-    // Search in title, section, and content
-    const results = searchPages.filter(page => {
-      const titleMatch = page.title.toLowerCase().includes(searchTerm);
-      const sectionMatch = page.section.toLowerCase().includes(searchTerm);
-      const urlMatch = page.url.toLowerCase().includes(searchTerm);
+    return docs.pages.filter(page => {
+      const matchesQuery = 
+        page.title.toLowerCase().includes(searchTerm) ||
+        page.content.toLowerCase().includes(searchTerm) ||
+        page.section.toLowerCase().includes(searchTerm) ||
+        page.path.toLowerCase().includes(searchTerm);
       
-      return titleMatch || sectionMatch || urlMatch;
-    });
-    
-    // Sort by relevance (title matches first)
-    return results.sort((a, b) => {
-      const aTitle = a.title.toLowerCase().includes(searchTerm) ? 1 : 0;
-      const bTitle = b.title.toLowerCase().includes(searchTerm) ? 1 : 0;
-      return bTitle - aTitle;
-    });
+      const matchesCategory = !category || page.category.toLowerCase().includes(category.toLowerCase());
+      
+      return matchesQuery && matchesCategory;
+    }).slice(0, 10);
   }
 
   async getExamples(): Promise<DocPage[]> {
-    const docs = await this.getDocumentationStructure();
-    return docs.pages.filter(page => 
-      page.section.toLowerCase().includes('example') ||
-      page.category.toLowerCase().includes('example') ||
-      page.title.toLowerCase().includes('example')
-    );
+    if (!this.docsCache) {
+      await this.getDocumentationStructure();
+    }
+    
+    return this.docsCache!.pages.filter(page => 
+      page.title.toLowerCase().includes('example') ||
+      page.title.toLowerCase().includes('quickstart') ||
+      page.content.toLowerCase().includes('```')
+    ).slice(0, 10);
   }
 
   async getGuides(): Promise<DocPage[]> {
-    const docs = await this.getDocumentationStructure();
-    return docs.pages.filter(page => 
-      page.section.toLowerCase().includes('guide') ||
-      page.section.toLowerCase().includes('quickstart') ||
-      page.section.toLowerCase().includes('get started') ||
-      page.section.toLowerCase().includes('tutorial')
-    );
+    if (!this.docsCache) {
+      await this.getDocumentationStructure();
+    }
+    
+    return this.docsCache!.pages.filter(page => 
+      page.title.toLowerCase().includes('guide') ||
+      page.title.toLowerCase().includes('tutorial') ||
+      page.section.toLowerCase().includes('guide')
+    ).slice(0, 10);
   }
 
   async getApiReference(): Promise<DocPage[]> {
-    const docs = await this.getDocumentationStructure();
-    return docs.pages.filter(page => 
-      page.category.toLowerCase().includes('api') ||
-      page.section.toLowerCase().includes('api') ||
-      page.title.toLowerCase().includes('api')
-    );
-  }
-
-  async getBestPractices(): Promise<DocPage[]> {
-    const docs = await this.getDocumentationStructure();
-    return docs.pages.filter(page => 
-      page.section.toLowerCase().includes('best practices') ||
-      page.section.toLowerCase().includes('prompting') ||
-      page.section.toLowerCase().includes('debugging') ||
-      page.section.toLowerCase().includes('testing')
-    );
+    if (!this.docsCache) {
+      await this.getDocumentationStructure();
+    }
+    
+    return this.docsCache!.pages.filter(page => 
+      page.path.includes('/api-reference/') ||
+      page.title.toLowerCase().includes('api') ||
+      page.section.toLowerCase().includes('api')
+    ).slice(0, 10);
   }
 
   isVectorSearchReady(): boolean {

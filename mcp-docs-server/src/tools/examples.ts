@@ -38,19 +38,19 @@ ${allExamples.slice(0, 8).map(ex => `- **${ex.title}** - ${ex.section}`).join('\
 
 ## 🎯 Popular Example Topics:
 
-- **Phone calls** - Making and receiving calls
-- **Assistants** - Creating voice assistants  
-- **Workflows** - Building conversation flows
-- **Tools** - Custom function calling
-- **Webhooks** - Real-time event handling
-- **Voice widget** - Embedding voice in web apps
-- **Appointment scheduling** - Calendar integration
-- **Lead qualification** - Sales automation
+- **MCP server** - Claude Desktop configuration with @vapi-ai/mcp-server
+- **Voice assistants** - Complete assistant creation and configuration  
+- **Phone calls** - Outbound calls, inbound handling, phone number setup
+- **Function tools** - Custom API integrations and webhooks
+- **Workflows** - Conversation flows and automation
+- **Voice providers** - ElevenLabs, OpenAI TTS, and voice configuration
+- **Real-time features** - Streaming, WebSocket transport
+- **Integration examples** - Google Calendar, Sheets, CRM systems
 
 ## 💡 Tips:
-- Try searching for broader terms (e.g., "phone" instead of "telephone")
-- Use the \`search_documentation\` tool for more general searches
-- Check the **Guides** section for step-by-step tutorials
+- Try specific terms like "MCP server", "assistant create", "phone call"
+- Use the \`search_documentation\` tool for broader searches
+- Check the **API Reference** for endpoint-specific examples
 
 Try searching for one of the popular topics above!`;
       }
@@ -114,15 +114,23 @@ async function formatExamplesResponse(
     if (!example) continue;
     
     try {
-      const content = await docsFetcher.fetchPageContent(example);
-      
-      response += `## 📄 ${i + 1}. ${example.title}\n\n`;
+      response += `## 💻 ${i + 1}. ${example.title}\n\n`;
       response += `**Section:** ${example.section}\n`;
-      response += `**Category:** ${example.category}\n`;
       response += `**URL:** ${example.url}\n\n`;
       
-      // Add the actual content
-      response += `### Content:\n\n${content}\n\n`;
+      // Use the already-extracted content
+      if (example.content && example.content.length > 50) {
+        // Truncate very long content for readability
+        let contentToShow = example.content;
+        if (contentToShow.length > 1500) {
+          contentToShow = contentToShow.substring(0, 1500) + '...\n\n*[Content truncated - visit URL for complete example]*';
+        }
+        
+        response += `### Content:\n\n${contentToShow}\n\n`;
+      } else {
+        response += `*Content extraction in progress - visit URL for complete example*\n\n`;
+      }
+      
       response += `---\n\n`;
       
     } catch (error) {
@@ -135,10 +143,10 @@ async function formatExamplesResponse(
   }
 
   response += `## 🎯 Next Steps\n\n`;
-  response += `- Use \`get_guides\` for step-by-step implementation guides\n`;
-  response += `- Use \`get_api_reference\` for detailed API documentation\n`;
-  response += `- Visit the URLs above for interactive code examples\n`;
-  response += `- Check the **Quickstart** guides for basic setup\n\n`;
+  response += `- Use \`get_guides [topic]\` for step-by-step implementation guides\n`;
+  response += `- Use \`get_api_reference [endpoint]\` for detailed API documentation\n`;
+  response += `- Visit the URLs above for complete interactive code examples\n`;
+  response += `- Try \`search_documentation [feature]\` for related content\n\n`;
   
   response += `## 🔗 Additional Resources\n\n`;
   response += `- **All Examples:** https://docs.vapi.ai/guides\n`;

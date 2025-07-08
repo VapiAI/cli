@@ -209,16 +209,28 @@ export class VectorSearch {
       parts.push(...urlWords);
     }
     
-    // Add actual content if available
+    // Add actual content - this is the key improvement
     if (doc.content && doc.content.length > 50) {
-      // Extract key phrases and sentences from content
-      const contentWords = doc.content
+      // Clean the content and extract meaningful text
+      let contentText = doc.content
+        // Remove markdown formatting but keep the text
+        .replace(/^#+\s*/gm, '') // Remove heading markers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markers
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic markers
+        .replace(/`([^`]+)`/g, '$1') // Remove inline code markers
+        .replace(/```[\s\S]*?```/g, ' [CODE_BLOCK] ') // Replace code blocks with placeholder
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Extract link text
+        .replace(/[^\w\s]/g, ' ') // Remove special characters
         .toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter(word => word.length > 3)
-        .slice(0, 100); // Limit to first 100 meaningful words
-      parts.push(...contentWords);
+        .filter(word => word.length > 3 && !this.isStopWord(word))
+        .slice(0, 200); // Limit to first 200 meaningful words
+      
+      parts.push(...contentText);
+      
+      // Also add the full content for context (truncated)
+      const fullContent = doc.content.substring(0, 1000);
+      parts.push(fullContent);
     }
     
     // Create a rich searchable text
@@ -229,6 +241,23 @@ export class VectorSearch {
       .trim();
     
     return searchableText;
+  }
+
+  private isStopWord(word: string): boolean {
+    const stopWords = new Set([
+      'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+      'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above',
+      'below', 'between', 'among', 'through', 'during', 'before', 'after', 'above',
+      'this', 'that', 'these', 'those', 'then', 'than', 'such', 'some', 'very',
+      'will', 'can', 'could', 'should', 'would', 'may', 'might', 'must', 'shall',
+      'have', 'has', 'had', 'was', 'were', 'been', 'being', 'are', 'is', 'am',
+      'does', 'did', 'do', 'done', 'what', 'when', 'where', 'how', 'why', 'who',
+      'which', 'what', 'all', 'any', 'each', 'every', 'few', 'more', 'most',
+      'other', 'another', 'such', 'only', 'own', 'same', 'so', 'also', 'just',
+      'here', 'there', 'now', 'then', 'both', 'either', 'neither', 'once'
+    ]);
+    
+    return stopWords.has(word);
   }
 
   private cosineSimilarity(a: number[], b: number[]): number {
@@ -319,35 +348,47 @@ export class VectorSearch {
     
     // Add variations for common terms
     if (queryLower.includes('mcp')) {
-      enhancements.push('model context protocol', 'tools integration', 'dynamic tools');
+      enhancements.push('model context protocol', 'tools integration', 'dynamic tools', 'mcp server', 'mcp client');
+    }
+    
+    if (queryLower.includes('claude') && queryLower.includes('desktop')) {
+      enhancements.push('claude desktop configuration', 'mcp client setup', 'claude_desktop_config.json');
     }
     
     if (queryLower.includes('assistant')) {
-      enhancements.push('voice ai', 'chatbot', 'agent', 'conversation');
+      enhancements.push('voice ai', 'chatbot', 'agent', 'conversation', 'voice assistant');
     }
     
     if (queryLower.includes('call')) {
-      enhancements.push('phone', 'telephony', 'voice call', 'conversation');
+      enhancements.push('phone', 'telephony', 'voice call', 'conversation', 'calling');
     }
     
     if (queryLower.includes('api')) {
-      enhancements.push('endpoint', 'rest api', 'integration', 'webhook');
+      enhancements.push('endpoint', 'rest api', 'integration', 'webhook', 'reference');
     }
     
     if (queryLower.includes('tool')) {
-      enhancements.push('function', 'integration', 'webhook', 'action');
+      enhancements.push('function', 'integration', 'webhook', 'action', 'tools');
     }
     
     if (queryLower.includes('phone')) {
-      enhancements.push('telephony', 'call', 'number', 'sip');
+      enhancements.push('telephony', 'call', 'number', 'sip', 'phone number');
     }
     
     if (queryLower.includes('voice')) {
-      enhancements.push('speech', 'audio', 'tts', 'synthesis');
+      enhancements.push('speech', 'audio', 'tts', 'synthesis', 'voice');
     }
     
     if (queryLower.includes('example')) {
       enhancements.push('code', 'sample', 'demo', 'tutorial', 'guide');
+    }
+    
+    if (queryLower.includes('config')) {
+      enhancements.push('configuration', 'setup', 'settings', 'configure');
+    }
+    
+    if (queryLower.includes('webhook')) {
+      enhancements.push('callback', 'endpoint', 'integration', 'http', 'api');
     }
     
     return enhancements.join(' ');

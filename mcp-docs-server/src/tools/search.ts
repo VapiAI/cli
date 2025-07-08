@@ -25,20 +25,22 @@ export async function searchDocumentation(
 No documentation found for "${query}" in category "${category}".
 
 ## 💡 Suggestions:
-- Try different keywords (e.g., "phone calls" instead of "calling")
-- Search in all categories instead of specific ones
-- Check for typos in your search query
+- Try different keywords (e.g., "MCP server" instead of "model context protocol")  
+- Use "get_examples" tool to find code examples specifically
 - Try broader terms first, then narrow down
+- Check for typos in your search query
 
-## 📚 Popular Topics:
-- **Phone calls** - Making and receiving calls
-- **Assistants** - Creating voice assistants
-- **Workflows** - Building conversation flows
-- **Tools** - Custom function calling
-- **Webhooks** - Real-time event handling
-- **Best practices** - Prompting and debugging guides
+## 📚 Popular Topics Available:
+- **MCP integration** - Claude Desktop configuration and setup
+- **Voice assistants** - Creating and configuring assistants
+- **Phone calls** - Outbound calls, inbound handling, phone numbers
+- **Tools** - Function tools, MCP tools, custom integrations
+- **Webhooks** - Real-time events and server configuration  
+- **API reference** - Assistants, calls, tools, phone numbers
+- **Voice providers** - ElevenLabs, OpenAI, Cartesia, PlayHT
+- **Workflows** - Building conversation flows and automation
 
-Try searching for one of these topics!`;
+Try searching for one of these topics or use 'get_examples [topic]' for code samples!`;
     }
 
     // Display search method used
@@ -54,37 +56,37 @@ Try searching for one of these topics!`;
       response += `📝 **Text Search** - Found ${limitedResults.length} relevant page(s) (vector search initializing...):\n\n`;
     }
 
-    // Fetch and return actual content for each result
+    // Return results with already-extracted content
     for (let i = 0; i < limitedResults.length; i++) {
       const page = limitedResults[i];
       if (!page) continue;
       
-      try {
-        const content = await docsFetcher.fetchPageContent(page);
+      response += `## 📄 ${i + 1}. ${page.title}\n\n`;
+      response += `**Section:** ${page.section}\n`;
+      response += `**Category:** ${page.category}\n`;
+      response += `**URL:** ${page.url}\n\n`;
+      
+      // Use the already-extracted content
+      if (page.content && page.content.length > 50) {
+        // Truncate very long content for readability
+        let contentToShow = page.content;
+        if (contentToShow.length > 2000) {
+          contentToShow = contentToShow.substring(0, 2000) + '...\n\n*[Content truncated - visit URL for complete documentation]*';
+        }
         
-        response += `## 📄 ${i + 1}. ${page.title}\n\n`;
-        response += `**Section:** ${page.section}\n`;
-        response += `**Category:** ${page.category}\n`;
-        response += `**URL:** ${page.url}\n\n`;
-        
-        // Add the actual content
-        response += `### Content:\n\n${content}\n\n`;
-        response += `---\n\n`;
-        
-      } catch (error) {
-        response += `## 📄 ${i + 1}. ${page.title}\n\n`;
-        response += `**Section:** ${page.section}\n`;
-        response += `**URL:** ${page.url}\n\n`;
-        response += `⚠️ Content temporarily unavailable. Please visit the URL above.\n\n`;
-        response += `---\n\n`;
+        response += `### Content:\n\n${contentToShow}\n\n`;
+      } else {
+        response += `*Content extraction in progress - visit URL for complete documentation*\n\n`;
       }
+      
+      response += `---\n\n`;
     }
 
     response += `## 🎯 Next Steps\n\n`;
-    response += `- Use \`get_examples\` to see code examples\n`;
-    response += `- Use \`get_guides\` for step-by-step tutorials\n`;
-    response += `- Use \`get_api_reference\` for API documentation\n`;
-    response += `- Visit the URLs above for interactive content\n\n`;
+    response += `- Use \`get_examples [feature]\` to see code examples for specific features\n`;
+    response += `- Use \`get_guides [topic]\` for step-by-step tutorials\n`;
+    response += `- Use \`get_api_reference [endpoint]\` for API documentation\n`;
+    response += `- Visit the URLs above for complete interactive documentation\n\n`;
 
     if (usedVectorSearch) {
       response += `## 🧠 AI-Powered Search\n\n`;

@@ -67,16 +67,24 @@ Try searching for one of the popular topics above!`;
       const guide = relevantGuides[i];
       if (!guide) continue;
       
-      try {
-        const content = await docsFetcher.fetchPageContent(guide);
-        
-        response += `## 📄 ${i + 1}. ${guide.title}\n\n`;
+              try {
+          response += `## 📚 ${i + 1}. ${guide.title}\n\n`;
         response += `**Section:** ${guide.section}\n`;
-        response += `**Category:** ${guide.category}\n`;
         response += `**URL:** ${guide.url}\n\n`;
         
-        // Add the actual content
-        response += `### Content:\n\n${content}\n\n`;
+        // Use the already-extracted content
+        if (guide.content && guide.content.length > 50) {
+          // Truncate very long content for readability
+          let contentToShow = guide.content;
+          if (contentToShow.length > 1500) {
+            contentToShow = contentToShow.substring(0, 1500) + '...\n\n*[Content truncated - visit URL for complete guide]*';
+          }
+          
+          response += `### Content:\n\n${contentToShow}\n\n`;
+        } else {
+          response += `*Content extraction in progress - visit URL for complete guide*\n\n`;
+        }
+        
         response += `---\n\n`;
         
       } catch (error) {
