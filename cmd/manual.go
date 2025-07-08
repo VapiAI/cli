@@ -21,13 +21,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-
-	"os/exec"
 
 	versionpkg "github.com/VapiAI/cli/pkg/version"
 )
@@ -66,7 +65,11 @@ func installManualPages(cmd *cobra.Command, args []string) error {
 	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir) // Clean up temp directory
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temporary directory: %v\n", err)
+		}
+	}() // Clean up temp directory
 
 	// Generate man pages
 	fmt.Printf("   📝 Generating manual pages...\n")
@@ -115,7 +118,7 @@ func installManualPages(cmd *cobra.Command, args []string) error {
 		}
 
 		// Set appropriate permissions
-		if err := os.Chmod(destPath, 0o644); err != nil {
+		if err := os.Chmod(destPath, 0o600); err != nil {
 			fmt.Printf("   ⚠️  Warning: failed to set permissions on %s\n", fileName)
 		}
 	}
@@ -164,7 +167,7 @@ func ensureManDirWritable(dir string) error {
 	stat, err := os.Stat(dir)
 	if err != nil {
 		// Try to create the directory
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return fmt.Errorf("directory does not exist and cannot be created: %w", err)
 		}
 		return nil
@@ -176,28 +179,43 @@ func ensureManDirWritable(dir string) error {
 
 	// Test write permissions by creating a temporary file
 	testFile := filepath.Join(dir, ".vapi-test-write")
+	// #nosec G304 - testFile is constructed from known safe directory path
 	if file, err := os.Create(testFile); err != nil {
 		return fmt.Errorf("directory is not writable: %w", err)
 	} else {
-		file.Close()
-		os.Remove(testFile) // Clean up test file
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close test file: %v\n", err)
+		}
+		if err := os.Remove(testFile); err != nil {
+			fmt.Printf("Warning: failed to remove test file: %v\n", err)
+		}
 	}
 
 	return nil
 }
 
 func copyFile(src, dst string) error {
+	// #nosec G304 - src and dst are paths controlled by this application
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() {
+		if err := srcFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close source file: %v\n", err)
+		}
+	}()
 
+	// #nosec G304 - dst is a path controlled by this application
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer func() {
+		if err := dstFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close destination file: %v\n", err)
+		}
+	}()
 
 	_, err = srcFile.WriteTo(dstFile)
 	return err
@@ -212,6 +230,7 @@ func updateManDatabase() error {
 	}
 
 	for _, cmdArgs := range commands {
+		// #nosec G204 - command arguments are from a predefined safe list
 		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 		if err := cmd.Run(); err == nil {
 			return nil // Success

@@ -31,9 +31,10 @@ import (
 	"strings"
 	"time"
 
-	versionpkg "github.com/VapiAI/cli/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+
+	versionpkg "github.com/VapiAI/cli/pkg/version"
 )
 
 // GitHubRelease represents a GitHub release
@@ -291,7 +292,9 @@ func installUpdate(release *GitHubRelease) error {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer func() {
-		_ = os.RemoveAll(tmpDir) // Ignore cleanup errors
+		if err := os.RemoveAll(tmpDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temporary directory: %v\n", err)
+		}
 	}()
 
 	// Download the archive
@@ -493,7 +496,7 @@ func getArchiveFileName() string {
 	return fmt.Sprintf("cli_%s_%s.tar.gz", getOSName(), getArchName())
 }
 
-func downloadFile(url, filepath string) error {
+func downloadFile(url, filePath string) error {
 	// #nosec G107 - URL is from GitHub releases API, considered safe
 	resp, err := http.Get(url)
 	if err != nil {
@@ -507,8 +510,8 @@ func downloadFile(url, filepath string) error {
 		return fmt.Errorf("download failed with status %d", resp.StatusCode)
 	}
 
-	// #nosec G304 - filepath is controlled by this function
-	file, err := os.Create(filepath)
+	// #nosec G304 - filePath is controlled by this function
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
@@ -596,7 +599,11 @@ func autoInstallManPages() error {
 	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temporary directory: %v\n", err)
+		}
+	}()
 
 	// Generate man pages (simplified version of the manual command)
 	if err := generateManPagesTo(tmpDir); err != nil {
@@ -615,7 +622,9 @@ func autoInstallManPages() error {
 	}
 
 	// Try to update man database
-	updateManDatabase()
+	if err := updateManDatabase(); err != nil {
+		fmt.Printf("Warning: failed to update man database: %v\n", err)
+	}
 
 	return nil
 }
@@ -636,7 +645,7 @@ func generateManPagesTo(outputDir string) error {
 // installManPagesTo copies man pages from source to destination directory
 func installManPagesTo(sourceDir, destDir string) error {
 	// Ensure destination directory exists
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
+	if err := os.MkdirAll(destDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
@@ -656,7 +665,7 @@ func installManPagesTo(sourceDir, destDir string) error {
 		}
 
 		// Set appropriate permissions
-		if err := os.Chmod(destPath, 0o644); err != nil {
+		if err := os.Chmod(destPath, 0o600); err != nil {
 			// Don't fail on permission errors, just warn
 			fmt.Printf("Warning: failed to set permissions on %s\n", fileName)
 		}

@@ -318,13 +318,27 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 			genErr = integrations.GenerateGoIntegration(absPath, project)
 		case integrations.FrameworkNode:
 			genErr = integrations.GenerateNodeIntegration(absPath, project)
-		// TODO: Add other framework integrations
-		case integrations.FrameworkVue, integrations.FrameworkAngular, integrations.FrameworkSvelte,
-			integrations.FrameworkNuxt, integrations.FrameworkVanilla, integrations.FrameworkReactNative,
-			integrations.FrameworkFlutter, integrations.FrameworkRuby, integrations.FrameworkJava,
-			integrations.FrameworkCSharp, integrations.FrameworkUnknown:
+		case integrations.FrameworkVue:
 			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
-		default:
+		case integrations.FrameworkAngular:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkSvelte:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkNuxt:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkVanilla:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkReactNative:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkFlutter:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkRuby:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkJava:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkCSharp:
+			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
+		case integrations.FrameworkUnknown:
 			fmt.Printf("   ℹ️  Code generation for %s coming soon!\n", project.GetFrameworkName())
 		}
 
@@ -387,6 +401,33 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 		case integrations.FrameworkPython:
 			fmt.Println("   - Configure webhook handlers for call events")
 			fmt.Println("   - Set up assistant and call management endpoints")
+		case integrations.FrameworkVue:
+			fmt.Println("   - Follow the Vue.js integration guide in documentation")
+		case integrations.FrameworkAngular:
+			fmt.Println("   - Follow the Angular integration guide in documentation")
+		case integrations.FrameworkSvelte:
+			fmt.Println("   - Follow the Svelte integration guide in documentation")
+		case integrations.FrameworkNuxt:
+			fmt.Println("   - Follow the Nuxt.js integration guide in documentation")
+		case integrations.FrameworkRemix:
+			fmt.Println("   - Follow the Remix integration guide in documentation")
+		case integrations.FrameworkVanilla:
+			fmt.Println("   - Follow the vanilla JavaScript integration guide in documentation")
+		case integrations.FrameworkReactNative:
+			fmt.Println("   - Follow the React Native integration guide in documentation")
+		case integrations.FrameworkFlutter:
+			fmt.Println("   - Follow the Flutter integration guide in documentation")
+		case integrations.FrameworkGolang:
+			fmt.Println("   - Set up webhook endpoints for call events")
+			fmt.Println("   - Create assistant configuration and call management routes")
+		case integrations.FrameworkRuby:
+			fmt.Println("   - Follow the Ruby integration guide in documentation")
+		case integrations.FrameworkJava:
+			fmt.Println("   - Follow the Java integration guide in documentation")
+		case integrations.FrameworkCSharp:
+			fmt.Println("   - Follow the C#/.NET integration guide in documentation")
+		case integrations.FrameworkUnknown:
+			fmt.Println("   - Follow the documentation for your specific framework")
 		}
 		fmt.Println()
 		stepNum++
