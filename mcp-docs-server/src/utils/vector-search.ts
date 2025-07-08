@@ -101,15 +101,18 @@ export class VectorSearch {
     console.log(`✅ Created ${embeddings.length} document embeddings`);
   }
 
-  async search(query: string, limit: number = 5, threshold: number = 0.3): Promise<DocPage[]> {
+  async search(query: string, limit: number = 5, threshold: number = 0.15): Promise<DocPage[]> {
     if (!this.embedder || this.vectorIndex.length === 0) {
       console.log('⚠️  Vector search not available, falling back to text search');
       return [];
     }
 
     try {
+      // Enhance query for better matching
+      const enhancedQuery = this.enhanceQuery(query);
+      
       // Get query embedding
-      const queryEmbedding = await this.getEmbedding(query);
+      const queryEmbedding = await this.getEmbedding(enhancedQuery);
       
       // Calculate similarities
       const similarities = this.vectorIndex.map(doc => ({
@@ -121,7 +124,7 @@ export class VectorSearch {
       similarities.sort((a, b) => b.similarity - a.similarity);
       
       // Log top similarities for debugging
-      const topSimilarities = similarities.slice(0, 3).map(s => 
+      const topSimilarities = similarities.slice(0, 5).map(s => 
         `${s.metadata.title}: ${s.similarity.toFixed(3)}`
       );
       console.log(`🔍 Top similarities for "${query}": ${topSimilarities.join(', ')}`);
@@ -167,15 +170,65 @@ export class VectorSearch {
   }
 
   private createSearchableContent(doc: DocPage): string {
-    const parts = [
-      doc.title,
-      doc.section,
-      doc.category,
-      doc.path?.replace(/[\/\-\_\.]/g, ' '),
-      doc.content || ''
-    ].filter(Boolean);
+    const parts = [];
     
-    return parts.join(' ').toLowerCase();
+    // Add title with higher weight (repeat for importance)
+    if (doc.title) {
+      parts.push(doc.title);
+      parts.push(doc.title); // Add twice for importance
+    }
+    
+    // Add section and category
+    if (doc.section) {
+      parts.push(doc.section);
+    }
+    
+    if (doc.category) {
+      parts.push(doc.category);
+    }
+    
+    // Process path to extract meaningful keywords
+    if (doc.path) {
+      const pathWords = doc.path
+        .replace(/[\/\-\_\.]/g, ' ')
+        .replace(/([A-Z])/g, ' $1') // Split camelCase
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !['mdx', 'fern', 'docs'].includes(word));
+      parts.push(...pathWords);
+    }
+    
+    // Add URL keywords
+    if (doc.url) {
+      const urlWords = doc.url
+        .replace(/https?:\/\/[^\/]+\//, '') // Remove domain
+        .replace(/[\/\-\_\.]/g, ' ')
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !['docs', 'vapi', 'ai'].includes(word));
+      parts.push(...urlWords);
+    }
+    
+    // Add actual content if available
+    if (doc.content && doc.content.length > 50) {
+      // Extract key phrases and sentences from content
+      const contentWords = doc.content
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 3)
+        .slice(0, 100); // Limit to first 100 meaningful words
+      parts.push(...contentWords);
+    }
+    
+    // Create a rich searchable text
+    const searchableText = parts
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .trim();
+    
+    return searchableText;
   }
 
   private cosineSimilarity(a: number[], b: number[]): number {
@@ -257,5 +310,46 @@ export class VectorSearch {
 
   isReady(): boolean {
     return this.embedder !== null && this.vectorIndex.length > 0;
+  }
+
+  private enhanceQuery(query: string): string {
+    // Add common variations and synonyms for better matching
+    const queryLower = query.toLowerCase();
+    const enhancements: string[] = [query];
+    
+    // Add variations for common terms
+    if (queryLower.includes('mcp')) {
+      enhancements.push('model context protocol', 'tools integration', 'dynamic tools');
+    }
+    
+    if (queryLower.includes('assistant')) {
+      enhancements.push('voice ai', 'chatbot', 'agent', 'conversation');
+    }
+    
+    if (queryLower.includes('call')) {
+      enhancements.push('phone', 'telephony', 'voice call', 'conversation');
+    }
+    
+    if (queryLower.includes('api')) {
+      enhancements.push('endpoint', 'rest api', 'integration', 'webhook');
+    }
+    
+    if (queryLower.includes('tool')) {
+      enhancements.push('function', 'integration', 'webhook', 'action');
+    }
+    
+    if (queryLower.includes('phone')) {
+      enhancements.push('telephony', 'call', 'number', 'sip');
+    }
+    
+    if (queryLower.includes('voice')) {
+      enhancements.push('speech', 'audio', 'tts', 'synthesis');
+    }
+    
+    if (queryLower.includes('example')) {
+      enhancements.push('code', 'sample', 'demo', 'tutorial', 'guide');
+    }
+    
+    return enhancements.join(' ');
   }
 } 

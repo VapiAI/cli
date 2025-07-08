@@ -290,14 +290,19 @@ export class DocsFetcher {
     try {
       // Try to fetch from GitHub raw content
       const contentUrl = `${this.GITHUB_RAW_BASE}/fern/docs/${docPage.path}`;
-      const response = await axios.get(contentUrl);
+      const response = await axios.get(contentUrl, {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'Vapi-MCP-Docs-Server/1.0'
+        }
+      });
       
       // Parse MDX content and extract meaningful text
       let content = this.parseMDXContent(response.data);
       
-      // If content is too short, provide helpful summary instead
-      if (content.length < 100) {
-        content = this.generatePageSummary(docPage);
+      // If content is too short or looks like it failed, provide contextual summary
+      if (content.length < 100 || content.includes('This documentation covers')) {
+        content = this.generateContextualSummary(docPage);
       }
       
       // Cache the content
@@ -305,67 +310,71 @@ export class DocsFetcher {
       
       return content;
       
-    } catch (error) {
-      // Return helpful summary instead of error
-      return this.generatePageSummary(docPage);
-    }
+          } catch (error: any) {
+        // Return contextual summary instead of generic error
+        console.warn(`⚠️  Failed to fetch content for ${docPage.path}:`, error.response?.status || error.message);
+        return this.generateContextualSummary(docPage);
+      }
   }
 
   private parseMDXContent(mdxContent: string): string {
-    // Remove frontmatter
-    const content = mdxContent.replace(/^---[\s\S]*?---\n/, '');
-    
-    // Remove import statements
-    const cleanContent = content.replace(/^import.*$/gm, '');
-    
-    // Remove JSX components but keep their content
-    const withoutJSX = cleanContent
-      .replace(/<[^>]*>/g, '')
-      .replace(/\{[^}]*\}/g, '')
-      .replace(/^\s*$/gm, '')
-      .trim();
-    
-    return withoutJSX;
+    try {
+      // Remove frontmatter
+      let content = mdxContent.replace(/^---[\s\S]*?---\n/, '');
+      
+      // Remove import statements
+      content = content.replace(/^import.*$/gm, '');
+      
+      // Remove JSX components but preserve their content
+      content = content
+        .replace(/<([A-Z][A-Za-z0-9]*)[^>]*>([\s\S]*?)<\/\1>/g, '$2')
+        .replace(/<[^>]*\/>/g, '')
+        .replace(/<[^>]*>/g, '');
+      
+      // Remove JSX expressions but keep useful content
+      content = content.replace(/\{[^}]*\}/g, '');
+      
+      // Clean up excessive whitespace and newlines
+      content = content
+        .replace(/^\s*$/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      
+      // If we have substantial content, return it
+      if (content.length > 100 && !content.startsWith('This documentation covers')) {
+        return content;
+      }
+      
+      return '';
+      
+    } catch (error) {
+      console.warn('Failed to parse MDX content:', error);
+      return '';
+    }
   }
 
-  private generatePageSummary(docPage: DocPage): string {
-    const { title, url, section, category } = docPage;
+  private generateContextualSummary(docPage: DocPage): string {
+    const { title, url, section, category, path } = docPage;
     
     let summary = `# ${title}\n\n`;
     
-    // Add contextual information based on category
-    switch (category) {
-      case 'quickstart':
-        summary += `This is a getting started guide for ${title.toLowerCase()}. `;
-        summary += `It covers the basic setup and implementation steps for building voice AI applications with Vapi.\n\n`;
-        break;
-      case 'assistants':
-        summary += `This guide covers ${title.toLowerCase()} for voice assistants. `;
-        summary += `Learn how to configure and customize your Vapi voice agents.\n\n`;
-        break;
-      case 'workflows':
-        summary += `This section explains ${title.toLowerCase()} in Vapi's visual workflow system. `;
-        summary += `Build complex conversation flows with branching logic.\n\n`;
-        break;
-      case 'guides':
-        summary += `This is a practical guide showing ${title.toLowerCase()}. `;
-        summary += `Includes code examples and step-by-step instructions.\n\n`;
-        break;
-      default:
-        summary += `This documentation covers ${title.toLowerCase()} in Vapi.\n\n`;
+    // Generate specific content based on the page path and title
+    if (path?.includes('mcp') || title.toLowerCase().includes('mcp')) {
+      summary += this.generateMCPSpecificContent(title, path);
+    } else if (path?.includes('tools/') || title.toLowerCase().includes('tool')) {
+      summary += this.generateToolsContent(title);
+    } else if (path?.includes('assistants/') || title.toLowerCase().includes('assistant')) {
+      summary += this.generateAssistantsContent(title);
+    } else if (path?.includes('quickstart/') || section.toLowerCase().includes('quickstart')) {
+      summary += this.generateQuickstartContent(title);
+    } else if (path?.includes('phone') || title.toLowerCase().includes('phone')) {
+      summary += this.generatePhoneContent(title);
+    } else {
+      summary += this.generateGenericContent(title, category);
     }
     
-    summary += `**Section:** ${section}\n`;
+    summary += `\n\n**Section:** ${section}\n`;
     summary += `**Category:** ${category}\n\n`;
-    
-    // Add relevant getting started tips
-    if (category === 'quickstart') {
-      summary += `## Quick Start Tips:\n\n`;
-      summary += `1. Sign up for a Vapi account at https://dashboard.vapi.ai\n`;
-      summary += `2. Get your API key from the dashboard\n`;
-      summary += `3. Install the Vapi SDK for your preferred language\n`;
-      summary += `4. Follow the examples in the complete documentation\n\n`;
-    }
     
     summary += `## 📖 Complete Documentation\n\n`;
     summary += `For detailed instructions, code examples, and interactive content, visit:\n`;
@@ -384,6 +393,124 @@ export class DocsFetcher {
     return summary;
   }
 
+  private generateMCPSpecificContent(title: string, path?: string): string {
+    if (title.toLowerCase().includes('client') || path?.includes('tools/mcp')) {
+      return `Connect your assistant to dynamic tools through MCP servers for enhanced capabilities.\n\n` +
+        `The Model Context Protocol (MCP) integration allows your Vapi assistant to:\n` +
+        `- Connect to any MCP-compatible server\n` +
+        `- Access tools dynamically at runtime\n` +
+        `- Execute actions through the MCP server\n\n` +
+        `## Setup Steps\n` +
+        `1. Obtain MCP Server URL from your provider (e.g., Zapier, Composio)\n` +
+        `2. Create and configure MCP Tool in Vapi Dashboard\n` +
+        `3. Add tool to your assistant\n\n` +
+        `## Popular MCP Providers\n` +
+        `- **Zapier MCP** - Access to 7,000+ apps and 30,000+ actions\n` +
+        `- **Composio MCP** - Developer-focused integrations\n` +
+        `- **Custom MCP Servers** - Build your own integrations\n\n`;
+    } else if (title.toLowerCase().includes('server') || path?.includes('sdk/mcp-server')) {
+      return `Vapi provides its own MCP server that exposes Vapi APIs as callable tools.\n\n` +
+        `The Vapi MCP Server allows you to:\n` +
+        `- Use Vapi APIs directly from Claude Desktop\n` +
+        `- Create assistants and manage calls from any MCP client\n` +
+        `- Access phone numbers, tools, and analytics\n` +
+        `- Build custom applications with MCP integration\n\n` +
+        `## Installation\n` +
+        `\`\`\`bash\nnpm install @vapi-ai/mcp-server\n\`\`\`\n\n` +
+        `## Configuration\n` +
+        `Add to your MCP client configuration:\n` +
+        `\`\`\`json\n{\n  "mcpServers": {\n    "vapi": {\n      "command": "npx",\n      "args": ["@vapi-ai/mcp-server"]\n    }\n  }\n}\n\`\`\`\n\n`;
+    }
+    return `Model Context Protocol (MCP) integration for Vapi voice AI platform.\n\n`;
+  }
+
+  private generateToolsContent(title: string): string {
+    return `Tools in Vapi allow your assistant to perform actions and access external systems.\n\n` +
+      `Available tool types:\n` +
+      `- **Function Tools** - Custom server-side functions\n` +
+      `- **Transfer Tools** - Call forwarding and routing\n` +
+      `- **End Call Tools** - Programmatic call termination\n` +
+      `- **DTMF Tools** - Touch-tone digit collection\n` +
+      `- **Make Tools** - Integration with Make.com\n` +
+      `- **GoHighLevel Tools** - CRM integrations\n` +
+      `- **MCP Tools** - Dynamic tool discovery via Model Context Protocol\n\n` +
+      `## Key Features\n` +
+      `- Real-time tool execution during calls\n` +
+      `- Custom message templates for user feedback\n` +
+      `- Conditional tool availability\n` +
+      `- Webhook-based tool responses\n\n`;
+  }
+
+  private generateAssistantsContent(title: string): string {
+    return `Assistants are the core of Vapi - they define how your voice AI behaves and responds.\n\n` +
+      `## Key Configuration Areas\n` +
+      `- **Model Settings** - Choose LLM provider and model\n` +
+      `- **Voice Configuration** - Select voice provider and voice\n` +
+      `- **Transcriber Settings** - Configure speech-to-text\n` +
+      `- **System Messages** - Define personality and behavior\n` +
+      `- **Tools Integration** - Add custom functions and actions\n` +
+      `- **First Message** - Set the opening greeting\n\n` +
+      `## Advanced Features\n` +
+      `- Background noise filtering\n` +
+      `- Conversation recording\n` +
+      `- Real-time analytics\n` +
+      `- Custom webhooks and callbacks\n` +
+      `- Multi-language support\n\n`;
+  }
+
+  private generateQuickstartContent(title: string): string {
+    return `Get started with Vapi voice AI platform quickly and easily.\n\n` +
+      `## Getting Started Steps\n` +
+      `1. **Sign up** for a Vapi account at https://dashboard.vapi.ai\n` +
+      `2. **Get your API key** from the dashboard\n` +
+      `3. **Install the SDK** for your preferred language\n` +
+      `4. **Create your first assistant** with basic configuration\n` +
+      `5. **Make your first call** and test the setup\n\n` +
+      `## Quick Setup Commands\n` +
+      `\`\`\`bash\n# Install Vapi CLI\nnpm install -g @vapi-ai/cli\n\n# Initialize new project\nvapi init\n\n# Create assistant\nvapi assistant create\n\`\`\`\n\n` +
+      `## Popular Use Cases\n` +
+      `- Customer support automation\n` +
+      `- Appointment scheduling\n` +
+      `- Lead qualification\n` +
+      `- Survey and feedback collection\n\n`;
+  }
+
+  private generatePhoneContent(title: string): string {
+    return `Phone number management and telephony integration with Vapi.\n\n` +
+      `## Phone Number Options\n` +
+      `- **Vapi Numbers** - Free numbers provided by Vapi\n` +
+      `- **Twilio Integration** - Use your own Twilio numbers\n` +
+      `- **Vonage Integration** - Connect Vonage phone numbers\n` +
+      `- **Telnyx Integration** - Enterprise-grade telephony\n` +
+      `- **Bring Your Own (BYO)** - Use any SIP-compatible provider\n\n` +
+      `## Features\n` +
+      `- Inbound and outbound calling\n` +
+      `- Call forwarding and routing\n` +
+      `- Voicemail detection\n` +
+      `- Call recording and transcription\n` +
+      `- Real-time call analytics\n\n` +
+      `## Setup Process\n` +
+      `1. Choose your telephony provider\n` +
+      `2. Configure phone number in dashboard\n` +
+      `3. Assign assistant to phone number\n` +
+      `4. Test incoming and outgoing calls\n\n`;
+  }
+
+  private generateGenericContent(title: string, category: string): string {
+    switch (category) {
+      case 'workflows':
+        return `Visual workflow builder for creating complex conversation flows with branching logic.\n\n`;
+      case 'guides':
+        return `Practical implementation guide with code examples and step-by-step instructions.\n\n`;
+      case 'webhooks':
+        return `Real-time event notifications and webhook configuration for call events.\n\n`;
+      case 'analytics':
+        return `Call analytics, performance metrics, and detailed reporting capabilities.\n\n`;
+      default:
+        return `This documentation covers ${title.toLowerCase()} in Vapi voice AI platform.\n\n`;
+    }
+  }
+
   async searchDocumentation(query: string, category?: string): Promise<{results: DocPage[], usedVectorSearch: boolean}> {
     const docs = await this.getDocumentationStructure();
     
@@ -394,9 +521,9 @@ export class DocsFetcher {
     }
     
     // Try vector search first if available
-    if (this.vectorSearch.isReady()) {
-      try {
-        const vectorResults = await this.vectorSearch.search(query, 10, 0.2); // Lower threshold for better matches
+          if (this.vectorSearch.isReady()) {
+        try {
+          const vectorResults = await this.vectorSearch.search(query, 10, 0.15); // Lower threshold for better matches
         
         // Filter by category if specified
         let filteredResults = vectorResults;

@@ -1,132 +1,230 @@
-import { DocsFetcher } from "../utils/docs-fetcher.js";
+import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import axios from 'axios';
 
-const docsFetcher = new DocsFetcher();
+interface OpenAPISpec {
+  openapi: string;
+  paths: Record<string, Record<string, any>>;
+  components?: {
+    schemas?: Record<string, any>;
+  };
+}
 
-/**
- * Get detailed API reference information for Vapi endpoints
- */
-export async function getApiReference(
-  endpoint: string,
-  method: string = "all",
-  includeExamples: boolean = true
-): Promise<string> {
-  try {
-    // Get all API reference pages
-    const allApiPages = await docsFetcher.getApiReference();
-    
-    // Search for endpoint in API pages
-    const searchTerm = endpoint.toLowerCase();
-    let relevantApiPages = allApiPages.filter(page =>
-      page.title.toLowerCase().includes(searchTerm) ||
-      page.section.toLowerCase().includes(searchTerm) ||
-      page.url.toLowerCase().includes(searchTerm) ||
-      page.url.toLowerCase().includes(endpoint.toLowerCase())
-    );
+interface APIEndpoint {
+  path: string;
+  method: string;
+  operationId?: string;
+  summary?: string;
+  description?: string;
+  parameters?: any[];
+  requestBody?: any;
+  responses?: Record<string, any>;
+  tags?: string[];
+}
 
-    // If no direct matches, try broader search
-    if (relevantApiPages.length === 0) {
-      const broadSearchResults = await docsFetcher.searchDocumentation(endpoint + " api");
-      relevantApiPages = broadSearchResults.results.slice(0, 3);
-    }
-
-    if (relevantApiPages.length === 0) {
-      return `# 🔧 No API Reference Found
-
-No API reference found for "${endpoint}".
-
-## 📚 Available API Endpoints:
-
-${allApiPages.slice(0, 8).map(page => `- **${page.title}** - ${page.section}`).join('\n')}
-
-## 🎯 Popular API Endpoints:
-
-- **Assistants** - Create and manage voice assistants
-- **Calls** - Make and manage phone calls
-- **Phone Numbers** - Manage phone numbers
-- **Tools** - Define custom functions
-- **Webhooks** - Configure event notifications
-- **Analytics** - Call analytics and insights
-- **Files** - File upload and management
-- **Squads** - Team management
-
-## 💡 Tips:
-- Try searching for broader terms (e.g., "assistant" instead of "assistants")
-- Use the \`search_documentation\` tool for more general searches
-- Check the full API reference at https://docs.vapi.ai/api-reference
-
-Try searching for one of the popular endpoints above!`;
-    }
-
-    let response = `# 🔧 API Reference for "${endpoint}"\n\n`;
-    response += `Found ${relevantApiPages.length} API reference(s) for "${endpoint}"\n`;
-    if (method !== "all") {
-      response += `**Method:** ${method.toUpperCase()}\n`;
-    }
-    response += `**Include Examples:** ${includeExamples ? 'Yes' : 'No'}\n\n`;
-
-    // Fetch and return actual content for each API reference
-    for (let i = 0; i < Math.min(relevantApiPages.length, 3); i++) {
-      const apiPage = relevantApiPages[i];
-      if (!apiPage) continue;
-      
-      try {
-        const content = await docsFetcher.fetchPageContent(apiPage);
-        
-        response += `## 📄 ${i + 1}. ${apiPage.title}\n\n`;
-        response += `**Section:** ${apiPage.section}\n`;
-        response += `**Category:** ${apiPage.category}\n`;
-        response += `**URL:** ${apiPage.url}\n\n`;
-        
-        // Add the actual content
-        response += `### Content:\n\n${content}\n\n`;
-        response += `---\n\n`;
-        
-      } catch (error) {
-        response += `## 📄 ${i + 1}. ${apiPage.title}\n\n`;
-        response += `**Section:** ${apiPage.section}\n`;
-        response += `**URL:** ${apiPage.url}\n\n`;
-        response += `⚠️ Content temporarily unavailable. Please visit the URL above.\n\n`;
-        response += `---\n\n`;
+export const apiReferenceTool: Tool = {
+  name: 'get_api_reference',
+  description: 'Get detailed API reference information for Vapi endpoints using the actual OpenAPI specification',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      endpoint: {
+        type: 'string',
+        description: 'API endpoint or resource to get reference for (e.g., "assistants", "calls", "phone-numbers")'
+      },
+      method: {
+        type: 'string',
+        enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'all'],
+        default: 'all',
+        description: 'HTTP method (optional)'
+      },
+      includeExamples: {
+        type: 'boolean',
+        default: true,
+        description: 'Include request/response examples'
       }
+    },
+    required: ['endpoint']
+  }
+};
+
+export async function handleApiReference(args: any): Promise<string> {
+  const { endpoint, method = 'all', includeExamples = true } = args;
+
+  try {
+    // Fetch the OpenAPI spec
+    const response = await axios.get('https://api.vapi.ai/api-json');
+    const spec: OpenAPISpec = response.data;
+    
+    // Find matching endpoints
+    const matchingEndpoints = findMatchingEndpoints(spec, endpoint, method);
+    
+    if (matchingEndpoints.length === 0) {
+      return generateNoResultsResponse(endpoint, method);
     }
 
-    response += `## 🎯 Next Steps\n\n`;
-    response += `After reviewing this API reference:\n`;
-    response += `- Use \`get_examples\` to see code implementations\n`;
-    response += `- Use \`get_guides\` for step-by-step tutorials\n`;
-    response += `- Visit the URLs above for interactive API testing\n`;
-    response += `- Check the **Quickstart** guides for basic setup\n\n`;
-    
-    response += `## 🔗 Additional Resources\n\n`;
-    response += `- **Full API Reference:** https://docs.vapi.ai/api-reference\n`;
-    response += `- **Interactive API:** https://api.vapi.ai/api\n`;
-    response += `- **OpenAPI Spec:** https://api.vapi.ai/api-json\n`;
-    response += `- **Dashboard:** https://dashboard.vapi.ai\n`;
-    response += `- **Discord Community:** https://discord.gg/vapi`;
-
-    return response;
+    // Generate comprehensive API reference
+    return generateApiReference(matchingEndpoints, spec, includeExamples);
     
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return `# ❌ API Reference Error
-
-Failed to fetch API reference: ${errorMessage}
-
-## 🛠️ Troubleshooting:
-- The documentation server might be temporarily unavailable
-- Try again in a few moments
-- Check your internet connection
-
-## 📋 Manual Resources:
-- **Full API Reference:** https://docs.vapi.ai/api-reference
-- **Interactive API:** https://api.vapi.ai/api
-- **OpenAPI Spec:** https://api.vapi.ai/api-json
-- **Postman Collection:** Available in the dashboard
-
-## 🎯 Popular API Endpoints:
-- **Assistants:** https://docs.vapi.ai/api-reference/assistants
-- **Calls:** https://docs.vapi.ai/api-reference/calls
-- **Phone Numbers:** https://docs.vapi.ai/api-reference/phone-numbers
-- **Tools:** https://docs.vapi.ai/api-reference/tools`;
+    console.error('Failed to fetch OpenAPI spec:', error);
+    return generateErrorResponse(endpoint);
   }
+}
+
+function findMatchingEndpoints(spec: OpenAPISpec, endpoint: string, method: string): APIEndpoint[] {
+  const endpoints: APIEndpoint[] = [];
+  const searchTerm = endpoint.toLowerCase();
+  
+  for (const [path, pathMethods] of Object.entries(spec.paths)) {
+    for (const [httpMethod, operation] of Object.entries(pathMethods)) {
+      // Skip if method filter doesn't match
+      if (method !== 'all' && httpMethod.toUpperCase() !== method.toUpperCase()) {
+        continue;
+      }
+      
+      // Check if endpoint matches path, operationId, summary, or tags
+      const pathMatch = path.toLowerCase().includes(searchTerm);
+      const operationMatch = operation.operationId?.toLowerCase().includes(searchTerm);
+      const summaryMatch = operation.summary?.toLowerCase().includes(searchTerm);
+      const tagMatch = operation.tags?.some((tag: string) => 
+        tag.toLowerCase().includes(searchTerm)
+      );
+      
+      if (pathMatch || operationMatch || summaryMatch || tagMatch) {
+        endpoints.push({
+          path,
+          method: httpMethod.toUpperCase(),
+          operationId: operation.operationId,
+          summary: operation.summary,
+          description: operation.description,
+          parameters: operation.parameters,
+          requestBody: operation.requestBody,
+          responses: operation.responses,
+          tags: operation.tags
+        });
+      }
+    }
+  }
+  
+  return endpoints;
+}
+
+function generateApiReference(endpoints: APIEndpoint[], spec: OpenAPISpec, includeExamples: boolean): string {
+  let result = `# 🔧 API Reference for "${endpoints[0]?.path.split('/')[1] || 'endpoint'}"\n\n`;
+  
+  result += `Found ${endpoints.length} endpoint(s)\n\n`;
+  
+  endpoints.forEach((endpoint, index) => {
+    result += `## 📄 ${index + 1}. ${endpoint.method} ${endpoint.path}\n\n`;
+    
+    if (endpoint.summary) {
+      result += `**Summary:** ${endpoint.summary}\n\n`;
+    }
+    
+    if (endpoint.description) {
+      result += `**Description:** ${endpoint.description}\n\n`;
+    }
+    
+    if (endpoint.operationId) {
+      result += `**Operation ID:** \`${endpoint.operationId}\`\n\n`;
+    }
+    
+    if (endpoint.tags && endpoint.tags.length > 0) {
+      result += `**Tags:** ${endpoint.tags.join(', ')}\n\n`;
+    }
+    
+    // Parameters
+    if (endpoint.parameters && endpoint.parameters.length > 0) {
+      result += `### Parameters\n\n`;
+      endpoint.parameters.forEach((param: any) => {
+        result += `- **${param.name}** (${param.in})`;
+        if (param.required) result += ` *required*`;
+        result += `\n`;
+        if (param.description) result += `  - ${param.description}\n`;
+        if (param.schema?.type) result += `  - Type: \`${param.schema.type}\`\n`;
+        if (param.schema?.enum) result += `  - Allowed values: \`${param.schema.enum.join('`, `')}\`\n`;
+        result += `\n`;
+      });
+    }
+    
+    // Request Body
+    if (endpoint.requestBody) {
+      result += `### Request Body\n\n`;
+      if (endpoint.requestBody.description) {
+        result += `${endpoint.requestBody.description}\n\n`;
+      }
+      
+      if (endpoint.requestBody.content) {
+        const contentTypes = Object.keys(endpoint.requestBody.content);
+        result += `**Content Types:** ${contentTypes.join(', ')}\n\n`;
+        
+        // Show schema for application/json if available
+        const jsonContent = endpoint.requestBody.content['application/json'];
+        if (jsonContent?.schema && includeExamples) {
+          result += `**Schema:**\n\`\`\`json\n${JSON.stringify(jsonContent.schema, null, 2)}\`\`\`\n\n`;
+        }
+      }
+    }
+    
+    // Responses
+    if (endpoint.responses) {
+      result += `### Responses\n\n`;
+      Object.entries(endpoint.responses).forEach(([statusCode, response]: [string, any]) => {
+        result += `**${statusCode}** - ${response.description || 'Success'}\n`;
+        
+        if (response.content && includeExamples) {
+          const contentTypes = Object.keys(response.content);
+          if (contentTypes.length > 0) {
+            result += `  - Content Types: ${contentTypes.join(', ')}\n`;
+          }
+        }
+        result += `\n`;
+      });
+    }
+    
+    // Add link to interactive API
+    result += `### 🔗 Try it out\n\n`;
+    result += `**Interactive API:** https://api.vapi.ai/api#${endpoint.operationId || endpoint.method.toLowerCase() + endpoint.path.replace(/[{}]/g, '')}\n\n`;
+    
+    if (index < endpoints.length - 1) {
+      result += `---\n\n`;
+    }
+  });
+  
+  // Footer with additional resources
+  result += `## 🎯 Additional Resources\n\n`;
+  result += `- **Full API Reference:** https://docs.vapi.ai/api-reference\n`;
+  result += `- **Interactive API Explorer:** https://api.vapi.ai/api\n`;
+  result += `- **OpenAPI Spec:** https://api.vapi.ai/api-json\n`;
+  result += `- **Dashboard:** https://dashboard.vapi.ai\n`;
+  result += `- **Discord Community:** https://discord.gg/vapi\n\n`;
+  
+  result += `💡 **Pro Tip:** Use the interactive API explorer to test endpoints with your actual API key and see real request/response examples.\n`;
+  
+  return result;
+}
+
+function generateNoResultsResponse(endpoint: string, method: string): string {
+  return `# 🔍 No API Reference Found\n\n` +
+    `No API endpoints found for "${endpoint}" with method "${method}".\n\n` +
+    `## 💡 Suggestions:\n` +
+    `- Try broader search terms (e.g., "call" instead of "voice-call")\n` +
+    `- Use "all" for method to see all HTTP methods\n` +
+    `- Check for typos in your search query\n` +
+    `- Try these common endpoints: assistants, calls, phone-numbers, tools, webhooks\n\n` +
+    `## 📚 Available Resources:\n` +
+    `- **Full API Reference:** https://docs.vapi.ai/api-reference\n` +
+    `- **Interactive API:** https://api.vapi.ai/api\n` +
+    `- **OpenAPI Spec:** https://api.vapi.ai/api-json\n`;
+}
+
+function generateErrorResponse(endpoint: string): string {
+  return `# ❌ API Reference Error\n\n` +
+    `Sorry, there was an error fetching the API reference for "${endpoint}".\n\n` +
+    `## 🔗 Alternative Resources:\n` +
+    `- **Full API Reference:** https://docs.vapi.ai/api-reference\n` +
+    `- **Interactive API:** https://api.vapi.ai/api\n` +
+    `- **OpenAPI Spec:** https://api.vapi.ai/api-json\n` +
+    `- **Dashboard:** https://dashboard.vapi.ai\n\n` +
+    `Please try again later or visit the links above for complete API documentation.`;
 } 

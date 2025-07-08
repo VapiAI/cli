@@ -2,7 +2,7 @@ import { Tool, Resource } from "@modelcontextprotocol/sdk/types.js";
 import { searchDocumentation } from "./tools/search.js";
 import { getExamples } from "./tools/examples.js";
 import { getGuides } from "./tools/guides.js";
-import { getApiReference } from "./tools/api-reference.js";
+import { handleApiReference } from './tools/api-reference.js';
 import { getChangelog } from "./tools/changelog.js";
 import { DocumentationSource } from "./resources/documentation.js";
 
@@ -211,11 +211,7 @@ export class VapiDocsServer {
           break;
 
         case "get_api_reference":
-          result = await getApiReference(
-            args.endpoint as string,
-            args.method as string,
-            args.includeExamples as boolean
-          );
+          result = await handleApiReference(args);
           break;
 
         case "get_changelog":
