@@ -12,7 +12,9 @@ export async function searchDocumentation(
 ): Promise<string> {
   try {
     // Search the documentation
-    const searchResults = await docsFetcher.searchDocumentation(query, category);
+    const searchResult = await docsFetcher.searchDocumentation(query, category);
+    const searchResults = searchResult.results;
+    const usedVectorSearch = searchResult.usedVectorSearch;
     
     // Limit results
     const limitedResults = searchResults.slice(0, limit);
@@ -39,8 +41,18 @@ No documentation found for "${query}" in category "${category}".
 Try searching for one of these topics!`;
     }
 
+    // Display search method used
+    const vectorIndexSize = docsFetcher.getVectorIndexSize();
+    
     let response = `# 🔍 Search Results for "${query}"\n\n`;
-    response += `Found ${limitedResults.length} relevant page(s):\n\n`;
+    
+    if (usedVectorSearch) {
+      response += `🧠 **Enhanced AI Search** - Found ${limitedResults.length} semantically relevant page(s) from ${vectorIndexSize} indexed documents:\n\n`;
+    } else if (vectorIndexSize > 0) {
+      response += `📝 **Text Search** - Found ${limitedResults.length} relevant page(s) (vector search available but no semantic matches above threshold):\n\n`;
+    } else {
+      response += `📝 **Text Search** - Found ${limitedResults.length} relevant page(s) (vector search initializing...):\n\n`;
+    }
 
     // Fetch and return actual content for each result
     for (let i = 0; i < limitedResults.length; i++) {
@@ -72,7 +84,18 @@ Try searching for one of these topics!`;
     response += `- Use \`get_examples\` to see code examples\n`;
     response += `- Use \`get_guides\` for step-by-step tutorials\n`;
     response += `- Use \`get_api_reference\` for API documentation\n`;
-    response += `- Visit the URLs above for interactive content\n`;
+    response += `- Visit the URLs above for interactive content\n\n`;
+
+    if (usedVectorSearch) {
+      response += `## 🧠 AI-Powered Search\n\n`;
+      response += `This search used semantic similarity to find the most relevant results, even if they don't contain your exact keywords. `;
+      response += `Vector search indexed ${vectorIndexSize} documents for intelligent matching.\n\n`;
+    }
+
+    response += `## 🔗 Resources\n\n`;
+    response += `- **Main Documentation:** https://docs.vapi.ai\n`;
+    response += `- **API Reference:** https://docs.vapi.ai/api-reference\n`;
+    response += `- **Community Discord:** https://discord.gg/vapi`;
 
     return response;
     
@@ -84,6 +107,7 @@ Failed to search documentation: ${errorMessage}
 
 ## 🛠️ Troubleshooting:
 - The documentation server might be temporarily unavailable
+- Vector search model might be initializing (first run takes longer)
 - Try again in a few moments
 - Check your internet connection
 - Contact support if the issue persists

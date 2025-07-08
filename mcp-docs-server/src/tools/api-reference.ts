@@ -26,7 +26,7 @@ export async function getApiReference(
     // If no direct matches, try broader search
     if (relevantApiPages.length === 0) {
       const broadSearchResults = await docsFetcher.searchDocumentation(endpoint + " api");
-      relevantApiPages = broadSearchResults.slice(0, 3);
+      relevantApiPages = broadSearchResults.results.slice(0, 3);
     }
 
     if (relevantApiPages.length === 0) {

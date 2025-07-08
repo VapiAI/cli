@@ -17,7 +17,8 @@ RUN mkdir -p /usr/local/share/man/man1
 COPY vapi /usr/local/bin/vapi
 
 # Copy man pages from GoReleaser (if available)
-COPY man/*.1 /usr/local/share/man/man1/
+# Use a wildcard copy that won't fail if no files match
+COPY --chmod=644 man/ /usr/local/share/man/man1/
 
 # Set ownership and permissions (mandoc doesn't need database updates)
 RUN chown vapi:vapi /usr/local/bin/vapi && \

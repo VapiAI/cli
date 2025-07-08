@@ -24,7 +24,7 @@ export async function getGuides(
     // If no direct matches, try broader search
     if (relevantGuides.length === 0) {
       const broadSearchResults = await docsFetcher.searchDocumentation(topic + " guide");
-      relevantGuides = broadSearchResults.slice(0, 3);
+      relevantGuides = broadSearchResults.results.slice(0, 3);
     }
 
     if (relevantGuides.length === 0) {

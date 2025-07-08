@@ -12,7 +12,8 @@ export async function getChangelog(
 ): Promise<string> {
   try {
     // Search for changelog content
-    const changelogResults = await docsFetcher.searchDocumentation("changelog", "changelog");
+    const changelogSearchResult = await docsFetcher.searchDocumentation("changelog", "changelog");
+    const changelogResults = changelogSearchResult.results;
     
     if (changelogResults.length === 0) {
       return `# 📝 Changelog

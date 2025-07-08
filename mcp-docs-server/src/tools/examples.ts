@@ -25,7 +25,7 @@ export async function getExamples(
     if (filteredExamples.length === 0) {
       // If no direct matches, try a broader search
       const broadSearchResults = await docsFetcher.searchDocumentation(feature + " example");
-      const exampleResults = broadSearchResults.slice(0, 3);
+      const exampleResults = broadSearchResults.results.slice(0, 3);
       
       if (exampleResults.length === 0) {
         return `# 📝 No Examples Found
