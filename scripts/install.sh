@@ -135,7 +135,7 @@ chmod +x "$exe" ||
 # Install man pages if available and on Unix systems
 if [[ $platform != MINGW64* ]]; then
     man_pages_found=0
-    for man_file in "$temp_extract_dir"/man/*.1 2>/dev/null; do
+    for man_file in "$temp_extract_dir"/man/*.1; do
         if [[ -f "$man_file" ]]; then
             cp "$man_file" "$man_dir/" 2>/dev/null || true
             man_pages_found=$((man_pages_found + 1))
@@ -143,7 +143,7 @@ if [[ $platform != MINGW64* ]]; then
     done
     
     # Also check for man pages in root of archive
-    for man_file in "$temp_extract_dir"/*.1 2>/dev/null; do
+    for man_file in "$temp_extract_dir"/*.1; do
         if [[ -f "$man_file" ]]; then
             cp "$man_file" "$man_dir/" 2>/dev/null || true
             man_pages_found=$((man_pages_found + 1))
