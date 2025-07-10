@@ -7,6 +7,12 @@ param()
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"  # Suppress progress bars for faster downloads
 
+# Ensure compatibility with PowerShell 5.1
+if (-not (Test-Path Variable:IsWindows)) {
+    # We're on PowerShell 5.1 or earlier (which only runs on Windows)
+    $IsWindows = $true
+}
+
 # Check if running on Windows
 if (-not $IsWindows) {
     Write-Host "[ERROR] This installer is for Windows only." -ForegroundColor Red
