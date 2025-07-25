@@ -1,0 +1,8 @@
+{
+  "assistant_id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Test Assistant",
+  "first_message": "Hello! I'm your test assistant. How can I help you today?",
+  "voice_id": "elliot",
+  "model": "gpt-3.5-turbo",
+  "system_message": "You are a helpful and friendly assistant. Keep responses concise and conversational."
+}
