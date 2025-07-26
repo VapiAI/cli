@@ -208,7 +208,7 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 			}{
 				Format:     "pcm_s16le",
 				Container:  "raw",
-				SampleRate: 16000,
+				SampleRate: 48000,  // Request 48kHz to match our audio system
 			},
 		},
 	}
@@ -361,15 +361,8 @@ func (c *VoiceClient) handleSignalingEvents() {
 		if event.Type == "audio_data" {
 			// Handle audio data directly without forwarding as call event
 			if samples, ok := event.Data.([]float32); ok {
-				// Vapi sends 16kHz audio, but our audio stream expects 48kHz
-				// Upsample by repeating each sample 3 times (simple upsampling)
-				upsampled := make([]float32, len(samples)*3)
-				for i, sample := range samples {
-					upsampled[i*3] = sample
-					upsampled[i*3+1] = sample
-					upsampled[i*3+2] = sample
-				}
-				c.audioStream.WriteAudio(upsampled)
+				// Audio is now at 48kHz, no upsampling needed
+				c.audioStream.WriteAudio(samples)
 			}
 			continue
 		}
@@ -432,32 +425,21 @@ func (c *VoiceClient) handleSignalingEvents() {
 // streamMicrophoneAudio continuously streams audio from microphone to Vapi WebSocket
 func (c *VoiceClient) streamMicrophoneAudio() {
 	// Buffer for audio samples 
-	// Note: AudioStream runs at 48kHz, but Vapi expects 16kHz
-	const vapiSampleRate = 16000
+	// Note: Both AudioStream and Vapi now use 48kHz
+	const vapiSampleRate = 48000
 	const chunkDurationMs = 20
-	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000      // 320 samples at 16kHz
-	const audioStreamSamplesPerChunk = (48000 * chunkDurationMs) / 1000       // 960 samples at 48kHz
+	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000      // 960 samples at 48kHz
 	
 	audioBuffer := make([]float32, vapiSamplesPerChunk)
 	
 	for c.callState.Status == CallStatusConnected || c.callState.Status == CallStatusConnecting {
 		// Read audio from microphone
 		if c.audioStream.IsRunning() {
-			// Get audio samples from input stream
-			inputSamples := c.audioStream.ReadAudio(audioStreamSamplesPerChunk)
+			// Get audio samples from input stream (already at 48kHz)
+			inputSamples := c.audioStream.ReadAudio(vapiSamplesPerChunk)
 			if len(inputSamples) > 0 {
-				// Downsample from 48kHz to 16kHz (3:1 ratio)
-				// Simple downsampling: take every 3rd sample
-				downsampledCount := 0
-				for i := 0; i < len(inputSamples) && downsampledCount < len(audioBuffer); i += 3 {
-					audioBuffer[downsampledCount] = inputSamples[i]
-					downsampledCount++
-				}
-				
-				// Pad remaining with silence if needed
-				for i := downsampledCount; i < len(audioBuffer); i++ {
-					audioBuffer[i] = 0.0
-				}
+				// No resampling needed - both are at 48kHz
+				copy(audioBuffer, inputSamples)
 				
 				// Send audio to Vapi WebSocket
 				if c.signaling != nil && c.signaling.IsConnected() {
