@@ -208,7 +208,7 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 			}{
 				Format:     "pcm_s16le",
 				Container:  "raw",
-				SampleRate: 48000,  // Request 48kHz to match our audio system
+				SampleRate: 16000,  // Request 16kHz from Vapi (their default)
 			},
 		},
 	}
@@ -236,7 +236,22 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+privateKey)
 
+	// Log the API request
+	requestLog := APIRequest{
+		Method:    "POST",
+		URL:       url,
+		Headers:   map[string]string{"Authorization": "Bearer " + privateKey[:10] + "...", "Content-Type": "application/json"},
+		Body:      payload,
+		Timestamp: time.Now(),
+	}
+	select {
+	case c.requestLog <- requestLog:
+	default:
+		// Channel full, drop log
+	}
+
 	// Make the HTTP request
+	startTime := time.Now()
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -249,6 +264,19 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 		// Try to read error response body for more details
 		var errorBody map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&errorBody); err == nil {
+			// Log error response
+			responseLog := APIResponse{
+				StatusCode: resp.StatusCode,
+				Headers:    make(map[string]string),
+				Body:       errorBody,
+				Duration:   time.Since(startTime),
+				Timestamp:  time.Now(),
+			}
+			select {
+			case c.responseLog <- responseLog:
+			default:
+				// Channel full, drop log
+			}
 			return nil, fmt.Errorf("WebSocket call creation failed with status %d: %v", resp.StatusCode, errorBody)
 		}
 		return nil, fmt.Errorf("WebSocket call creation failed with status: %d", resp.StatusCode)
@@ -260,6 +288,22 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 	resp.Body.Close()
+
+	// Log successful response
+	var responseBody map[string]interface{}
+	json.Unmarshal(bodyBytes, &responseBody)
+	responseLog := APIResponse{
+		StatusCode: resp.StatusCode,
+		Headers:    make(map[string]string),
+		Body:       responseBody,
+		Duration:   time.Since(startTime),
+		Timestamp:  time.Now(),
+	}
+	select {
+	case c.responseLog <- responseLog:
+	default:
+		// Channel full, drop log
+	}
 	
 	// Parse the response
 	var wsCallResp WebSocketCallResponse
@@ -361,8 +405,23 @@ func (c *VoiceClient) handleSignalingEvents() {
 		if event.Type == "audio_data" {
 			// Handle audio data directly without forwarding as call event
 			if samples, ok := event.Data.([]float32); ok {
-				// Audio is now at 48kHz, no upsampling needed
-				c.audioStream.WriteAudio(samples)
+				// Vapi sends 16kHz audio, we need to upsample to 48kHz
+				// Simple 3x upsampling (16kHz -> 48kHz)
+				upsampled := make([]float32, len(samples)*3)
+				for i := 0; i < len(samples); i++ {
+					// Linear interpolation for upsampling
+					upsampled[i*3] = samples[i]
+					if i < len(samples)-1 {
+						// Interpolate between current and next sample
+						upsampled[i*3+1] = samples[i]*0.667 + samples[i+1]*0.333
+						upsampled[i*3+2] = samples[i]*0.333 + samples[i+1]*0.667
+					} else {
+						// Last sample - just repeat
+						upsampled[i*3+1] = samples[i]
+						upsampled[i*3+2] = samples[i]
+					}
+				}
+				c.audioStream.WriteAudio(upsampled)
 			}
 			continue
 		}
@@ -425,21 +484,25 @@ func (c *VoiceClient) handleSignalingEvents() {
 // streamMicrophoneAudio continuously streams audio from microphone to Vapi WebSocket
 func (c *VoiceClient) streamMicrophoneAudio() {
 	// Buffer for audio samples 
-	// Note: Both AudioStream and Vapi now use 48kHz
-	const vapiSampleRate = 48000
+	// AudioStream uses 48kHz, but Vapi expects 16kHz
+	const audioStreamSampleRate = 48000
+	const vapiSampleRate = 16000
 	const chunkDurationMs = 20
-	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000      // 960 samples at 48kHz
+	const audioStreamSamplesPerChunk = (audioStreamSampleRate * chunkDurationMs) / 1000  // 960 samples at 48kHz
+	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000              // 320 samples at 16kHz
 	
 	audioBuffer := make([]float32, vapiSamplesPerChunk)
 	
 	for c.callState.Status == CallStatusConnected || c.callState.Status == CallStatusConnecting {
 		// Read audio from microphone
 		if c.audioStream.IsRunning() {
-			// Get audio samples from input stream (already at 48kHz)
-			inputSamples := c.audioStream.ReadAudio(vapiSamplesPerChunk)
+			// Get audio samples from input stream at 48kHz
+			inputSamples := c.audioStream.ReadAudio(audioStreamSamplesPerChunk)
 			if len(inputSamples) > 0 {
-				// No resampling needed - both are at 48kHz
-				copy(audioBuffer, inputSamples)
+				// Downsample from 48kHz to 16kHz (take every 3rd sample)
+				for i := 0; i < vapiSamplesPerChunk && i*3 < len(inputSamples); i++ {
+					audioBuffer[i] = inputSamples[i*3]
+				}
 				
 				// Send audio to Vapi WebSocket
 				if c.signaling != nil && c.signaling.IsConnected() {
