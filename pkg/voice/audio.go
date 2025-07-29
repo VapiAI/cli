@@ -103,7 +103,7 @@ type AudioStream struct {
 	running  bool
 	runMutex sync.RWMutex
 	stopChan chan struct{}
-	
+
 	// Debugging
 	debugger *AudioDebugger
 }
@@ -114,7 +114,7 @@ func NewAudioStream(config *WebRTCConfig) (*AudioStream, error) {
 	if err := deviceManager.Initialize(); err != nil {
 		return nil, fmt.Errorf("failed to initialize device manager: %w", err)
 	}
-	
+
 	// Create debugger if enabled
 	debugger := NewAudioDebugger(config.AudioDebug)
 
@@ -175,7 +175,7 @@ func (a *AudioStream) Start() error {
 		}
 		return fmt.Errorf("failed to start output stream: %w", err)
 	}
-	
+
 	// Start debugger if enabled
 	if err := a.debugger.Start(); err != nil {
 		fmt.Printf("Failed to start audio debugger: %v\n", err)
@@ -244,7 +244,7 @@ func (a *AudioStream) startInputStream() error {
 		// Debug input audio
 		a.debugger.WriteInput(in)
 		a.debugger.LogAudioStats(in, "Input")
-		
+
 		// Write audio data to input buffer for processing
 		a.inputBuffer.Write(in)
 	}
@@ -264,7 +264,7 @@ func (a *AudioStream) startOutputStream() error {
 	outputCallback := func(out []float32) {
 		// Read audio data from output buffer
 		a.outputBuffer.Read(out)
-		
+
 		// Debug output audio
 		a.debugger.WriteOutput(out)
 		a.debugger.LogAudioStats(out, "Output")
@@ -308,7 +308,7 @@ func (a *AudioStream) Stop() error {
 	if err := a.debugger.Stop(); err != nil {
 		fmt.Printf("Warning: failed to stop audio debugger: %v\n", err)
 	}
-	
+
 	// Terminate device manager
 	if err := a.deviceManager.Terminate(); err != nil {
 		fmt.Printf("Warning: failed to terminate device manager: %v\n", err)

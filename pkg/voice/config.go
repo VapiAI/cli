@@ -28,7 +28,7 @@ type WebRTCConfig struct {
 	// Call Configuration
 	CallTimeout  time.Duration `mapstructure:"call_timeout"`
 	VideoEnabled bool          `mapstructure:"video_enabled"`
-	
+
 	// Debug Configuration
 	AudioDebug bool `mapstructure:"audio_debug"`
 }

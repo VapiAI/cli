@@ -61,6 +61,12 @@ type VoiceClient struct {
 	// WebSocket signaling
 	signaling *VapiWebSocket
 
+	// Audio processing
+	audioProcessor *WebSocketAudioProcessor
+
+	// Echo cancellation state
+	lastSpeakerSamples []float32
+
 	// Event channels
 	requestLog  chan APIRequest
 	responseLog chan APIResponse
@@ -89,11 +95,19 @@ func NewVoiceClient(config *WebRTCConfig, vapiClient *vapiclient.Client) (*Voice
 	// Create WebSocket signaling client
 	signaling := NewVapiWebSocket()
 
+	// Create audio processor
+	audioProcessor, err := NewWebSocketAudioProcessor()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create audio processor: %w", err)
+	}
+
 	return &VoiceClient{
-		config:      config,
-		vapiClient:  vapiClient,
-		audioStream: audioStream,
-		signaling:   signaling,
+		config:             config,
+		vapiClient:         vapiClient,
+		audioStream:        audioStream,
+		signaling:          signaling,
+		audioProcessor:     audioProcessor,
+		lastSpeakerSamples: make([]float32, 0),
 		callState: &CallState{
 			Status: CallStatusIdle,
 		},
@@ -135,7 +149,10 @@ func (c *VoiceClient) StartCall(assistantID string) error {
 		return fmt.Errorf("failed to start audio stream: %w", err)
 	}
 
-	// 4. Start streaming microphone audio to WebSocket
+	// 4. Reset and start audio processing
+	c.audioProcessor.Reset()
+
+	// 5. Start streaming microphone audio to WebSocket
 	go c.streamMicrophoneAudio()
 
 	c.callState.Status = CallStatusConnected
@@ -473,6 +490,27 @@ func (c *VoiceClient) IsAudioRunning() bool {
 	return c.audioStream.IsRunning()
 }
 
+// ResetAudioProcessor resets the audio processor's internal state
+func (c *VoiceClient) ResetAudioProcessor() {
+	if c.audioProcessor != nil {
+		c.audioProcessor.Reset()
+	}
+}
+
+// SetNoiseGateThreshold adjusts the noise gate sensitivity
+func (c *VoiceClient) SetNoiseGateThreshold(threshold float32) {
+	if c.audioProcessor != nil {
+		c.audioProcessor.SetNoiseGateThreshold(threshold)
+	}
+}
+
+// SetEchoLearningRate adjusts the echo cancellation learning rate
+func (c *VoiceClient) SetEchoLearningRate(rate float32) {
+	if c.audioProcessor != nil {
+		c.audioProcessor.SetLearningRate(rate)
+	}
+}
+
 // handleSignalingEvents processes events from Vapi WebSocket signaling
 func (c *VoiceClient) handleSignalingEvents() {
 	for event := range c.signaling.GetEvents() {
@@ -496,10 +534,13 @@ func (c *VoiceClient) handleSignalingEvents() {
 					}
 				}
 				if clippedCount > 0 || maxSample > 0.95 {
-					fmt.Printf("⚠️  Incoming Vapi audio: %d samples, %d clipped, peak=%.3f\n", 
+					fmt.Printf("⚠️  Incoming Vapi audio: %d samples, %d clipped, peak=%.3f\n",
 						len(samples), clippedCount, maxSample)
 				}
-				
+
+				// Store speaker samples for echo cancellation
+				c.lastSpeakerSamples = samples
+
 				// Vapi sends 16kHz audio, we need to upsample to 48kHz
 				// TODO: This simple 3x upsampling by repeating samples causes poor audio quality
 				// Should use proper interpolation or resampling library
@@ -599,9 +640,12 @@ func (c *VoiceClient) streamMicrophoneAudio() {
 					audioBuffer[i] = inputSamples[i*3]
 				}
 
-				// Send audio to Vapi WebSocket
+				// Apply audio processing (echo cancellation and noise reduction)
+				processedAudio := c.audioProcessor.ProcessAudio(audioBuffer, c.lastSpeakerSamples)
+
+				// Send processed audio to Vapi WebSocket
 				if c.signaling != nil && c.signaling.IsConnected() {
-					if err := c.signaling.SendAudioData(audioBuffer); err != nil {
+					if err := c.signaling.SendAudioData(processedAudio); err != nil {
 						fmt.Printf("Failed to send audio data: %v\n", err)
 					}
 				}

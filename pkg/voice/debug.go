@@ -10,13 +10,13 @@ import (
 
 // AudioDebugger handles audio debugging and recording
 type AudioDebugger struct {
-	enabled      bool
-	inputFile    *os.File
-	outputFile   *os.File
-	inputMutex   sync.Mutex
-	outputMutex  sync.Mutex
-	sampleRate   int
-	channels     int
+	enabled       bool
+	inputFile     *os.File
+	outputFile    *os.File
+	inputMutex    sync.Mutex
+	outputMutex   sync.Mutex
+	sampleRate    int
+	channels      int
 	bitsPerSample int
 }
 
@@ -37,24 +37,28 @@ func (d *AudioDebugger) Start() error {
 	}
 
 	timestamp := time.Now().Format("20060102-150405")
-	
+
 	// Create input debug file
 	inputPath := fmt.Sprintf("audio_debug_input_%s.wav", timestamp)
+	// #nosec G304 -- This is intentional file creation for debugging
 	inputFile, err := os.Create(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create input debug file: %w", err)
 	}
 	d.inputFile = inputFile
-	
+
 	// Create output debug file
 	outputPath := fmt.Sprintf("audio_debug_output_%s.wav", timestamp)
+	// #nosec G304 -- This is intentional file creation for debugging
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
-		inputFile.Close()
+		if err := inputFile.Close(); err != nil {
+			fmt.Printf("Failed to close input file: %v\n", err)
+		}
 		return fmt.Errorf("failed to create output debug file: %w", err)
 	}
 	d.outputFile = outputFile
-	
+
 	// Write WAV headers (we'll update the size later)
 	if err := d.writeWAVHeader(d.inputFile); err != nil {
 		return fmt.Errorf("failed to write input WAV header: %w", err)
@@ -62,11 +66,11 @@ func (d *AudioDebugger) Start() error {
 	if err := d.writeWAVHeader(d.outputFile); err != nil {
 		return fmt.Errorf("failed to write output WAV header: %w", err)
 	}
-	
+
 	fmt.Printf("📝 Audio debugging enabled:\n")
 	fmt.Printf("   Input:  %s\n", inputPath)
 	fmt.Printf("   Output: %s\n", outputPath)
-	
+
 	return nil
 }
 
@@ -75,27 +79,29 @@ func (d *AudioDebugger) WriteInput(samples []float32) {
 	if !d.enabled || d.inputFile == nil {
 		return
 	}
-	
+
 	d.inputMutex.Lock()
 	defer d.inputMutex.Unlock()
-	
+
 	// Convert float32 to int16 and write
 	for _, sample := range samples {
 		// Check for clipping in float domain
 		if sample > 1.0 || sample < -1.0 {
 			fmt.Printf("⚠️  Input clipping detected: %.3f\n", sample)
 		}
-		
+
 		// Clamp to prevent overflow
 		if sample > 1.0 {
 			sample = 1.0
 		} else if sample < -1.0 {
 			sample = -1.0
 		}
-		
+
 		// Convert to int16
 		int16Sample := int16(sample * 32767.0)
-		binary.Write(d.inputFile, binary.LittleEndian, int16Sample)
+		if err := binary.Write(d.inputFile, binary.LittleEndian, int16Sample); err != nil {
+			fmt.Printf("Failed to write input sample: %v\n", err)
+		}
 	}
 }
 
@@ -104,27 +110,29 @@ func (d *AudioDebugger) WriteOutput(samples []float32) {
 	if !d.enabled || d.outputFile == nil {
 		return
 	}
-	
+
 	d.outputMutex.Lock()
 	defer d.outputMutex.Unlock()
-	
+
 	// Convert float32 to int16 and write
 	for _, sample := range samples {
 		// Check for clipping in float domain
 		if sample > 1.0 || sample < -1.0 {
 			fmt.Printf("⚠️  Output clipping detected: %.3f\n", sample)
 		}
-		
+
 		// Clamp to prevent overflow
 		if sample > 1.0 {
 			sample = 1.0
 		} else if sample < -1.0 {
 			sample = -1.0
 		}
-		
+
 		// Convert to int16
 		int16Sample := int16(sample * 32767.0)
-		binary.Write(d.outputFile, binary.LittleEndian, int16Sample)
+		if err := binary.Write(d.outputFile, binary.LittleEndian, int16Sample); err != nil {
+			fmt.Printf("Failed to write output sample: %v\n", err)
+		}
 	}
 }
 
@@ -133,33 +141,33 @@ func (d *AudioDebugger) LogAudioStats(samples []float32, source string) {
 	if !d.enabled || len(samples) == 0 {
 		return
 	}
-	
+
 	// Calculate RMS
 	var sum float64
 	var peak float32
 	var clippedCount int
-	
+
 	for _, sample := range samples {
 		sum += float64(sample * sample)
-		
+
 		absSample := sample
 		if absSample < 0 {
 			absSample = -absSample
 		}
-		
+
 		if absSample > peak {
 			peak = absSample
 		}
-		
+
 		if sample > 1.0 || sample < -1.0 {
 			clippedCount++
 		}
 	}
-	
+
 	rms := float32(sum / float64(len(samples)))
-	
+
 	if clippedCount > 0 || peak > 0.95 {
-		fmt.Printf("🔊 %s Audio Stats: RMS=%.3f, Peak=%.3f, Clipped=%d/%d\n", 
+		fmt.Printf("🔊 %s Audio Stats: RMS=%.3f, Peak=%.3f, Clipped=%d/%d\n",
 			source, rms, peak, clippedCount, len(samples))
 	}
 }
@@ -169,9 +177,9 @@ func (d *AudioDebugger) Stop() error {
 	if !d.enabled {
 		return nil
 	}
-	
+
 	var errs []error
-	
+
 	if d.inputFile != nil {
 		d.inputMutex.Lock()
 		if err := d.updateWAVHeader(d.inputFile); err != nil {
@@ -182,7 +190,7 @@ func (d *AudioDebugger) Stop() error {
 		}
 		d.inputMutex.Unlock()
 	}
-	
+
 	if d.outputFile != nil {
 		d.outputMutex.Lock()
 		if err := d.updateWAVHeader(d.outputFile); err != nil {
@@ -193,11 +201,11 @@ func (d *AudioDebugger) Stop() error {
 		}
 		d.outputMutex.Unlock()
 	}
-	
+
 	if len(errs) > 0 {
 		return fmt.Errorf("errors during stop: %v", errs)
 	}
-	
+
 	fmt.Println("📝 Audio debug files saved")
 	return nil
 }
@@ -220,16 +228,18 @@ func (d *AudioDebugger) writeWAVHeader(file *os.File) error {
 		'd', 'a', 't', 'a', // Subchunk2ID
 		0, 0, 0, 0, // Subchunk2Size (to be filled later)
 	}
-	
+
 	// Calculate ByteRate and BlockAlign
 	blockAlign := d.channels * d.bitsPerSample / 8
 	byteRate := d.sampleRate * blockAlign
-	
+
 	// Update ByteRate
+	// #nosec G115 -- byteRate is calculated from safe constants
 	binary.LittleEndian.PutUint32(header[28:32], uint32(byteRate))
 	// Update BlockAlign
+	// #nosec G115 -- blockAlign is calculated from safe constants
 	binary.LittleEndian.PutUint16(header[32:34], uint16(blockAlign))
-	
+
 	_, err := file.Write(header)
 	return err
 }
@@ -241,16 +251,26 @@ func (d *AudioDebugger) updateWAVHeader(file *os.File) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fileSize := fileInfo.Size()
-	
+
 	// Update ChunkSize (file size - 8)
-	file.Seek(4, 0)
-	binary.Write(file, binary.LittleEndian, uint32(fileSize-8))
-	
+	if _, err := file.Seek(4, 0); err != nil {
+		return fmt.Errorf("failed to seek to chunk size position: %w", err)
+	}
+	// #nosec G115 -- fileSize is from file stat, safe for WAV header
+	if err := binary.Write(file, binary.LittleEndian, uint32(fileSize-8)); err != nil {
+		return fmt.Errorf("failed to write chunk size: %w", err)
+	}
+
 	// Update Subchunk2Size (file size - 44)
-	file.Seek(40, 0)
-	binary.Write(file, binary.LittleEndian, uint32(fileSize-44))
-	
+	if _, err := file.Seek(40, 0); err != nil {
+		return fmt.Errorf("failed to seek to subchunk size position: %w", err)
+	}
+	// #nosec G115 -- fileSize is from file stat, safe for WAV header
+	if err := binary.Write(file, binary.LittleEndian, uint32(fileSize-44)); err != nil {
+		return fmt.Errorf("failed to write subchunk size: %w", err)
+	}
+
 	return nil
 }
