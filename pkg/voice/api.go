@@ -65,13 +65,13 @@ func (h *APIHandler) GetResponseLog() <-chan APIResponse {
 }
 
 // FormatRequest formats an API request for display
-func FormatRequest(req APIRequest) string {
+func FormatRequest(req *APIRequest) string {
 	return req.Timestamp.Format("15:04:05") + " → " + req.Method + " " + req.URL
 }
 
 // FormatResponse formats an API response for display
 func FormatResponse(resp APIResponse) string {
-	return resp.Timestamp.Format("15:04:05") + " ← " + 
-		   string(rune(resp.StatusCode)) + " " + 
-		   resp.Duration.String()
+	return resp.Timestamp.Format("15:04:05") + " ← " +
+		string(rune(resp.StatusCode)) + " " +
+		resp.Duration.String()
 }

@@ -11,19 +11,19 @@ import (
 const (
 	// Audio configuration constants
 	SampleRate    = 48000
-	FrameSize     = 480  // 10ms at 48kHz
-	Channels      = 1    // Mono
+	FrameSize     = 480 // 10ms at 48kHz
+	Channels      = 1   // Mono
 	BitsPerSample = 16
 )
 
 // AudioBuffer represents a circular buffer for audio data
 type AudioBuffer struct {
-	data   []float32
-	size   int
-	head   int
-	tail   int
-	count  int
-	mutex  sync.Mutex
+	data  []float32
+	size  int
+	head  int
+	tail  int
+	count int
+	mutex sync.Mutex
 }
 
 // NewAudioBuffer creates a new audio buffer
@@ -90,22 +90,19 @@ type AudioStream struct {
 	config        *WebRTCConfig
 
 	// Input stream
-	inputStream  *portaudio.Stream
-	inputBuffer  *AudioBuffer
-	inputDevice  *AudioDevice
+	inputStream *portaudio.Stream
+	inputBuffer *AudioBuffer
+	inputDevice *AudioDevice
 
-	// Output stream  
+	// Output stream
 	outputStream *portaudio.Stream
 	outputBuffer *AudioBuffer
 	outputDevice *AudioDevice
 
-	// Audio track mutex for thread safety
-	trackMutex sync.RWMutex
-
 	// Control
-	running     bool
-	runMutex    sync.RWMutex
-	stopChan    chan struct{}
+	running  bool
+	runMutex sync.RWMutex
+	stopChan chan struct{}
 }
 
 // NewAudioStream creates a new audio stream
@@ -166,7 +163,9 @@ func (a *AudioStream) Start() error {
 
 	// Start output stream
 	if err := a.startOutputStream(); err != nil {
-		a.inputStream.Close()
+		if closeErr := a.inputStream.Close(); closeErr != nil {
+			fmt.Printf("Failed to close input stream: %v\n", closeErr)
+		}
 		return fmt.Errorf("failed to start output stream: %w", err)
 	}
 
@@ -174,89 +173,89 @@ func (a *AudioStream) Start() error {
 	return nil
 }
 
-// startInputStream starts the audio input stream
-func (a *AudioStream) startInputStream() error {
+// createStream is a helper function to create audio streams
+func (a *AudioStream) createStream(isInput bool, device *AudioDevice, callback interface{}) (*portaudio.Stream, error) {
 	// Get all devices to find the actual device info
 	devices, err := portaudio.Devices()
 	if err != nil {
-		return fmt.Errorf("failed to get devices: %w", err)
+		return nil, fmt.Errorf("failed to get devices: %w", err)
 	}
 
-	if a.inputDevice.Index >= len(devices) {
-		return fmt.Errorf("invalid input device index: %d", a.inputDevice.Index)
+	if device.Index >= len(devices) {
+		return nil, fmt.Errorf("invalid device index: %d", device.Index)
 	}
 
-	device := devices[a.inputDevice.Index]
-	
-	inputParams := portaudio.StreamParameters{
-		Input: portaudio.StreamDeviceParameters{
-			Device:   device,
-			Channels: Channels,
-			Latency:  time.Duration(a.inputDevice.DefaultLowInputLatency * float64(time.Second)),
-		},
-		SampleRate:      SampleRate,
-		FramesPerBuffer: FrameSize,
+	actualDevice := devices[device.Index]
+
+	var params portaudio.StreamParameters
+	if isInput {
+		params = portaudio.StreamParameters{
+			Input: portaudio.StreamDeviceParameters{
+				Device:   actualDevice,
+				Channels: Channels,
+				Latency:  time.Duration(device.DefaultLowInputLatency * float64(time.Second)),
+			},
+			SampleRate:      SampleRate,
+			FramesPerBuffer: FrameSize,
+		}
+	} else {
+		params = portaudio.StreamParameters{
+			Output: portaudio.StreamDeviceParameters{
+				Device:   actualDevice,
+				Channels: Channels,
+				Latency:  time.Duration(device.DefaultLowOutputLatency * float64(time.Second)),
+			},
+			SampleRate:      SampleRate,
+			FramesPerBuffer: FrameSize,
+		}
 	}
 
+	stream, err := portaudio.OpenStream(params, callback)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open stream: %w", err)
+	}
+
+	if err := stream.Start(); err != nil {
+		if closeErr := stream.Close(); closeErr != nil {
+			fmt.Printf("Failed to close stream: %v\n", closeErr)
+		}
+		return nil, fmt.Errorf("failed to start stream: %w", err)
+	}
+
+	return stream, nil
+}
+
+// startInputStream starts the audio input stream
+func (a *AudioStream) startInputStream() error {
 	// Create input callback
 	inputCallback := func(in []float32) {
 		// Write audio data to input buffer for processing
 		a.inputBuffer.Write(in)
 	}
 
-	a.inputStream, err = portaudio.OpenStream(inputParams, inputCallback)
+	stream, err := a.createStream(true, a.inputDevice, inputCallback)
 	if err != nil {
-		return fmt.Errorf("failed to open input stream: %w", err)
+		return fmt.Errorf("failed to create input stream: %w", err)
 	}
 
-	if err := a.inputStream.Start(); err != nil {
-		a.inputStream.Close()
-		return fmt.Errorf("failed to start input stream: %w", err)
-	}
-
+	a.inputStream = stream
 	return nil
 }
 
 // startOutputStream starts the audio output stream
 func (a *AudioStream) startOutputStream() error {
-	// Get all devices to find the actual device info
-	devices, err := portaudio.Devices()
-	if err != nil {
-		return fmt.Errorf("failed to get devices: %w", err)
-	}
-
-	if a.outputDevice.Index >= len(devices) {
-		return fmt.Errorf("invalid output device index: %d", a.outputDevice.Index)
-	}
-
-	device := devices[a.outputDevice.Index]
-	
-	outputParams := portaudio.StreamParameters{
-		Output: portaudio.StreamDeviceParameters{
-			Device:   device,
-			Channels: Channels,
-			Latency:  time.Duration(a.outputDevice.DefaultLowOutputLatency * float64(time.Second)),
-		},
-		SampleRate:      SampleRate,
-		FramesPerBuffer: FrameSize,
-	}
-
 	// Create output callback
 	outputCallback := func(out []float32) {
 		// Read audio data from output buffer
 		a.outputBuffer.Read(out)
 	}
 
-	a.outputStream, err = portaudio.OpenStream(outputParams, outputCallback)
+	stream, err := a.createStream(false, a.outputDevice, outputCallback)
 	if err != nil {
-		return fmt.Errorf("failed to open output stream: %w", err)
+		return fmt.Errorf("failed to create output stream: %w", err)
 	}
 
-	if err := a.outputStream.Start(); err != nil {
-		a.outputStream.Close()
-		return fmt.Errorf("failed to start output stream: %w", err)
-	}
-
+	a.outputStream = stream
 	return nil
 }
 
@@ -303,7 +302,6 @@ func (a *AudioStream) Stop() error {
 	return nil
 }
 
-
 // WriteAudio writes audio data to the output buffer (for incoming audio)
 func (a *AudioStream) WriteAudio(data []float32) int {
 	return a.outputBuffer.Write(data)
@@ -314,7 +312,7 @@ func (a *AudioStream) GetInputLevel() float32 {
 	// Get recent audio data from input buffer
 	samples := make([]float32, FrameSize)
 	read := a.inputBuffer.Read(samples)
-	
+
 	if read == 0 {
 		return 0.0
 	}
@@ -324,7 +322,7 @@ func (a *AudioStream) GetInputLevel() float32 {
 	for i := 0; i < read; i++ {
 		sum += samples[i] * samples[i]
 	}
-	
+
 	rms := float32(0.0)
 	if read > 0 {
 		rms = float32(sum) / float32(read)
@@ -337,7 +335,7 @@ func (a *AudioStream) GetInputLevel() float32 {
 	if rms > 1.0 {
 		rms = 1.0
 	}
-	
+
 	return rms
 }
 
@@ -346,16 +344,16 @@ func (a *AudioStream) GetOutputLevel() float32 {
 	// For output level, we can check the buffer fill level as a proxy
 	available := a.outputBuffer.Available()
 	bufferSize := a.outputBuffer.size
-	
+
 	if bufferSize == 0 {
 		return 0.0
 	}
-	
+
 	level := float32(available) / float32(bufferSize)
 	if level > 1.0 {
 		level = 1.0
 	}
-	
+
 	return level
 }
 
@@ -376,12 +374,11 @@ func (a *AudioStream) ReadAudio(numSamples int) []float32 {
 	if !a.IsRunning() {
 		return make([]float32, numSamples) // Return silence if not running
 	}
-	
+
 	samples := make([]float32, numSamples)
 	a.inputBuffer.Read(samples)
 	return samples
 }
-
 
 // GetOutputDevice returns the current output device
 func (a *AudioStream) GetOutputDevice() *AudioDevice {

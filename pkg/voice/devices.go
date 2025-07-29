@@ -9,14 +9,14 @@ import (
 
 // AudioDevice represents an audio input or output device
 type AudioDevice struct {
-	Index                int
-	Name                 string
-	MaxInputChannels     int
-	MaxOutputChannels    int
-	DefaultSampleRate    float64
-	DefaultLowInputLatency   float64
-	DefaultLowOutputLatency  float64
-	IsDefault            bool
+	Index                   int
+	Name                    string
+	MaxInputChannels        int
+	MaxOutputChannels       int
+	DefaultSampleRate       float64
+	DefaultLowInputLatency  float64
+	DefaultLowOutputLatency float64
+	IsDefault               bool
 }
 
 // AudioDeviceManager manages audio device enumeration and selection
@@ -48,7 +48,9 @@ func (m *AudioDeviceManager) Initialize() error {
 
 	// Enumerate devices
 	if err := m.enumerateDevices(); err != nil {
-		portaudio.Terminate()
+		if termErr := portaudio.Terminate(); termErr != nil {
+			fmt.Printf("Failed to terminate portaudio: %v\n", termErr)
+		}
 		return fmt.Errorf("failed to enumerate audio devices: %w", err)
 	}
 
@@ -104,7 +106,7 @@ func (m *AudioDeviceManager) enumerateDevices() error {
 			DefaultSampleRate:       device.DefaultSampleRate,
 			DefaultLowInputLatency:  device.DefaultLowInputLatency.Seconds(),
 			DefaultLowOutputLatency: device.DefaultLowOutputLatency.Seconds(),
-			IsDefault:              false,
+			IsDefault:               false,
 		}
 
 		// Check if this is the default input device
@@ -202,7 +204,7 @@ func (m *AudioDeviceManager) FindInputDeviceByName(name string) (*AudioDevice, e
 
 	// First try exact match
 	for _, device := range devices {
-		if strings.ToLower(device.Name) == name {
+		if strings.EqualFold(device.Name, name) {
 			return &device, nil
 		}
 	}
@@ -228,7 +230,7 @@ func (m *AudioDeviceManager) FindOutputDeviceByName(name string) (*AudioDevice, 
 
 	// First try exact match
 	for _, device := range devices {
-		if strings.ToLower(device.Name) == name {
+		if strings.EqualFold(device.Name, name) {
 			return &device, nil
 		}
 	}

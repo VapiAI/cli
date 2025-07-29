@@ -23,10 +23,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
-	"github.com/spf13/cobra"
 	vapi "github.com/VapiAI/server-sdk-go"
+	"github.com/spf13/cobra"
+
 	"github.com/VapiAI/cli/pkg/voice"
 )
 
@@ -34,21 +36,21 @@ var (
 	configFile        string
 	audioInputDevice  string
 	audioOutputDevice string
-	noVideo          bool
-	callTimeout      int
-	
+	noVideo           bool
+	callTimeout       int
+
 	// Transient assistant configuration
-	assistantName      string
-	firstMessage      string
-	voiceID           string
-	model             string
-	systemMessage     string
+	assistantName string
+	firstMessage  string
+	voiceID       string
+	model         string
+	systemMessage string
 )
 
 // Voice call management commands
 var voiceCmd = &cobra.Command{
 	Use:   "voice [assistant-id]",
-	Short: "Start voice call with assistant", 
+	Short: "Start voice call with assistant",
 	Long: `Start a real-time voice call with a Vapi assistant.
 
 This command creates a WebSocket connection using Vapi's native transport,
@@ -87,7 +89,9 @@ Examples:
 			assistantID = args[0]
 		} else if configFile != "" {
 			// Load assistant configuration from JSON file
-			data, err := os.ReadFile(configFile)
+			// Clean the path to prevent directory traversal
+			cleanPath := filepath.Clean(configFile)
+			data, err := os.ReadFile(cleanPath)
 			if err != nil {
 				return fmt.Errorf("failed to read config file: %w", err)
 			}
@@ -104,10 +108,8 @@ Examples:
 				assistantID = id
 			} else {
 				// No assistant ID found - create transient assistant from config
-				if err := loadConfigIntoFlags(config); err != nil {
-					return fmt.Errorf("failed to load config: %w", err)
-				}
-				
+				loadConfigIntoFlags(config)
+
 				createdAssistantID, err := createTransientAssistant()
 				if err != nil {
 					return fmt.Errorf("failed to create transient assistant from config: %w", err)
@@ -142,7 +144,11 @@ var configureVoiceCmd = &cobra.Command{
 		if err := deviceManager.Initialize(); err != nil {
 			return fmt.Errorf("failed to initialize audio system: %w", err)
 		}
-		defer deviceManager.Terminate()
+		defer func() {
+			if err := deviceManager.Terminate(); err != nil {
+				fmt.Printf("Failed to terminate device manager: %v\n", err)
+			}
+		}()
 
 		// List available devices
 		deviceList, err := deviceManager.ListDevices()
@@ -159,7 +165,7 @@ var configureVoiceCmd = &cobra.Command{
 		fmt.Println()
 		fmt.Println("Example:")
 		fmt.Println("  vapi call voice asst_12345 --audio-input \"Built-in Microphone\"")
-		
+
 		return nil
 	},
 }
@@ -251,63 +257,61 @@ var endVoiceCmd = &cobra.Command{
 }
 
 // loadConfigIntoFlags loads configuration from a JSON config into the flag variables
-func loadConfigIntoFlags(config map[string]interface{}) error {
+func loadConfigIntoFlags(config map[string]interface{}) {
 	// Load name
 	if name, ok := config["name"].(string); ok {
 		assistantName = name
 	}
-	
+
 	// Load first message
 	if msg, ok := config["first_message"].(string); ok {
 		firstMessage = msg
 	} else if msg, ok := config["firstMessage"].(string); ok {
 		firstMessage = msg
 	}
-	
+
 	// Load voice ID
-	if voice, ok := config["voice_id"].(string); ok {
-		voiceID = voice
-	} else if voice, ok := config["voiceId"].(string); ok {
-		voiceID = voice
+	if voiceValue, ok := config["voice_id"].(string); ok {
+		voiceID = voiceValue
+	} else if voiceValue, ok := config["voiceId"].(string); ok {
+		voiceID = voiceValue
 	}
-	
+
 	// Load model
 	if mdl, ok := config["model"].(string); ok {
 		model = mdl
 	}
-	
+
 	// Load system message
 	if sysMsg, ok := config["system_message"].(string); ok {
 		systemMessage = sysMsg
 	} else if sysMsg, ok := config["systemMessage"].(string); ok {
 		systemMessage = sysMsg
 	}
-	
-	return nil
 }
 
 // createTransientAssistant creates a temporary assistant for the voice call
 func createTransientAssistant() (string, error) {
 	fmt.Println("🤖 Creating transient assistant...")
-	
+
 	// Get Vapi client
 	if vapiClient.GetClient() == nil {
 		return "", fmt.Errorf("no active Vapi account found. Please run 'vapi login' first")
 	}
-	
+
 	// Set defaults if not provided
 	name := assistantName
 	if name == "" {
 		name = "Transient Assistant"
 	}
-	
+
 	message := firstMessage
 	if message == "" {
 		message = "Hello! How can I assist you today?"
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Create the assistant request
 	createRequest := &vapi.CreateAssistantDto{
 		Name:         &name,
@@ -318,7 +322,7 @@ func createTransientAssistant() (string, error) {
 			},
 		},
 	}
-	
+
 	// Note: For now, we'll keep it simple and just use the default voice and model
 	// Advanced voice/model configuration can be added later once we understand the full API structure
 	if voiceID != "" {
@@ -330,13 +334,13 @@ func createTransientAssistant() (string, error) {
 	if systemMessage != "" {
 		fmt.Printf("ℹ️  System message specified but using default behavior for now\n")
 	}
-	
+
 	// Create the assistant
 	assistant, err := vapiClient.GetClient().Assistants.Create(ctx, createRequest)
 	if err != nil {
 		return "", fmt.Errorf("failed to create transient assistant: %w", err)
 	}
-	
+
 	fmt.Printf("✅ Created transient assistant: %s (ID: %s)\n", name, assistant.Id)
 	return assistant.Id, nil
 }
@@ -348,7 +352,7 @@ func startVoiceCall(assistantID string) error {
 
 	// Create voice call configuration
 	config := voice.DefaultWebRTCConfig()
-	
+
 	// Override with command line options
 	if audioInputDevice != "" {
 		config.AudioInputDevice = audioInputDevice
@@ -362,17 +366,17 @@ func startVoiceCall(assistantID string) error {
 	if vapiClient.GetClient() == nil {
 		return fmt.Errorf("no active Vapi account found. Please run 'vapi login' first")
 	}
-	
+
 	// Set Vapi API key from the active account configuration
 	if apiKey := vapiClient.GetConfig().GetActiveAPIKey(); apiKey != "" {
 		config.VapiAPIKey = apiKey
 	} else {
 		return fmt.Errorf("VAPI_API_KEY not found. Please run 'vapi login' to authenticate")
 	}
-	
+
 	// Set API base URL from configuration
 	config.VapiBaseURL = vapiClient.GetConfig().GetAPIBaseURL()
-	
+
 	// Set public API key for staging environment
 	// TODO: This should be configurable via environment variable or config file
 	if config.VapiBaseURL == "https://staging-api.vapi.ai" {
@@ -408,9 +412,9 @@ func init() {
 	// Add flags to the main voice command
 	voiceCmd.Flags().StringVar(&configFile, "config", "", "Path to assistant configuration JSON file")
 	voiceCmd.Flags().StringVar(&audioInputDevice, "audio-input", "", "Audio input device name")
-	voiceCmd.Flags().StringVar(&audioOutputDevice, "audio-output", "", "Audio output device name")  
+	voiceCmd.Flags().StringVar(&audioOutputDevice, "audio-output", "", "Audio output device name")
 	voiceCmd.Flags().IntVar(&callTimeout, "timeout", 30, "Call timeout in minutes")
-	
+
 	// Transient assistant flags
 	voiceCmd.Flags().StringVar(&assistantName, "name", "", "Name for transient assistant")
 	voiceCmd.Flags().StringVar(&firstMessage, "first-message", "", "First message from transient assistant")

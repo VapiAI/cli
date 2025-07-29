@@ -100,51 +100,51 @@ func (ui *TerminalUI) monitorCallEvents() {
 // handleCallEvent processes call events
 func (ui *TerminalUI) handleCallEvent(event CallEvent) {
 	timestamp := event.Timestamp.Format("15:04:05")
-	
+
 	switch event.Type {
 	case "call_started":
-		fmt.Printf("[%s] %s Call started successfully\n", 
+		fmt.Printf("[%s] %s Call started successfully\n",
 			timestamp, ui.successStyle.Render("✓"))
 		ui.displayCallStatus()
 
 	case "call_ended":
-		fmt.Printf("[%s] %s Call ended\n", 
+		fmt.Printf("[%s] %s Call ended\n",
 			timestamp, ui.infoStyle.Render("•"))
 		ui.done <- true
 
 	case "ice_connection_state_change":
 		state := event.Data.(string)
-		fmt.Printf("[%s] %s Connection state: %s\n", 
+		fmt.Printf("[%s] %s Connection state: %s\n",
 			timestamp, ui.infoStyle.Render("•"), state)
 
 	case "ice_candidate":
-		fmt.Printf("[%s] %s Connection negotiation\n", 
+		fmt.Printf("[%s] %s Connection negotiation\n",
 			timestamp, ui.infoStyle.Render("•"))
 
 	case "offer_sent":
-		fmt.Printf("[%s] %s Audio connection established\n", 
+		fmt.Printf("[%s] %s Audio connection established\n",
 			timestamp, ui.infoStyle.Render("•"))
 
 	case "room_connected":
-		fmt.Printf("[%s] %s Connected to Vapi WebSocket transport\n", 
+		fmt.Printf("[%s] %s Connected to Vapi WebSocket transport\n",
 			timestamp, ui.successStyle.Render("✓"))
 
 	case "participant_joined":
-		fmt.Printf("[%s] %s Participant joined call\n", 
+		fmt.Printf("[%s] %s Participant joined call\n",
 			timestamp, ui.successStyle.Render("✓"))
 
 	case "connection_error":
-		fmt.Printf("[%s] %s Connection error: %v\n", 
+		fmt.Printf("[%s] %s Connection error: %v\n",
 			timestamp, ui.errorStyle.Render("✗"), event.Data)
 
 	case "signaling_room_joined":
-		fmt.Printf("[%s] %s Vapi WebSocket connected\n", 
+		fmt.Printf("[%s] %s Vapi WebSocket connected\n",
 			timestamp, ui.successStyle.Render("✓"))
 
 	default:
 		// Show all events for debugging
 		if event.Type != "" {
-			fmt.Printf("[%s] %s %s\n", 
+			fmt.Printf("[%s] %s %s\n",
 				timestamp, ui.infoStyle.Render("•"), event.Type)
 		}
 	}
@@ -163,13 +163,13 @@ func (ui *TerminalUI) handleUIUpdate(update UIUpdate) {
 // displayCallStatus shows current call status
 func (ui *TerminalUI) displayCallStatus() {
 	state := ui.client.GetCallState()
-	
+
 	fmt.Println(ui.headerStyle.Render("📞 Call Status"))
 	fmt.Printf("  Call ID: %s\n", state.CallID)
 	fmt.Printf("  Assistant: %s\n", state.AssistantID)
 	fmt.Printf("  Status: %s\n", ui.formatStatus(state.Status))
 	fmt.Printf("  Duration: %s\n", ui.formatDuration(state.StartTime))
-	
+
 	if state.WebSocketURL != "" {
 		fmt.Printf("  Room: %s\n", state.CallID)
 		fmt.Printf("  WebSocket URL: %s\n", state.WebSocketURL)
@@ -181,7 +181,7 @@ func (ui *TerminalUI) displayCallStatus() {
 	} else {
 		fmt.Printf("  Audio: %s\n", ui.errorStyle.Render("Inactive"))
 	}
-	
+
 	fmt.Println()
 }
 
@@ -192,6 +192,8 @@ func (ui *TerminalUI) formatStatus(status CallStatus) string {
 		return ui.successStyle.Render(string(status))
 	case CallStatusFailed, CallStatusDisconnected:
 		return ui.errorStyle.Render(string(status))
+	case CallStatusIdle, CallStatusConnecting:
+		return ui.infoStyle.Render(string(status))
 	default:
 		return ui.infoStyle.Render(string(status))
 	}
@@ -202,15 +204,14 @@ func (ui *TerminalUI) formatDuration(startTime time.Time) string {
 	if startTime.IsZero() {
 		return "00:00:00"
 	}
-	
+
 	duration := time.Since(startTime)
 	hours := int(duration.Hours())
 	minutes := int(duration.Minutes()) % 60
 	seconds := int(duration.Seconds()) % 60
-	
+
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
-
 
 // handleKeyboardInput handles keyboard input (placeholder for future interactive features)
 func (ui *TerminalUI) handleKeyboardInput() {
@@ -221,7 +222,7 @@ func (ui *TerminalUI) handleKeyboardInput() {
 // shutdown gracefully shuts down the terminal UI
 func (ui *TerminalUI) shutdown() error {
 	fmt.Println(ui.infoStyle.Render("Ending voice call..."))
-	
+
 	// End the call if still active
 	if ui.client.GetCallState().Status == CallStatusConnected {
 		if err := ui.client.EndCall(); err != nil {
@@ -229,12 +230,12 @@ func (ui *TerminalUI) shutdown() error {
 			// Don't return error, continue with shutdown
 		}
 	}
-	
+
 	// Give a brief moment for cleanup to complete
 	time.Sleep(200 * time.Millisecond)
-	
+
 	fmt.Println(ui.successStyle.Render("✓ Voice call ended successfully"))
-	
+
 	// Force exit the process
 	os.Exit(0)
 	return nil // This line will never be reached, but Go requires it

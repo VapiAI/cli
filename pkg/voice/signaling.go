@@ -13,14 +13,14 @@ import (
 
 // VapiWebSocket handles WebSocket communication with Vapi transport
 type VapiWebSocket struct {
-	conn       *websocket.Conn
-	wsURL      string
-	events     chan SignalingEvent
-	
+	conn   *websocket.Conn
+	wsURL  string
+	events chan SignalingEvent
+
 	// Control
-	connected  bool
-	mutex      sync.RWMutex
-	done       chan struct{}
+	connected bool
+	mutex     sync.RWMutex
+	done      chan struct{}
 }
 
 // SignalingEvent represents a signaling event
@@ -33,8 +33,8 @@ type SignalingEvent struct {
 
 // WebSocket message types for Vapi transport
 const (
-	MSG_ROOM_JOINED         = "room-joined"
-	MSG_ERROR               = "error"
+	MSG_ROOM_JOINED = "room-joined"
+	MSG_ERROR       = "error"
 )
 
 // NewVapiWebSocket creates a new Vapi WebSocket client
@@ -59,16 +59,17 @@ func (s *VapiWebSocket) Connect(wsURL string) error {
 	}
 
 	s.wsURL = wsURL
-	
+
 	dialer := websocket.DefaultDialer
 	dialer.HandshakeTimeout = 10 * time.Second
-	
+
 	// Add authentication headers for Vapi WebSocket
 	headers := http.Header{}
-	
+
 	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		if resp != nil {
+			defer resp.Body.Close() //nolint:errcheck // Error handling would complicate deferred cleanup
 			if body, readErr := io.ReadAll(resp.Body); readErr == nil {
 				return fmt.Errorf("WebSocket handshake failed (status %d): %s", resp.StatusCode, string(body))
 			}
@@ -85,17 +86,19 @@ func (s *VapiWebSocket) Connect(wsURL string) error {
 	return nil
 }
 
-
 // handleMessages processes incoming WebSocket messages
 func (s *VapiWebSocket) handleMessages() {
 	defer func() {
-		if r := recover(); r != nil {
+		if r := recover(); r != nil { //nolint:staticcheck // Empty branch is intentional for panic recovery
 			// Panic recovery - websocket connection was closed
+			// Intentionally empty - we handle cleanup below
 		}
 		s.mutex.Lock()
 		s.connected = false
 		if s.conn != nil {
-			s.conn.Close()
+			if err := s.conn.Close(); err != nil {
+				fmt.Printf("Failed to close WebSocket connection: %v\n", err)
+			}
 		}
 		s.mutex.Unlock()
 	}()
@@ -112,7 +115,7 @@ func (s *VapiWebSocket) handleMessages() {
 					// Normal closure
 					return
 				}
-				
+
 				// Send error event
 				s.events <- SignalingEvent{
 					Type:      "websocket_error",
@@ -122,9 +125,10 @@ func (s *VapiWebSocket) handleMessages() {
 				return
 			}
 
-			if messageType == websocket.TextMessage {
+			switch messageType {
+			case websocket.TextMessage:
 				s.handleTextMessage(data)
-			} else if messageType == websocket.BinaryMessage {
+			case websocket.BinaryMessage:
 				s.handleBinaryMessage(data)
 			}
 		}
@@ -133,7 +137,6 @@ func (s *VapiWebSocket) handleMessages() {
 
 // handleTextMessage processes JSON control messages from Vapi WebSocket transport
 func (s *VapiWebSocket) handleTextMessage(data []byte) {
-	
 	var message map[string]interface{}
 	if err := json.Unmarshal(data, &message); err != nil {
 		s.events <- SignalingEvent{
@@ -158,7 +161,6 @@ func (s *VapiWebSocket) handleTextMessage(data []byte) {
 		Timestamp: time.Now(),
 	}
 
-
 	// Send event to listeners
 	select {
 	case s.events <- event:
@@ -169,24 +171,24 @@ func (s *VapiWebSocket) handleTextMessage(data []byte) {
 
 // handleBinaryMessage processes binary audio data from Vapi WebSocket transport
 func (s *VapiWebSocket) handleBinaryMessage(data []byte) {
-	
 	// Binary data is PCM audio from the assistant
 	// Convert to float32 samples for audio playback
 	if len(data)%2 != 0 {
 		return
 	}
-	
+
 	// Convert PCM 16-bit little-endian to float32 samples
 	samples := make([]float32, len(data)/2)
 	for i := 0; i < len(samples); i++ {
 		// Read 16-bit little-endian sample correctly
 		low := uint16(data[i*2])
 		high := uint16(data[i*2+1])
-		sample := int16(low | (high << 8))
+		// Use proper bit manipulation to avoid overflow
+		sample := int16(low) | (int16(high) << 8) //nolint:gosec // Safe conversion for audio data
 		// Convert to float32 (-1.0 to 1.0) with proper scaling
 		samples[i] = float32(sample) / 32767.0
 	}
-	
+
 	// Send audio samples to output stream via event
 	s.events <- SignalingEvent{
 		Type:      "audio_data",
@@ -215,35 +217,15 @@ func (s *VapiWebSocket) SendAudioData(samples []float32) error {
 		} else if sample < -1.0 {
 			sample = -1.0
 		}
-		
+
 		pcmSample := int16(sample * 32767.0)
-		
+
 		// Write as little-endian
 		data[i*2] = byte(pcmSample & 0xFF)
 		data[i*2+1] = byte((pcmSample >> 8) & 0xFF)
 	}
 
 	return conn.WriteMessage(websocket.BinaryMessage, data)
-}
-
-
-// sendMessage sends a message to the WebSocket connection
-func (s *VapiWebSocket) sendMessage(message map[string]interface{}) error {
-	s.mutex.RLock()
-	conn := s.conn
-	connected := s.connected
-	s.mutex.RUnlock()
-
-	if !connected || conn == nil {
-		return fmt.Errorf("not connected to signaling server")
-	}
-
-	data, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("failed to marshal message: %w", err)
-	}
-
-	return conn.WriteMessage(websocket.TextMessage, data)
 }
 
 // GetEvents returns the events channel

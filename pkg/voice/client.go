@@ -51,15 +51,15 @@ type APIResponse struct {
 
 // VoiceClient manages voice calls with Vapi WebSocket transport
 type VoiceClient struct {
-	config      *WebRTCConfig
-	vapiClient  *vapiclient.Client
-	callState   *CallState
+	config     *WebRTCConfig
+	vapiClient *vapiclient.Client
+	callState  *CallState
 
 	// Audio pipeline
 	audioStream *AudioStream
 
 	// WebSocket signaling
-	signaling   *VapiWebSocket
+	signaling *VapiWebSocket
 
 	// Event channels
 	requestLog  chan APIRequest
@@ -139,7 +139,7 @@ func (c *VoiceClient) StartCall(assistantID string) error {
 	go c.streamMicrophoneAudio()
 
 	c.callState.Status = CallStatusConnected
-	
+
 	// Emit call started event
 	c.callEvents <- CallEvent{
 		Type:      "call_started",
@@ -165,14 +165,14 @@ type WebSocketCallRequest struct {
 
 // WebSocketCallResponse represents the response from /call endpoint with WebSocket transport
 type WebSocketCallResponse struct {
-	ID          string    `json:"id"`
-	Status      string    `json:"status"`
-	AssistantID string    `json:"assistantId"`
+	ID          string `json:"id"`
+	Status      string `json:"status"`
+	AssistantID string `json:"assistantId"`
 	Transport   struct {
 		Provider         string `json:"provider"`
 		WebsocketCallURL string `json:"websocketCallUrl"` // The WebSocket URL for audio transport
 	} `json:"transport"`
-	CreatedAt   time.Time `json:"createdAt"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // Call represents a Vapi call for WebSocket transport
@@ -208,7 +208,7 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 			}{
 				Format:     "pcm_s16le",
 				Container:  "raw",
-				SampleRate: 16000,  // Request 16kHz from Vapi (their default)
+				SampleRate: 16000, // Request 16kHz from Vapi (their default)
 			},
 		},
 	}
@@ -218,7 +218,7 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal WebSocket call request: %w", err)
 	}
-	
+
 	// Get the API base URL from config
 	baseURL := c.config.getAPIBaseURL()
 	url := baseURL + "/call"
@@ -257,7 +257,7 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create WebSocket call: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // Error handling would complicate deferred cleanup
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
@@ -287,11 +287,15 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
-	resp.Body.Close()
+	if err := resp.Body.Close(); err != nil {
+		fmt.Printf("Failed to close response body: %v\n", err)
+	}
 
 	// Log successful response
 	var responseBody map[string]interface{}
-	json.Unmarshal(bodyBytes, &responseBody)
+	if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
+		fmt.Printf("Failed to unmarshal response body: %v\n", err)
+	}
 	responseLog := APIResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    make(map[string]string),
@@ -304,23 +308,23 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	default:
 		// Channel full, drop log
 	}
-	
+
 	// Parse the response
 	var wsCallResp WebSocketCallResponse
 	if err := json.Unmarshal(bodyBytes, &wsCallResp); err != nil {
 		return nil, fmt.Errorf("failed to decode WebSocket call response: %w", err)
 	}
-	
+
 	// Convert to our internal Call structure
 	call := &Call{
 		Id:          wsCallResp.ID,
 		AssistantID: wsCallResp.AssistantID,
 		Status:      wsCallResp.Status,
 		RoomURL:     wsCallResp.Transport.WebsocketCallURL, // Use WebSocket URL as room URL
-		RoomName:    wsCallResp.ID,                        // Use call ID as room name
-		JoinToken:   "",                                   // No token needed for WebSocket transport
+		RoomName:    wsCallResp.ID,                         // Use call ID as room name
+		JoinToken:   "",                                    // No token needed for WebSocket transport
 		ListenURL:   wsCallResp.Transport.WebsocketCallURL, // WebSocket URL for transport
-		ControlURL:  "",                                // No separate control URL for WebSocket transport
+		ControlURL:  "",                                    // No separate control URL for WebSocket transport
 	}
 
 	return call, nil
@@ -336,7 +340,7 @@ func (c *VoiceClient) endVapiCall(callID string) error {
 	privateKey := c.config.getPrivateAPIKey()
 
 	// Create DELETE request
-	req, err := http.NewRequest("DELETE", url, nil)
+	req, err := http.NewRequest("DELETE", url, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create end call request: %w", err)
 	}
@@ -365,7 +369,7 @@ func (c *VoiceClient) endVapiCall(callID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to send end call request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // Error handling would complicate deferred cleanup
 
 	// Log response
 	responseLog := APIResponse{
@@ -456,7 +460,7 @@ func (c *VoiceClient) GetAudioLevels() (input, output float32) {
 	if c.audioStream == nil {
 		return 0.0, 0.0
 	}
-	
+
 	return c.audioStream.GetInputLevel(), c.audioStream.GetOutputLevel()
 }
 
@@ -465,7 +469,7 @@ func (c *VoiceClient) IsAudioRunning() bool {
 	if c.audioStream == nil {
 		return false
 	}
-	
+
 	return c.audioStream.IsRunning()
 }
 
@@ -552,16 +556,16 @@ func (c *VoiceClient) handleSignalingEvents() {
 
 // streamMicrophoneAudio continuously streams audio from microphone to Vapi WebSocket
 func (c *VoiceClient) streamMicrophoneAudio() {
-	// Buffer for audio samples 
+	// Buffer for audio samples
 	// AudioStream uses 48kHz, but Vapi expects 16kHz
 	const audioStreamSampleRate = 48000
 	const vapiSampleRate = 16000
 	const chunkDurationMs = 20
-	const audioStreamSamplesPerChunk = (audioStreamSampleRate * chunkDurationMs) / 1000  // 960 samples at 48kHz
-	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000              // 320 samples at 16kHz
-	
+	const audioStreamSamplesPerChunk = (audioStreamSampleRate * chunkDurationMs) / 1000 // 960 samples at 48kHz
+	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000               // 320 samples at 16kHz
+
 	audioBuffer := make([]float32, vapiSamplesPerChunk)
-	
+
 	for c.callState.Status == CallStatusConnected || c.callState.Status == CallStatusConnecting {
 		// Read audio from microphone
 		if c.audioStream.IsRunning() {
@@ -572,14 +576,16 @@ func (c *VoiceClient) streamMicrophoneAudio() {
 				for i := 0; i < vapiSamplesPerChunk && i*3 < len(inputSamples); i++ {
 					audioBuffer[i] = inputSamples[i*3]
 				}
-				
+
 				// Send audio to Vapi WebSocket
 				if c.signaling != nil && c.signaling.IsConnected() {
-					c.signaling.SendAudioData(audioBuffer)
+					if err := c.signaling.SendAudioData(audioBuffer); err != nil {
+						fmt.Printf("Failed to send audio data: %v\n", err)
+					}
 				}
 			}
 		}
-		
+
 		// Sleep for chunk duration (20ms)
 		time.Sleep(time.Duration(chunkDurationMs) * time.Millisecond)
 	}
