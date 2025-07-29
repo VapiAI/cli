@@ -28,6 +28,9 @@ type WebRTCConfig struct {
 	// Call Configuration
 	CallTimeout  time.Duration `mapstructure:"call_timeout"`
 	VideoEnabled bool          `mapstructure:"video_enabled"`
+	
+	// Debug Configuration
+	AudioDebug bool `mapstructure:"audio_debug"`
 }
 
 // DefaultWebRTCConfig returns default WebRTC configuration
@@ -48,6 +51,7 @@ func DefaultWebRTCConfig() *WebRTCConfig {
 		BufferSize:        480,
 		CallTimeout:       30 * time.Minute,
 		VideoEnabled:      false, // Audio-only by default
+		AudioDebug:        false,
 	}
 }
 

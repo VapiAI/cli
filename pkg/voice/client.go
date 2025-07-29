@@ -480,11 +480,33 @@ func (c *VoiceClient) handleSignalingEvents() {
 		if event.Type == "audio_data" {
 			// Handle audio data directly without forwarding as call event
 			if samples, ok := event.Data.([]float32); ok {
+				// Debug: Check for clipping in incoming audio
+				var clippedCount int
+				var maxSample float32
+				for _, s := range samples {
+					if s < 0 {
+						if s < maxSample {
+							maxSample = -s
+						}
+					} else if s > maxSample {
+						maxSample = s
+					}
+					if s > 1.0 || s < -1.0 {
+						clippedCount++
+					}
+				}
+				if clippedCount > 0 || maxSample > 0.95 {
+					fmt.Printf("⚠️  Incoming Vapi audio: %d samples, %d clipped, peak=%.3f\n", 
+						len(samples), clippedCount, maxSample)
+				}
+				
 				// Vapi sends 16kHz audio, we need to upsample to 48kHz
-				// Simple 3x upsampling (16kHz -> 48kHz) by repeating samples
+				// TODO: This simple 3x upsampling by repeating samples causes poor audio quality
+				// Should use proper interpolation or resampling library
 				upsampled := make([]float32, len(samples)*3)
 				for i := 0; i < len(samples); i++ {
 					// Repeat each sample 3 times for simple upsampling
+					// This causes aliasing and distortion!
 					upsampled[i*3] = samples[i]
 					upsampled[i*3+1] = samples[i]
 					upsampled[i*3+2] = samples[i]

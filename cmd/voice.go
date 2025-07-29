@@ -38,6 +38,7 @@ var (
 	audioOutputDevice string
 	noVideo           bool
 	callTimeout       int
+	audioDebug        bool
 
 	// Transient assistant configuration
 	assistantName string
@@ -361,6 +362,7 @@ func startVoiceCall(assistantID string) error {
 		config.AudioOutputDevice = audioOutputDevice
 	}
 	config.VideoEnabled = !noVideo
+	config.AudioDebug = audioDebug
 
 	// Get Vapi API configuration from the CLI client
 	if vapiClient.GetClient() == nil {
@@ -414,6 +416,7 @@ func init() {
 	voiceCmd.Flags().StringVar(&audioInputDevice, "audio-input", "", "Audio input device name")
 	voiceCmd.Flags().StringVar(&audioOutputDevice, "audio-output", "", "Audio output device name")
 	voiceCmd.Flags().IntVar(&callTimeout, "timeout", 30, "Call timeout in minutes")
+	voiceCmd.Flags().BoolVar(&audioDebug, "audio-debug", false, "Enable audio debugging (saves input/output to WAV files)")
 
 	// Transient assistant flags
 	voiceCmd.Flags().StringVar(&assistantName, "name", "", "Name for transient assistant")
