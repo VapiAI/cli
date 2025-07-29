@@ -326,10 +326,81 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	return call, nil
 }
 
+// endVapiCall sends a DELETE request to Vapi to properly end the call
+func (c *VoiceClient) endVapiCall(callID string) error {
+	// Get the API base URL from config
+	baseURL := c.config.getAPIBaseURL()
+	url := baseURL + "/call/" + callID
+
+	// Use private API key for call termination
+	privateKey := c.config.getPrivateAPIKey()
+
+	// Create DELETE request
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create end call request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Authorization", "Bearer "+privateKey)
+
+	// Log the API request
+	requestLog := APIRequest{
+		Method:    "DELETE",
+		URL:       url,
+		Headers:   map[string]string{"Authorization": "Bearer " + privateKey[:10] + "..."},
+		Body:      nil,
+		Timestamp: time.Now(),
+	}
+	select {
+	case c.requestLog <- requestLog:
+	default:
+		// Channel full, drop log
+	}
+
+	// Make the HTTP request
+	startTime := time.Now()
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send end call request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Log response
+	responseLog := APIResponse{
+		StatusCode: resp.StatusCode,
+		Headers:    make(map[string]string),
+		Body:       nil,
+		Duration:   time.Since(startTime),
+		Timestamp:  time.Now(),
+	}
+	select {
+	case c.responseLog <- responseLog:
+	default:
+		// Channel full, drop log
+	}
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("end call request failed with status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 // EndCall terminates the current voice call
 func (c *VoiceClient) EndCall() error {
 	if c.callState.Status == CallStatusIdle {
 		return fmt.Errorf("no active call to end")
+	}
+
+	// Send DELETE request to Vapi to properly end the call
+	if c.callState.CallID != "" {
+		if err := c.endVapiCall(c.callState.CallID); err != nil {
+			fmt.Printf("Warning: failed to end Vapi call: %v\n", err)
+			// Continue with local cleanup even if API call fails
+		}
 	}
 
 	// Stop audio stream
@@ -406,23 +477,21 @@ func (c *VoiceClient) handleSignalingEvents() {
 			// Handle audio data directly without forwarding as call event
 			if samples, ok := event.Data.([]float32); ok {
 				// Vapi sends 16kHz audio, we need to upsample to 48kHz
-				// Simple 3x upsampling (16kHz -> 48kHz)
+				// Simple 3x upsampling (16kHz -> 48kHz) by repeating samples
 				upsampled := make([]float32, len(samples)*3)
 				for i := 0; i < len(samples); i++ {
-					// Linear interpolation for upsampling
+					// Repeat each sample 3 times for simple upsampling
 					upsampled[i*3] = samples[i]
-					if i < len(samples)-1 {
-						// Interpolate between current and next sample
-						upsampled[i*3+1] = samples[i]*0.667 + samples[i+1]*0.333
-						upsampled[i*3+2] = samples[i]*0.333 + samples[i+1]*0.667
-					} else {
-						// Last sample - just repeat
-						upsampled[i*3+1] = samples[i]
-						upsampled[i*3+2] = samples[i]
-					}
+					upsampled[i*3+1] = samples[i]
+					upsampled[i*3+2] = samples[i]
 				}
 				c.audioStream.WriteAudio(upsampled)
 			}
+			continue
+		}
+
+		// Skip excessive logging events
+		if event.Type == "model-output" || event.Type == "voice-input" {
 			continue
 		}
 
