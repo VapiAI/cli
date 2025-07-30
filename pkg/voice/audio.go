@@ -389,6 +389,29 @@ func (a *AudioStream) IsRunning() bool {
 	return a.running
 }
 
+// GetBufferState returns detailed buffer state for debugging
+func (a *AudioStream) GetBufferState() (inputAvail, outputAvail, inputSize, outputSize int) {
+	if a.inputBuffer != nil {
+		inputAvail = a.inputBuffer.Available()
+		inputSize = a.inputBuffer.size
+	}
+	if a.outputBuffer != nil {
+		outputAvail = a.outputBuffer.Available()
+		outputSize = a.outputBuffer.size
+	}
+	return
+}
+
+// LogBufferState logs current buffer state using the debugger
+func (a *AudioStream) LogBufferState() {
+	if a.debugger == nil {
+		return
+	}
+
+	inputAvail, outputAvail, inputSize, outputSize := a.GetBufferState()
+	a.debugger.LogBufferState(inputAvail, outputAvail, inputSize, outputSize)
+}
+
 // GetInputDevice returns the current input device
 func (a *AudioStream) GetInputDevice() *AudioDevice {
 	return a.inputDevice

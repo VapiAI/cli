@@ -61,11 +61,17 @@ type VoiceClient struct {
 	// WebSocket signaling
 	signaling *VapiWebSocket
 
-	// Audio processing
+	// Audio processing with jitter buffer
 	audioProcessor *WebSocketAudioProcessor
+	jitterBuffer   *WebSocketJitterBuffer
 
 	// Echo cancellation state
 	lastSpeakerSamples []float32
+
+	// Silence detection
+	silenceThreshold        float32
+	consecutiveSilentChunks int
+	maxSilentChunks         int
 
 	// Event channels
 	requestLog  chan APIRequest
@@ -101,13 +107,22 @@ func NewVoiceClient(config *WebRTCConfig, vapiClient *vapiclient.Client) (*Voice
 		return nil, fmt.Errorf("failed to create audio processor: %w", err)
 	}
 
+	// Create WebSocket jitter buffer for incoming audio
+	jitterBuffer, err := NewWebSocketJitterBuffer(DefaultWebSocketJitterConfig())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create jitter buffer: %w", err)
+	}
+
 	return &VoiceClient{
 		config:             config,
 		vapiClient:         vapiClient,
 		audioStream:        audioStream,
 		signaling:          signaling,
 		audioProcessor:     audioProcessor,
+		jitterBuffer:       jitterBuffer,
 		lastSpeakerSamples: make([]float32, 0),
+		silenceThreshold:   0.001, // -60dB threshold for silence detection
+		maxSilentChunks:    3,     // Allow max 3 consecutive silent chunks before gating
 		callState: &CallState{
 			Status: CallStatusIdle,
 		},
@@ -151,9 +166,19 @@ func (c *VoiceClient) StartCall(assistantID string) error {
 
 	// 4. Reset and start audio processing
 	c.audioProcessor.Reset()
+	c.consecutiveSilentChunks = 0 // Reset silence detection
 
-	// 5. Start streaming microphone audio to WebSocket
+	// 5. Start jitter buffer for incoming audio
+	if err := c.jitterBuffer.Start(); err != nil {
+		c.callState.Status = CallStatusFailed
+		return fmt.Errorf("failed to start jitter buffer: %w", err)
+	}
+
+	// 6. Start streaming microphone audio to WebSocket
 	go c.streamMicrophoneAudio()
+
+	// 7. Start jitter buffer audio processing
+	go c.processJitterBufferAudio()
 
 	c.callState.Status = CallStatusConnected
 
@@ -313,6 +338,7 @@ func (c *VoiceClient) createVapiWebSocketCall(assistantID string) (*Call, error)
 	if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
 		fmt.Printf("Failed to unmarshal response body: %v\n", err)
 	}
+
 	responseLog := APIResponse{
 		StatusCode: resp.StatusCode,
 		Headers:    make(map[string]string),
@@ -424,6 +450,13 @@ func (c *VoiceClient) EndCall() error {
 		}
 	}
 
+	// Stop jitter buffer
+	if c.jitterBuffer != nil {
+		if err := c.jitterBuffer.Stop(); err != nil {
+			fmt.Printf("Warning: failed to stop jitter buffer: %v\n", err)
+		}
+	}
+
 	// Stop audio stream
 	if c.audioStream != nil {
 		if err := c.audioStream.Stop(); err != nil {
@@ -511,6 +544,29 @@ func (c *VoiceClient) SetEchoLearningRate(rate float32) {
 	}
 }
 
+// SetSilenceThreshold adjusts the silence detection threshold
+func (c *VoiceClient) SetSilenceThreshold(threshold float32) {
+	c.silenceThreshold = threshold
+}
+
+// SetMaxSilentChunks adjusts how many consecutive silent chunks to allow before gating
+func (c *VoiceClient) SetMaxSilentChunks(maxChunks int) {
+	c.maxSilentChunks = maxChunks
+}
+
+// GetSilenceStats returns current silence detection statistics
+func (c *VoiceClient) GetSilenceStats() (threshold float32, maxChunks, consecutive int) {
+	return c.silenceThreshold, c.maxSilentChunks, c.consecutiveSilentChunks
+}
+
+// GetJitterBufferStats returns current jitter buffer performance statistics
+func (c *VoiceClient) GetJitterBufferStats() map[string]interface{} {
+	if c.jitterBuffer == nil {
+		return map[string]interface{}{"error": "jitter buffer not initialized"}
+	}
+	return c.jitterBuffer.GetStats()
+}
+
 // handleSignalingEvents processes events from Vapi WebSocket signaling
 func (c *VoiceClient) handleSignalingEvents() {
 	for event := range c.signaling.GetEvents() {
@@ -518,41 +574,14 @@ func (c *VoiceClient) handleSignalingEvents() {
 		if event.Type == "audio_data" {
 			// Handle audio data directly without forwarding as call event
 			if samples, ok := event.Data.([]float32); ok {
-				// Debug: Check for clipping in incoming audio
-				var clippedCount int
-				var maxSample float32
-				for _, s := range samples {
-					if s < 0 {
-						if s < maxSample {
-							maxSample = -s
-						}
-					} else if s > maxSample {
-						maxSample = s
-					}
-					if s > 1.0 || s < -1.0 {
-						clippedCount++
-					}
-				}
-				if clippedCount > 0 || maxSample > 0.95 {
-					fmt.Printf("⚠️  Incoming Vapi audio: %d samples, %d clipped, peak=%.3f\n",
-						len(samples), clippedCount, maxSample)
-				}
 
 				// Store speaker samples for echo cancellation
 				c.lastSpeakerSamples = samples
 
-				// Vapi sends 16kHz audio, we need to upsample to 48kHz
-				// TODO: This simple 3x upsampling by repeating samples causes poor audio quality
-				// Should use proper interpolation or resampling library
-				upsampled := make([]float32, len(samples)*3)
-				for i := 0; i < len(samples); i++ {
-					// Repeat each sample 3 times for simple upsampling
-					// This causes aliasing and distortion!
-					upsampled[i*3] = samples[i]
-					upsampled[i*3+1] = samples[i]
-					upsampled[i*3+2] = samples[i]
+				// Send samples to jitter buffer for adaptive buffering
+				if err := c.jitterBuffer.WriteAudio(samples); err != nil {
+					fmt.Printf("⚠️  Jitter buffer write failed: %v\n", err)
 				}
-				c.audioStream.WriteAudio(upsampled)
 			}
 			continue
 		}
@@ -628,8 +657,10 @@ func (c *VoiceClient) streamMicrophoneAudio() {
 	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000               // 320 samples at 16kHz
 
 	audioBuffer := make([]float32, vapiSamplesPerChunk)
+	chunkCount := 0
 
 	for c.callState.Status == CallStatusConnected || c.callState.Status == CallStatusConnecting {
+		chunkCount++
 		// Read audio from microphone
 		if c.audioStream.IsRunning() {
 			// Get audio samples from input stream at 48kHz
@@ -655,4 +686,70 @@ func (c *VoiceClient) streamMicrophoneAudio() {
 		// Sleep for chunk duration (20ms)
 		time.Sleep(time.Duration(chunkDurationMs) * time.Millisecond)
 	}
+}
+
+// processJitterBufferAudio continuously reads from jitter buffer and writes to audio stream
+func (c *VoiceClient) processJitterBufferAudio() {
+	const chunkDurationMs = 20
+	const vapiSampleRate = 16000
+	const vapiSamplesPerChunk = (vapiSampleRate * chunkDurationMs) / 1000 // 320 samples at 16kHz
+
+	ticker := time.NewTicker(time.Duration(chunkDurationMs) * time.Millisecond)
+	defer ticker.Stop()
+
+	chunkCount := 0
+
+	for c.callState.Status == CallStatusConnected || c.callState.Status == CallStatusConnecting {
+		select {
+		case <-ticker.C:
+			chunkCount++
+
+			// Read processed audio from jitter buffer (16kHz)
+			jitterSamples := c.jitterBuffer.ReadAudio(vapiSamplesPerChunk)
+
+			if len(jitterSamples) > 0 {
+				// Upsample from 16kHz to 48kHz using proper interpolation
+				upsampled := c.upsample16to48kHz(jitterSamples)
+
+				// Write to audio stream
+				written := c.audioStream.WriteAudio(upsampled)
+				if written != len(upsampled) {
+					fmt.Printf("⚠️  Audio buffer overflow: Tried to write %d samples, only wrote %d\n",
+						len(upsampled), written)
+				}
+			}
+
+		case <-time.After(100 * time.Millisecond):
+			// Timeout protection - continue if call is still active
+			if c.callState.Status != CallStatusConnected && c.callState.Status != CallStatusConnecting {
+				return
+			}
+		}
+	}
+}
+
+// upsample16to48kHz performs proper interpolation from 16kHz to 48kHz
+func (c *VoiceClient) upsample16to48kHz(samples []float32) []float32 {
+	// 3x upsampling with linear interpolation (better than simple repetition)
+	upsampled := make([]float32, len(samples)*3)
+
+	for i := 0; i < len(samples); i++ {
+		// Current sample
+		current := samples[i]
+
+		// Next sample (or repeat last if at end)
+		var next float32
+		if i+1 < len(samples) {
+			next = samples[i+1]
+		} else {
+			next = current
+		}
+
+		// Linear interpolation
+		upsampled[i*3] = current
+		upsampled[i*3+1] = current + (next-current)*0.33
+		upsampled[i*3+2] = current + (next-current)*0.67
+	}
+
+	return upsampled
 }

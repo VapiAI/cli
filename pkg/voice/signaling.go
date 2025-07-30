@@ -66,6 +66,7 @@ func (s *VapiWebSocket) Connect(wsURL string) error {
 	// Add authentication headers for Vapi WebSocket
 	headers := http.Header{}
 
+	fmt.Printf("🕐 Starting WebSocket handshake (timeout: 10s)...\n")
 	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		if resp != nil {
@@ -79,6 +80,8 @@ func (s *VapiWebSocket) Connect(wsURL string) error {
 
 	s.conn = conn
 	s.connected = true
+
+	fmt.Printf("✅ WebSocket connection established successfully\n")
 
 	// Start message handling for Vapi transport events
 	go s.handleMessages()

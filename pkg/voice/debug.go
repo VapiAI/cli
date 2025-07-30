@@ -18,6 +18,13 @@ type AudioDebugger struct {
 	sampleRate    int
 	channels      int
 	bitsPerSample int
+
+	// Timing and flow tracking
+	lastInputTime     time.Time
+	lastOutputTime    time.Time
+	outputSampleCount int64
+	silentChunks      int
+	totalChunks       int
 }
 
 // NewAudioDebugger creates a new audio debugger
@@ -113,6 +120,42 @@ func (d *AudioDebugger) WriteOutput(samples []float32) {
 
 	d.outputMutex.Lock()
 	defer d.outputMutex.Unlock()
+
+	// Track timing and detect gaps
+	now := time.Now()
+	if !d.lastOutputTime.IsZero() {
+		timeSinceLastOutput := now.Sub(d.lastOutputTime)
+		expectedInterval := time.Duration(float64(len(samples)) / float64(d.sampleRate) * float64(time.Second))
+
+		// Detect significant gaps (more than 2x expected interval)
+		if timeSinceLastOutput > expectedInterval*2 {
+			fmt.Printf("🔇 OUTPUT GAP DETECTED: Expected %.2fms, got %.2fms (gap: %.2fms)\n",
+				float64(expectedInterval.Nanoseconds())/1e6,
+				float64(timeSinceLastOutput.Nanoseconds())/1e6,
+				float64((timeSinceLastOutput-expectedInterval).Nanoseconds())/1e6)
+		}
+	}
+	d.lastOutputTime = now
+	d.outputSampleCount += int64(len(samples))
+
+	// Check if this chunk is mostly silent
+	var silentSamples int
+	for _, sample := range samples {
+		if sample > -0.001 && sample < 0.001 { // Very quiet threshold
+			silentSamples++
+		}
+	}
+
+	d.totalChunks++
+	if float64(silentSamples)/float64(len(samples)) > 0.95 {
+		d.silentChunks++
+		if d.totalChunks%50 == 0 { // Log every 50 chunks
+			fmt.Printf("🔇 Output silence rate: %d/%d chunks (%.1f%%) - Current chunk: %d/%d silent\n",
+				d.silentChunks, d.totalChunks,
+				float64(d.silentChunks)/float64(d.totalChunks)*100,
+				silentSamples, len(samples))
+		}
+	}
 
 	// Convert float32 to int16 and write
 	for _, sample := range samples {
@@ -273,4 +316,88 @@ func (d *AudioDebugger) updateWAVHeader(file *os.File) error {
 	}
 
 	return nil
+}
+
+// LogWebSocketAudio logs detailed information about incoming WebSocket audio
+func (d *AudioDebugger) LogWebSocketAudio(samples []float32, timestamp time.Time) {
+	if !d.enabled || len(samples) == 0 {
+		return
+	}
+
+	// Check for timing gaps in WebSocket audio
+	if !d.lastInputTime.IsZero() {
+		timeSinceLastWS := timestamp.Sub(d.lastInputTime)
+		expectedInterval := time.Duration(float64(len(samples)) / 16000.0 * float64(time.Second)) // 16kHz from Vapi
+
+		if timeSinceLastWS > expectedInterval*3 {
+			fmt.Printf("🌐 WEBSOCKET AUDIO GAP: Expected %.2fms, got %.2fms (gap: %.2fms)\n",
+				float64(expectedInterval.Nanoseconds())/1e6,
+				float64(timeSinceLastWS.Nanoseconds())/1e6,
+				float64((timeSinceLastWS-expectedInterval).Nanoseconds())/1e6)
+		}
+	}
+	d.lastInputTime = timestamp
+
+	// Analyze audio content
+	var silentSamples, clippedSamples int
+	var peak, rms float32
+	for _, sample := range samples {
+		if sample > -0.001 && sample < 0.001 {
+			silentSamples++
+		}
+		if sample > 1.0 || sample < -1.0 {
+			clippedSamples++
+		}
+
+		absSample := sample
+		if absSample < 0 {
+			absSample = -absSample
+		}
+		if absSample > peak {
+			peak = absSample
+		}
+		rms += sample * sample
+	}
+	rms /= float32(len(samples))
+
+	silenceRate := float64(silentSamples) / float64(len(samples))
+
+	// Log if significant silence or other issues
+	if silenceRate > 0.9 || clippedSamples > 0 || peak > 0.95 {
+		fmt.Printf("🌐 WebSocket Audio: %d samples, %.1f%% silent, peak=%.3f, rms=%.3f, clipped=%d\n",
+			len(samples), silenceRate*100, peak, rms, clippedSamples)
+	}
+}
+
+// LogBufferState logs the current state of audio buffers
+func (d *AudioDebugger) LogBufferState(inputAvailable, outputAvailable, inputSize, outputSize int) {
+	if !d.enabled {
+		return
+	}
+
+	inputFill := float64(inputAvailable) / float64(inputSize) * 100
+	outputFill := float64(outputAvailable) / float64(outputSize) * 100
+
+	// Log if buffers are getting too full or too empty
+	if inputFill < 10 || inputFill > 90 || outputFill < 10 || outputFill > 90 {
+		fmt.Printf("📊 Buffer State: Input %.1f%% (%d/%d), Output %.1f%% (%d/%d)\n",
+			inputFill, inputAvailable, inputSize,
+			outputFill, outputAvailable, outputSize)
+	}
+
+	// Warn about potential underruns
+	if outputFill < 5 {
+		fmt.Printf("⚠️  OUTPUT BUFFER UNDERRUN RISK: Only %.1f%% filled (%d/%d samples)\n",
+			outputFill, outputAvailable, outputSize)
+	}
+}
+
+// LogAudioFlow provides a comprehensive view of the audio pipeline state
+func (d *AudioDebugger) LogAudioFlow(stage string, sampleCount int, timestamp time.Time) {
+	if !d.enabled {
+		return
+	}
+
+	fmt.Printf("🎵 Audio Flow [%s]: %d samples at %s\n",
+		stage, sampleCount, timestamp.Format("15:04:05.000"))
 }
