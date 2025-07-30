@@ -42,8 +42,12 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           vcpkg install portaudio:x64-windows
+          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
           echo "CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows/include" >> $env:GITHUB_ENV
           echo "CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows/lib -lportaudio" >> $env:GITHUB_ENV
+          # Debug: List contents to verify paths
+          Get-ChildItem -Path C:/vcpkg/installed/x64-windows -Recurse -Filter "*.pc"
+          Get-ChildItem -Path C:/vcpkg/installed/x64-windows/lib
 
       - name: Download dependencies
         run: go mod download
