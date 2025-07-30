@@ -45,9 +45,8 @@ jobs:
           echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
           echo "CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows/include" >> $env:GITHUB_ENV
           echo "CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows/lib -lportaudio" >> $env:GITHUB_ENV
-          # Debug: List contents to verify paths
-          Get-ChildItem -Path C:/vcpkg/installed/x64-windows -Recurse -Filter "*.pc"
-          Get-ChildItem -Path C:/vcpkg/installed/x64-windows/lib
+          # Add DLL directory to PATH so tests can find portaudio.dll at runtime
+          echo "C:/vcpkg/installed/x64-windows/bin" >> $env:GITHUB_PATH
 
       - name: Download dependencies
         run: go mod download
