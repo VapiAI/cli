@@ -38,6 +38,13 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install portaudio
 
+      - name: Install PortAudio (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install portaudio:x64-windows
+          echo "CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows/include" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows/lib -lportaudio" >> $env:GITHUB_ENV
+
       - name: Download dependencies
         run: go mod download
 
