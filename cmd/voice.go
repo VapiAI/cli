@@ -379,10 +379,9 @@ func startVoiceCall(assistantID string) error {
 	// Set API base URL from configuration
 	config.VapiBaseURL = vapiClient.GetConfig().GetAPIBaseURL()
 
-	// Set public API key for staging environment
-	// TODO: This should be configurable via environment variable or config file
-	if config.VapiBaseURL == "https://staging-api.vapi.ai" {
-		config.VapiPublicAPIKey = "3eb02518-ae47-445f-9ba5-f5edb0b3e315"
+	// Set public API key from environment if provided
+	if pub := os.Getenv("VAPI_PUBLIC_KEY"); pub != "" {
+		config.VapiPublicAPIKey = pub
 	}
 
 	// Create voice client
