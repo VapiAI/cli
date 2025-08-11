@@ -170,6 +170,23 @@ tildify() {
 
 success "vapi was installed successfully to $Bold_Green$(tildify "$exe")"
 
+# PortAudio notice for voice features
+echo
+info "Note: For voice features (microphone/speaker), PortAudio must be installed."
+case $platform in
+  'Darwin x86_64'|'Darwin arm64')
+    info_bold "  brew install portaudio"
+    ;;
+  'Linux x86_64'|'Linux arm64'|'Linux aarch64')
+    info_bold "  Debian/Ubuntu: sudo apt-get update && sudo apt-get install -y libportaudio2 portaudio19-dev"
+    info_bold "  Fedora/RHEL:   sudo dnf install -y portaudio portaudio-devel"
+    info_bold "  Arch:          sudo pacman -S portaudio"
+    ;;
+  'MINGW64'* )
+    info_bold "  Windows: Install PortAudio and ensure portaudio.dll is on PATH (e.g., via vcpkg: vcpkg install portaudio)"
+    ;;
+esac
+
 if command -v vapi >/dev/null; then
     echo "Run 'vapi --help' to get started"
     exit

@@ -261,6 +261,12 @@ function Main {
     Install-Vapi $version $platform
     Add-ToPath
     Test-Installation
+
+    Write-Host "" 
+    Write-Info "Note: For voice features (microphone/speaker), PortAudio must be installed."
+    Write-Host "  Windows options:" -ForegroundColor White
+    Write-Host "    - Install via vcpkg: vcpkg install portaudio" -ForegroundColor White
+    Write-Host "    - Or download binaries and ensure portaudio.dll is alongside vapi.exe or on PATH" -ForegroundColor White
 }
 
 # Run main function

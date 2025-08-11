@@ -63,8 +63,8 @@ var environments = map[string]Environment{
 	},
 	"staging": {
 		Name:         "staging",
-		APIBaseURL:   "https://api.staging.vapi.ai",
-		DashboardURL: "https://dashboard.staging.vapi.ai",
+		APIBaseURL:   "https://staging-api.vapi.ai",
+		DashboardURL: "https://staging-dashboard.vapi.ai",
 	},
 	"development": {
 		Name:         "development",

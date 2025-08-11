@@ -7,19 +7,19 @@ export class DocumentationSource {
       switch (uri) {
         case "vapi://docs/overview":
           return this.getDocumentationOverview();
-          
+
         case "vapi://docs/quickstart":
           return this.getQuickStartGuide();
-          
+
         case "vapi://examples/collection":
           return this.getExamplesCollection();
-          
+
         case "vapi://api/reference":
           return this.getApiReference();
-          
+
         case "vapi://changelog/latest":
           return this.getLatestChanges();
-          
+
         default:
           throw new Error(`Unknown resource URI: ${uri}`);
       }
@@ -184,7 +184,7 @@ const assistant = await vapi.assistants.create({
   },
   model: {
     provider: "openai", 
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o",
     messages: [{
       role: "system",
       content: "You are a helpful assistant. Be concise and friendly."
@@ -209,7 +209,7 @@ assistant = vapi.assistants.create(
     },
     model={
         "provider": "openai",
-        "model": "gpt-3.5-turbo", 
+        "model": "gpt-4o", 
         "messages": [{
             "role": "system",
             "content": "You are a helpful assistant. Be concise and friendly."
@@ -332,7 +332,7 @@ const assistant = await vapi.assistants.create({
   voice: { provider: "openai", voiceId: "alloy" },
   model: {
     provider: "openai",
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o",
     messages: [{ role: "system", content: "You are a helpful assistant." }]
   }
 });
@@ -351,7 +351,7 @@ const supportBot = await vapi.assistants.create({
   voice: { provider: "openai", voiceId: "echo" },
   model: {
     provider: "openai",
-    model: "gpt-4",
+    model: "gpt-4o",
     messages: [{
       role: "system",
       content: \`You are a customer support representative for Acme Corp.
@@ -394,7 +394,7 @@ const assistant = await vapi.assistants.create({
   voice: { provider: "elevenlabs", voiceId: "21m00Tcm4TlvDq8ikWAM" },
   model: {
     provider: "openai",
-    model: "gpt-4",
+    model: "gpt-4o",
     messages: [{
       role: "system",
       content: "You are a smart assistant that can help with weather and scheduling."
@@ -531,7 +531,7 @@ def create_assistant():
         },
         model={
             "provider": "openai",
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o",
             "messages": [{
                 "role": "system", 
                 "content": data['system_prompt']
