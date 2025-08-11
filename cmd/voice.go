@@ -76,7 +76,7 @@ Examples:
   vapi call voice --name "My Assistant" --first-message "Hello! How can I help you?"
   
   # Advanced transient assistant
-  vapi call voice --name "Support Bot" --first-message "Hi there!" --voice-id "jennifer" --model "gpt-4"
+  vapi call voice --name "Support Bot" --first-message "Hi there!" --voice-id "jennifer" --model "gpt-4o"
   
   # Load from config file
   vapi call voice --config ./assistant.json`,
@@ -422,6 +422,6 @@ func init() {
 	voiceCmd.Flags().StringVar(&assistantName, "name", "", "Name for transient assistant")
 	voiceCmd.Flags().StringVar(&firstMessage, "first-message", "", "First message from transient assistant")
 	voiceCmd.Flags().StringVar(&voiceID, "voice-id", "", "Voice ID for transient assistant (jennifer, derek, elliot)")
-	voiceCmd.Flags().StringVar(&model, "model", "", "AI model for transient assistant (gpt-3.5-turbo, gpt-4, etc.)")
+	voiceCmd.Flags().StringVar(&model, "model", "", "AI model for transient assistant (gpt-4o, gpt-4o-mini, etc.)")
 	voiceCmd.Flags().StringVar(&systemMessage, "system-message", "", "System message for transient assistant")
 }

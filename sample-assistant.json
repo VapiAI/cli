@@ -3,6 +3,6 @@
   "name": "Test Assistant",
   "first_message": "Hello! I'm your test assistant. How can I help you today?",
   "voice_id": "elliot",
-  "model": "gpt-3.5-turbo",
+  "model": "gpt-4o",
   "system_message": "You are a helpful and friendly assistant. Keep responses concise and conversational."
 }
