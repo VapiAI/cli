@@ -1,6 +1,7 @@
 package voice
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"golang.org/x/term"
 )
 
 // TerminalUI manages the terminal interface for voice calls
@@ -23,6 +25,11 @@ type TerminalUI struct {
 	errorStyle   lipgloss.Style
 	infoStyle    lipgloss.Style
 	headerStyle  lipgloss.Style
+
+	// Terminal state
+	origTermState  *term.State
+	rawModeEnabled bool
+	stdinFD        int
 }
 
 // UIUpdate represents a terminal UI update
@@ -87,6 +94,7 @@ func (ui *TerminalUI) displayHeader() {
 	fmt.Println()
 	fmt.Println(ui.infoStyle.Render("Starting voice call..."))
 	fmt.Println(ui.infoStyle.Render("Press Ctrl+C to end the call"))
+	fmt.Println(ui.infoStyle.Render("Controls: [s] Status  [q] End call  [h] Help"))
 	fmt.Println()
 }
 
@@ -215,12 +223,53 @@ func (ui *TerminalUI) formatDuration(startTime time.Time) string {
 
 // handleKeyboardInput handles keyboard input (placeholder for future interactive features)
 func (ui *TerminalUI) handleKeyboardInput() {
-	// This is a placeholder for future keyboard input handling
-	// For now, we rely on signal handling for termination
+	fd := int(os.Stdin.Fd())
+	ui.stdinFD = fd
+
+	if term.IsTerminal(fd) {
+		if oldState, err := term.MakeRaw(fd); err == nil {
+			ui.origTermState = oldState
+			ui.rawModeEnabled = true
+		}
+	}
+
+	// Ensure terminal is restored when this goroutine exits
+	defer func() {
+		if ui.rawModeEnabled && ui.origTermState != nil {
+			_ = term.Restore(ui.stdinFD, ui.origTermState)
+			ui.rawModeEnabled = false
+		}
+	}()
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		b, err := reader.ReadByte()
+		if err != nil {
+			return
+		}
+		switch b {
+		case 'q', 'Q':
+			fmt.Println(ui.infoStyle.Render("\nEnding call (q pressed)..."))
+			_ = ui.shutdown()
+			return
+		case 's', 'S':
+			// Trigger a status update in the UI loop
+			ui.uiUpdates <- UIUpdate{Type: "status_update"}
+		case 'h', 'H':
+			fmt.Println(ui.infoStyle.Render("Controls: [s] Status  [q] End call  [h] Help"))
+		default:
+			// ignore other keys
+		}
+	}
 }
 
 // shutdown gracefully shuts down the terminal UI
 func (ui *TerminalUI) shutdown() error {
+	// Restore terminal if we enabled raw mode
+	if ui.rawModeEnabled && ui.origTermState != nil {
+		_ = term.Restore(ui.stdinFD, ui.origTermState)
+		ui.rawModeEnabled = false
+	}
 	fmt.Println(ui.infoStyle.Render("Ending voice call..."))
 
 	// End the call if still active
