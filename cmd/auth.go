@@ -54,10 +54,43 @@ This secure authentication flow:
 		fmt.Println("🔐 Authenticating with Vapi...")
 		fmt.Println()
 
+		// Read optional flags for labeling
+		labelFlag, _ := cmd.Flags().GetString("label")
+		emailFlag, _ := cmd.Flags().GetString("email") // alias, for backward-compat
+		orgFlag, _ := cmd.Flags().GetString("org")
+
 		// Start the browser-based authentication flow
 		// The Login() function handles saving the API key
 		if err := auth.Login(); err != nil {
 			return err
+		}
+
+		// Optionally override label/org with flags if provided
+		cfg, err := config.LoadConfig()
+		if err == nil && cfg.ActiveAccount != "" {
+			acc := cfg.Accounts[cfg.ActiveAccount]
+			changed := false
+
+			// Apply flags if provided
+			if labelFlag != "" {
+				acc.Label = labelFlag
+				changed = true
+			} else if emailFlag != "" { // backward-compat: set label from email flag
+				acc.Label = emailFlag
+				changed = true
+			}
+			if orgFlag != "" {
+				acc.Organization = orgFlag
+				changed = true
+			}
+
+			// No more interactive prompt - the dashboard now provides label/email
+
+			// Persist if any changes
+			if changed {
+				cfg.Accounts[cfg.ActiveAccount] = acc
+				_ = config.SaveConfig(cfg)
+			}
 		}
 
 		fmt.Println("\nYou can now use all Vapi CLI commands.")
@@ -175,6 +208,12 @@ which account you're currently using.`,
 				if account.Organization != "" {
 					fmt.Printf(" - %s", account.Organization)
 				}
+				// Prefer Label; fallback to Email if present
+				if account.Label != "" {
+					fmt.Printf(" <%s>", account.Label)
+				} else if account.Email != "" {
+					fmt.Printf(" <%s>", account.Email)
+				}
 				if account.LoginTime != "" {
 					fmt.Printf(" (logged in: %s)", account.LoginTime[:10]) // Show just the date
 				}
@@ -272,6 +311,12 @@ This is useful when working with multiple organizations or environments.`,
 				if account.Organization != "" {
 					displayName = fmt.Sprintf("%s (%s)", accountName, account.Organization)
 				}
+				// Prefer Label; fallback to Email if present
+				if account.Label != "" {
+					displayName = fmt.Sprintf("%s <%s>", displayName, account.Label)
+				} else if account.Email != "" {
+					displayName = fmt.Sprintf("%s <%s>", displayName, account.Email)
+				}
 				if accountName == cfg.ActiveAccount {
 					displayName += " ✓ (currently active)"
 				}
@@ -314,6 +359,11 @@ This is useful when working with multiple organizations or environments.`,
 				if account.Organization != "" {
 					fmt.Printf(" - %s", account.Organization)
 				}
+				if account.Label != "" {
+					fmt.Printf(" <%s>", account.Label)
+				} else if account.Email != "" {
+					fmt.Printf(" <%s>", account.Email)
+				}
 				fmt.Println()
 			}
 			return fmt.Errorf("account '%s' not found", targetAccount)
@@ -331,6 +381,11 @@ This is useful when working with multiple organizations or environments.`,
 		fmt.Printf("✅ Switched to account '%s'", targetAccount)
 		if account.Organization != "" {
 			fmt.Printf(" (%s)", account.Organization)
+		}
+		if account.Label != "" {
+			fmt.Printf(" <%s>", account.Label)
+		} else if account.Email != "" {
+			fmt.Printf(" <%s>", account.Email)
 		}
 		fmt.Println()
 		return nil
@@ -453,4 +508,9 @@ func init() {
 
 	// Add auth command to root
 	rootCmd.AddCommand(authCmd)
+
+	// Flags for login labeling
+	authLoginCmd.Flags().String("label", "", "Override the label for this account (default: your email from dashboard)")
+	authLoginCmd.Flags().String("email", "", "Alias for --label")
+	authLoginCmd.Flags().String("org", "", "Override the organization name for this account")
 }

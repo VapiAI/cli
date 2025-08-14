@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/VapiAI/cli/pkg/config"
@@ -37,6 +38,9 @@ type AuthManager struct {
 	callbackPort int
 	authCode     chan string
 	authError    chan error
+	orgName      string
+	orgID        string
+	label        string
 }
 
 func NewAuthManager() *AuthManager {
@@ -160,6 +164,30 @@ func (a *AuthManager) createCallbackHandler(expectedState string) http.Handler {
 			return
 		}
 
+		// Try to capture optional organization name from query params if provided by dashboard
+		// These parameters are optional and will be ignored if not present
+		if org := r.URL.Query().Get("org_name"); org != "" {
+			a.orgName = org
+		} else if org := r.URL.Query().Get("organization"); org != "" {
+			a.orgName = org
+		} else if org := r.URL.Query().Get("org"); org != "" {
+			a.orgName = org
+		}
+
+		// Organization ID for reliable deduplication
+		if orgID := r.URL.Query().Get("org_id"); orgID != "" {
+			a.orgID = orgID
+		}
+
+		// Optional label (fallback to email if provided)
+		if label := r.URL.Query().Get("label"); label != "" {
+			a.label = label
+		} else if email := r.URL.Query().Get("email"); email != "" { // backward-compat
+			a.label = email
+		} else if email := r.URL.Query().Get("user_email"); email != "" { // backward-compat
+			a.label = email
+		}
+
 		// Send success response
 		a.writeSuccessPage(w)
 
@@ -208,7 +236,6 @@ func (a *AuthManager) writeSuccessPage(w http.ResponseWriter) {
 </head>
 <body>
     <div class="container">
-        <div class="icon">✅</div>
         <h1>Authentication Successful!</h1>
         <p>You can now close this window and return to your terminal.</p>
     </div>
@@ -319,14 +346,114 @@ func LoginWithAccountName(accountName string) error {
 		cfg = &config.Config{}
 	}
 
+	// De-duplicate: if an existing account matches org ID (preferred), organization name, or API key,
+	// update it instead of creating a new one
+	if cfg.Accounts != nil {
+		// First prefer matching by org ID when provided (most reliable)
+		if authManager.orgID != "" {
+			for existingName, existing := range cfg.Accounts {
+				if existing.OrgID == authManager.orgID {
+					cfg.Accounts[existingName] = config.Account{
+						APIKey:       apiKey,
+						Organization: authManager.orgName,
+						OrgID:        authManager.orgID,
+						Environment:  cfg.GetEnvironment(),
+						LoginTime:    time.Now().Format(time.RFC3339),
+						Label:        firstNonEmpty(authManager.label, existing.Label, existing.Email),
+					}
+					cfg.ActiveAccount = existingName
+
+					if err := config.SaveConfig(cfg); err != nil {
+						return fmt.Errorf("failed to save API key: %w", err)
+					}
+
+					fmt.Printf("\n✅ Re-authenticated existing account '%s'!\n", existingName)
+					fmt.Printf("Organization: %s\n", authManager.orgName)
+					if authManager.label != "" {
+						fmt.Printf("Label: %s\n", authManager.label)
+					}
+					if len(cfg.Accounts) > 1 {
+						fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
+					}
+					return nil
+				}
+			}
+		}
+
+		// Then try matching by organization name when provided
+		if authManager.orgName != "" {
+			for existingName, existing := range cfg.Accounts {
+				if strings.EqualFold(existing.Organization, authManager.orgName) {
+					cfg.Accounts[existingName] = config.Account{
+						APIKey:       apiKey,
+						Organization: authManager.orgName,
+						OrgID:        authManager.orgID,
+						Environment:  cfg.GetEnvironment(),
+						LoginTime:    time.Now().Format(time.RFC3339),
+						Label:        firstNonEmpty(authManager.label, existing.Label, existing.Email),
+					}
+					cfg.ActiveAccount = existingName
+
+					if err := config.SaveConfig(cfg); err != nil {
+						return fmt.Errorf("failed to save API key: %w", err)
+					}
+
+					fmt.Printf("\n✅ Re-authenticated existing account '%s'!\n", existingName)
+					fmt.Printf("Organization: %s\n", authManager.orgName)
+					if authManager.label != "" {
+						fmt.Printf("Label: %s\n", authManager.label)
+					}
+					if len(cfg.Accounts) > 1 {
+						fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
+					}
+					return nil
+				}
+			}
+		}
+
+		// Fallback: match by API key if the same key already exists
+		for existingName, existing := range cfg.Accounts {
+			if existing.APIKey == apiKey {
+				// Update existing account's login time and organization (if newly available)
+				orgName := authManager.orgName
+				if orgName == "" {
+					orgName = existing.Organization
+				}
+
+				cfg.Accounts[existingName] = config.Account{
+					APIKey:       apiKey,
+					Organization: orgName,
+					OrgID:        authManager.orgID,
+					Environment:  cfg.GetEnvironment(),
+					LoginTime:    time.Now().Format(time.RFC3339),
+					Label:        firstNonEmpty(authManager.label, existing.Label, existing.Email),
+				}
+				// Set as active account
+				cfg.ActiveAccount = existingName
+
+				if err := config.SaveConfig(cfg); err != nil {
+					return fmt.Errorf("failed to save API key: %w", err)
+				}
+
+				fmt.Printf("\n✅ Re-authenticated existing account '%s'!\n", existingName)
+				if orgName != "" {
+					fmt.Printf("Organization: %s\n", orgName)
+				}
+				if len(cfg.Accounts) > 1 {
+					fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
+				}
+				return nil
+			}
+		}
+	}
+
 	// Generate account name if not provided
 	if accountName == "" {
-		// Try to extract organization info from API key or use timestamp
 		accountName = fmt.Sprintf("account-%d", time.Now().Unix())
 	}
 
-	// Add as new account (supports multiple accounts)
-	cfg.AddAccount(accountName, apiKey, "") // Organization will be filled later if available
+	// Add as new account (supports multiple accounts). Use org info if we captured it.
+	cfg.AddAccount(accountName, apiKey, authManager.orgName, authManager.orgID, authManager.label)
 
 	// For backward compatibility, also set legacy APIKey field if it's the first account
 	if len(cfg.Accounts) == 1 {
@@ -338,10 +465,25 @@ func LoginWithAccountName(accountName string) error {
 	}
 
 	fmt.Printf("\n✅ Successfully authenticated as '%s'! Your API key has been saved.\n", accountName)
+	if authManager.orgName != "" {
+		fmt.Printf("Organization: %s\n", authManager.orgName)
+	}
+	if authManager.label != "" {
+		fmt.Printf("Label: %s\n", authManager.label)
+	}
 	if len(cfg.Accounts) > 1 {
 		fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
 	}
 	return nil
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // Logout clears the stored authentication credentials

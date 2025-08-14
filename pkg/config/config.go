@@ -44,8 +44,13 @@ type Config struct {
 type Account struct {
 	APIKey       string `mapstructure:"apikey"`
 	Organization string `mapstructure:"organization,omitempty"` // Organization name if available
+	OrgID        string `mapstructure:"org_id,omitempty"`       // Organization ID for reliable deduplication
 	Environment  string `mapstructure:"environment,omitempty"`  // Per-account environment override
 	LoginTime    string `mapstructure:"logintime,omitempty"`    // When this account was last authenticated
+	// Preferred: user-defined label for the account (e.g., email, purpose, alias)
+	Label string `mapstructure:"label,omitempty"`
+	// Backward-compat: previously stored as email; still read if present
+	Email string `mapstructure:"email,omitempty"`
 }
 
 // Environment configuration
@@ -253,7 +258,7 @@ func (c *Config) GetActiveAccount() *Account {
 }
 
 // AddAccount adds a new account or updates an existing one
-func (c *Config) AddAccount(accountKey, apiKey, organization string) {
+func (c *Config) AddAccount(accountKey, apiKey, organization, orgID, label string) {
 	if c.Accounts == nil {
 		c.Accounts = make(map[string]Account)
 	}
@@ -261,8 +266,10 @@ func (c *Config) AddAccount(accountKey, apiKey, organization string) {
 	c.Accounts[accountKey] = Account{
 		APIKey:       apiKey,
 		Organization: organization,
+		OrgID:        orgID,
 		Environment:  c.Environment, // Use current environment as default
 		LoginTime:    time.Now().Format(time.RFC3339),
+		Label:        label,
 	}
 
 	// Set as active account if it's the first one or no active account is set

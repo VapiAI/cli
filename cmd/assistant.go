@@ -20,7 +20,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -224,21 +227,70 @@ var updateAssistantCmd = &cobra.Command{
 	Short: "Update an existing assistant",
 	Long: `Update an assistant's configuration.
 
-Complex updates involving voice models, tools, or advanced settings 
-are best done through the Vapi dashboard at https://dashboard.vapi.ai`,
+You can provide raw JSON via --json or --file to quickly copy configs across orgs.
+Examples:
+  vapi assistant update <id> --file assistant.json
+  cat assistant.json | vapi assistant update <id> --json -
+  vapi assistant update <id> --json '{"name":"New Name"}'
+
+Complex updates can also be done via the Vapi dashboard at https://dashboard.vapi.ai`,
 	Args: cobra.ExactArgs(1),
 	RunE: analytics.TrackCommandWrapper("assistant", "update", func(cmd *cobra.Command, args []string) error {
 		assistantID := args[0]
 
-		fmt.Printf("📝 Update assistant: %s\n", assistantID)
-		fmt.Println()
-		fmt.Println("Assistant updates are best done through the Vapi dashboard where you can:")
-		fmt.Println("- Configure model settings (GPT-4, Claude, etc.)")
-		fmt.Println("- Select and customize voices")
-		fmt.Println("- Set up tools and functions")
-		fmt.Println("- Configure advanced behaviors")
-		fmt.Println()
-		fmt.Println("Visit: https://dashboard.vapi.ai/assistants")
+		// Flags
+		jsonStr, _ := cmd.Flags().GetString("json")
+		filePath, _ := cmd.Flags().GetString("file")
+
+		if jsonStr == "" && filePath == "" {
+			return fmt.Errorf("provide --json or --file for update payload")
+		}
+
+		var payloadBytes []byte
+
+		if filePath != "" {
+			b, err := os.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("failed to read --file: %w", err)
+			}
+			payloadBytes = b
+		} else {
+			// jsonStr provided
+			if jsonStr == "-" {
+				// read from stdin
+				b, err := io.ReadAll(os.Stdin)
+				if err != nil {
+					return fmt.Errorf("failed to read stdin: %w", err)
+				}
+				payloadBytes = b
+			} else {
+				payloadBytes = []byte(jsonStr)
+			}
+		}
+
+		// Basic validation
+		var tmp map[string]interface{}
+		if err := json.Unmarshal(payloadBytes, &tmp); err != nil {
+			return fmt.Errorf("invalid JSON: %w", err)
+		}
+
+		ctx := context.Background()
+
+		// Use low-level raw request helper
+		respBody, err := vapiClient.DoRawJSON(ctx, "PATCH", fmt.Sprintf("/assistants/%s", assistantID), payloadBytes)
+		if err != nil {
+			return fmt.Errorf("failed to update assistant: %w", err)
+		}
+
+		fmt.Println("✅ Assistant updated successfully")
+		if name, ok := respBody["name"].(string); ok && name != "" {
+			fmt.Printf("Name: %s\n", name)
+		}
+
+		// Print the updated assistant JSON
+		if err := output.PrintJSON(respBody); err != nil {
+			return fmt.Errorf("failed to display response: %w", err)
+		}
 
 		return nil
 	}),
@@ -291,4 +343,8 @@ func init() {
 	assistantCmd.AddCommand(getAssistantCmd)
 	assistantCmd.AddCommand(updateAssistantCmd)
 	assistantCmd.AddCommand(deleteAssistantCmd)
+
+	// Flags for update
+	updateAssistantCmd.Flags().String("json", "", "Raw JSON payload string or '-' to read from stdin")
+	updateAssistantCmd.Flags().String("file", "", "Path to JSON file with assistant payload")
 }
