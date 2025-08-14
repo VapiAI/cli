@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -249,7 +250,8 @@ Complex updates can also be done via the Vapi dashboard at https://dashboard.vap
 		var payloadBytes []byte
 
 		if filePath != "" {
-			b, err := os.ReadFile(filePath)
+			filePath = filepath.Clean(filePath)
+			b, err := os.ReadFile(filePath) // #nosec G304 - filePath is user-provided and intentional
 			if err != nil {
 				return fmt.Errorf("failed to read --file: %w", err)
 			}

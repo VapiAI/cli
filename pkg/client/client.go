@@ -80,7 +80,7 @@ func (v *VapiClient) GetConfig() *config.Config {
 
 // DoRawJSON sends a raw JSON request to the Vapi API using the underlying client.
 // path should be like "/assistants/<id>". method is e.g. "PATCH".
-func (v *VapiClient) DoRawJSON(ctx context.Context, method string, path string, body []byte) (map[string]interface{}, error) {
+func (v *VapiClient) DoRawJSON(ctx context.Context, method, path string, body []byte) (map[string]interface{}, error) {
 	baseURL := strings.TrimRight(v.config.GetAPIBaseURL(), "/")
 	rel := "/" + strings.TrimLeft(path, "/")
 	url := baseURL + rel
