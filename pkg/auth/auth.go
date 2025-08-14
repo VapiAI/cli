@@ -40,7 +40,7 @@ type AuthManager struct {
 	authError    chan error
 	orgName      string
 	orgID        string
-	label        string
+	email        string
 }
 
 func NewAuthManager() *AuthManager {
@@ -179,13 +179,11 @@ func (a *AuthManager) createCallbackHandler(expectedState string) http.Handler {
 			a.orgID = orgID
 		}
 
-		// Optional label (fallback to email if provided)
-		if label := r.URL.Query().Get("label"); label != "" {
-			a.label = label
-		} else if email := r.URL.Query().Get("email"); email != "" { // backward-compat
-			a.label = email
-		} else if email := r.URL.Query().Get("user_email"); email != "" { // backward-compat
-			a.label = email
+		// Optional email
+		if email := r.URL.Query().Get("email"); email != "" {
+			a.email = email
+		} else if email := r.URL.Query().Get("user_email"); email != "" {
+			a.email = email
 		}
 
 		// Send success response
@@ -361,7 +359,7 @@ func LoginWithAccountName(accountName string) error {
 					OrgID:        authManager.orgID,
 					Environment:  cfg.GetEnvironment(),
 					LoginTime:    time.Now().Format(time.RFC3339),
-					Label:        firstNonEmpty(authManager.label, existing.Label, existing.Email),
+					Email:        firstNonEmpty(authManager.email, existing.Email),
 				}
 				cfg.ActiveAccount = existingName
 
@@ -371,8 +369,8 @@ func LoginWithAccountName(accountName string) error {
 
 				fmt.Printf("\n✅ Re-authenticated existing account '%s'!\n", existingName)
 				fmt.Printf("Organization: %s\n", authManager.orgName)
-				if authManager.label != "" {
-					fmt.Printf("Label: %s\n", authManager.label)
+				if authManager.email != "" {
+					fmt.Printf("Email: %s\n", authManager.email)
 				}
 				if len(cfg.Accounts) > 1 {
 					fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
@@ -393,7 +391,7 @@ func LoginWithAccountName(accountName string) error {
 					OrgID:        authManager.orgID,
 					Environment:  cfg.GetEnvironment(),
 					LoginTime:    time.Now().Format(time.RFC3339),
-					Label:        firstNonEmpty(authManager.label, existing.Label, existing.Email),
+					Email:        firstNonEmpty(authManager.email, existing.Email),
 				}
 				cfg.ActiveAccount = existingName
 
@@ -403,8 +401,8 @@ func LoginWithAccountName(accountName string) error {
 
 				fmt.Printf("\n✅ Re-authenticated existing account '%s'!\n", existingName)
 				fmt.Printf("Organization: %s\n", authManager.orgName)
-				if authManager.label != "" {
-					fmt.Printf("Label: %s\n", authManager.label)
+				if authManager.email != "" {
+					fmt.Printf("Email: %s\n", authManager.email)
 				}
 				if len(cfg.Accounts) > 1 {
 					fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
@@ -430,7 +428,7 @@ func LoginWithAccountName(accountName string) error {
 				OrgID:        authManager.orgID,
 				Environment:  cfg.GetEnvironment(),
 				LoginTime:    time.Now().Format(time.RFC3339),
-				Label:        firstNonEmpty(authManager.label, existing.Label, existing.Email),
+				Email:        firstNonEmpty(authManager.email, existing.Email),
 			}
 			// Set as active account
 			cfg.ActiveAccount = existingName
@@ -443,8 +441,8 @@ func LoginWithAccountName(accountName string) error {
 			if orgName != "" {
 				fmt.Printf("Organization: %s\n", orgName)
 			}
-			if authManager.label != "" {
-				fmt.Printf("Label: %s\n", authManager.label)
+			if authManager.email != "" {
+				fmt.Printf("Email: %s\n", authManager.email)
 			}
 			if len(cfg.Accounts) > 1 {
 				fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
@@ -459,7 +457,7 @@ func LoginWithAccountName(accountName string) error {
 	}
 
 	// Add as new account (supports multiple accounts). Use org info if we captured it.
-	cfg.AddAccount(accountName, apiKey, authManager.orgName, authManager.orgID, authManager.label)
+	cfg.AddAccount(accountName, apiKey, authManager.orgName, authManager.orgID, authManager.email)
 
 	// For backward compatibility, also set legacy APIKey field if it's the first account
 	if len(cfg.Accounts) == 1 {
@@ -474,8 +472,8 @@ func LoginWithAccountName(accountName string) error {
 	if authManager.orgName != "" {
 		fmt.Printf("Organization: %s\n", authManager.orgName)
 	}
-	if authManager.label != "" {
-		fmt.Printf("Label: %s\n", authManager.label)
+	if authManager.email != "" {
+		fmt.Printf("Email: %s\n", authManager.email)
 	}
 	if len(cfg.Accounts) > 1 {
 		fmt.Println("💡 Use 'vapi auth switch' to switch between accounts")
