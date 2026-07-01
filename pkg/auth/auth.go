@@ -316,10 +316,6 @@ func generateRandomState() (string, error) {
 func openBrowser(targetURL string) error {
 	switch runtime.GOOS {
 	case "windows":
-		// cmd.exe treats & as a command separator, which truncates the URL and
-		// drops query parameters such as `state`. Escape it as ^& so the full
-		// URL reaches the browser. The empty title arg ("") keeps `start` from
-		// mistaking the URL for a window title.
 		return exec.Command("cmd", "/c", "start", "", strings.ReplaceAll(targetURL, "&", "^&")).Start()
 	case "darwin":
 		return exec.Command("open", targetURL).Start()
