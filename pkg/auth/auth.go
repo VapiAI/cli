@@ -316,7 +316,7 @@ func generateRandomState() (string, error) {
 func openBrowser(targetURL string) error {
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("cmd", "/c", "start", targetURL).Start()
+		return exec.Command("cmd", "/c", "start", "", strings.ReplaceAll(targetURL, "&", "^&")).Start()
 	case "darwin":
 		return exec.Command("open", targetURL).Start()
 	default: // Linux and others
