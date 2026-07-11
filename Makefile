@@ -129,6 +129,15 @@ lint:
 	@echo "Running linters..."
 	golangci-lint run
 
+# Format Go code
+fmt:
+	@echo "Formatting Go code..."
+	@$(GOCMD) fmt ./...
+	@echo "✅ Go code formatted"
+
+# Alias
+format: fmt
+
 # Run all linters (CLI + MCP server)
 lint-all: lint lint-mcp
 
@@ -195,6 +204,7 @@ help:
 	@echo "  man-pages          Generate Unix manual pages"
 	@echo "  install            Install the CLI and manual pages to ~/.local/"
 	@echo "  test               Run CLI tests"
+	@echo "  fmt                Format Go code"
 	@echo "  lint               Run CLI linters"
 	@echo "  clean              Clean CLI build artifacts"
 	@echo ""
@@ -228,4 +238,4 @@ help:
 	@echo "  make version-set VERSION=1.2.3"
 	@echo "  make publish-mcp            # Publish MCP server to npm"
 
-.PHONY: all build build-mcp build-all test test-mcp test-all test-coverage clean clean-mcp clean-all tidy deps mcp-deps deps-all lint lint-mcp lint-all man-pages install install-mcp install-all run publish-mcp help 
+.PHONY: all build build-mcp build-all test test-mcp test-all test-coverage clean clean-mcp clean-all tidy deps mcp-deps deps-all lint lint-mcp lint-all fmt format man-pages install install-mcp install-all run publish-mcp help 

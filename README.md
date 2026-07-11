@@ -37,6 +37,18 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://vapi.ai/install.p
 
 Both scripts automatically detect your platform and install the latest version.
 
+### Audio prerequisite (PortAudio)
+
+For voice features (microphone and speaker I/O), the CLI relies on the PortAudio runtime. Install it with your OS package manager:
+
+- macOS: `brew install portaudio`
+- Debian/Ubuntu: `sudo apt-get update && sudo apt-get install -y libportaudio2 portaudio19-dev`
+- Fedora/RHEL: `sudo dnf install -y portaudio portaudio-devel`
+- Arch Linux: `sudo pacman -S portaudio`
+- Windows: Install PortAudio and ensure `portaudio.dll` is on your PATH (e.g., via vcpkg: `vcpkg install portaudio`, or download the official binary and place the DLL alongside `vapi.exe`).
+
+If PortAudio is not installed, commands that use voice I/O (like `vapi call voice`) will fail at runtime.
+
 ### Docker
 
 ```bash

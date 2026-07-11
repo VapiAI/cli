@@ -30,6 +30,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Install PortAudio (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev
+
+      - name: Install PortAudio (macOS)
+        if: runner.os == 'macOS'
+        run: brew install portaudio
+
+      - name: Install PortAudio (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install portaudio:x64-windows
+          echo "PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows/include" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows/lib -lportaudio" >> $env:GITHUB_ENV
+          # Add DLL directory to PATH so tests can find portaudio.dll at runtime
+          echo "C:/vcpkg/installed/x64-windows/bin" >> $env:GITHUB_PATH
+
       - name: Download dependencies
         run: go mod download
 
@@ -58,6 +76,9 @@ jobs:
         with:
           go-version: "1.24.4"
 
+      - name: Install PortAudio
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
@@ -75,6 +96,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.24.4"
+
+      - name: Install PortAudio
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev
 
       - name: Build
         run: make build
