@@ -62,9 +62,10 @@ var versionCmd = &cobra.Command{
 
 		// Show MCP server compatibility
 		fmt.Printf("\n🧠 MCP Integration:\n")
-		fmt.Printf("  Compatible MCP server: @vapi-ai/mcp-docs-server@%s\n", version)
+		fmt.Printf("  API MCP server: %s\n", vapiMCPURL)
 		fmt.Printf("  MCP setup: vapi mcp setup\n")
 		fmt.Printf("  MCP status: vapi mcp status\n")
+		fmt.Printf("  Skills setup: vapi skills setup\n")
 
 		// Show environment information for developers
 		if cfg, err := config.LoadConfig(); err == nil {

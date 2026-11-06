@@ -210,44 +210,57 @@ The `init` command will:
 - Generate example code and components
 - Create environment configuration templates
 
-### MCP Integration - Turn Your IDE into a Vapi Expert
+### MCP and agent skills
 
-Set up Model Context Protocol (MCP) integration to give your IDE's AI assistant complete knowledge about Vapi:
+Choose the integration you need:
+
+| Command | Sets up | Authentication |
+| --- | --- | --- |
+| `vapi mcp setup` | Vapi v2 API MCP server at `https://mcp-v2.vapi.ai/api/mcp` | Current Vapi API key |
+| `vapi skills setup` | Public agent skills from `VapiAI/skills` | No API key to install |
 
 ```bash
-# Auto-detect and configure all IDEs
-vapi mcp setup
+# API tools: first sign in, then configure an IDE
+vapi login
+vapi mcp setup cursor
 
-# Configure a specific IDE
-vapi mcp setup cursor   # For Cursor
-vapi mcp setup windsurf # For Windsurf
-vapi mcp setup vscode   # For VSCode
+# Install public skills (interactive agent/skill selection)
+vapi skills setup
+vapi skills setup --agent cursor --skill create-assistant
+vapi skills setup --global --agent claude-code --yes
 
-# Check configuration status
+# Inspect configuration without connecting or printing credentials
 vapi mcp status
 ```
 
-Once configured, your IDE's AI assistant will have access to:
+For MCP setup, omit the IDE to select detected IDEs, or specify `cursor`,
+`windsurf`, or `vscode`. Node.js and `npx` are required: the IDE starts
+`mcp-remote` with `--transport http-only` to connect over Streamable HTTP.
+SSE fallback is disabled.
 
-- **Complete Vapi Documentation** - No more hallucinated API info
-- **Code Examples & Templates** - Real working examples
-- **Best Practices & Guides** - Expert-level implementation patterns
-- **Latest Features** - Always up-to-date with new releases
+Setup writes the `vapi` entry and preserves unrelated settings. Cursor uses `~/.cursor/mcp.json`; Windsurf uses
+`~/.codeium/windsurf/mcp_config.json`; VS Code uses `Code/User/mcp.json` inside
+its platform user configuration directory (for example,
+`~/Library/Application Support/Code/User/mcp.json` on macOS).
+The API entry stores your current API key in the user configuration. Keep that
+file private; on POSIX systems setup writes it with mode `0600`. Re-run setup after changing accounts or rotating the key.
 
-**Supported IDEs:**
+**Migration:** Earlier releases used `vapi mcp setup` to launch
+`@vapi-ai/mcp-docs-server` under the `vapi` entry. Run `vapi mcp setup`
+to switch to the v2 connection.
+The API setup replaces that legacy `vapi` entry. The old local documentation
+package is no longer used by setup.
 
-- [Cursor](https://cursor.sh) - AI-powered code editor
-- [Windsurf](https://codeium.com/windsurf) - Codeium's AI IDE
-- [VSCode](https://code.visualstudio.com) - With GitHub Copilot
+`vapi skills setup` delegates to `npx -y skills add VapiAI/skills` and forwards
+installer options. It requires Node.js 22.20 or later, installs into the current
+project by default, and supports `--global`. It installs skill files for native
+agent discovery; it does not configure MCP or copy the skills repository's MCP
+configuration into your agent.
 
-**What this does:**
-
-- Configures your IDE to use the Vapi MCP docs server
-- Creates appropriate configuration files (`.cursor/mcp.json`, etc.)
-- Eliminates AI hallucination about Vapi features and APIs
-- Enables intelligent code suggestions specific to Vapi
-
-Try asking your IDE's AI: _"How do I create a voice assistant with Vapi?"_ and watch it provide accurate, up-to-date information!
+Documentation search is planned through the v2 MCP connection, with the server
+proxying requests to the documentation backend. The CLI does not configure a
+separate documentation MCP connection. Install skills separately for native
+skill discovery and activation.
 
 ### Configuration
 
