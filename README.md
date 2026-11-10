@@ -446,7 +446,7 @@ The CLI will automatically check for updates periodically and notify you when a 
 
 ## Project Structure
 
-This repository contains the Go CLI and the historical source of a retired documentation MCP package:
+The Go CLI is organized as follows:
 
 ```
 vapi-cli/                          # 🏠 Main repository
@@ -465,18 +465,11 @@ vapi-cli/                          # 🏠 Main repository
 │   ├── config/                   # Configuration management
 │   ├── integrations/             # Framework detection
 │   └── output/                   # Output formatting
-├── mcp-docs-server/              # Deprecated package; historical reference only
 ├── build/                        # Build artifacts (git-ignored)
 ├── main.go                       # Go CLI entry point
 ├── Makefile                      # CLI build system
 └── README.md                     # This file
 ```
-
-The bundled [`@vapi-ai/mcp-docs-server`](./mcp-docs-server/README.md) is
-**deprecated and no longer maintained**. It is not built, installed, or published
-by the CLI build system. Use the [current Vapi MCP server](https://github.com/VapiAI/mcp-server)
-for API tools and documentation through `ask_vapi_docs`, or connect directly to
-[Fern's documentation MCP](https://docs.vapi.ai/_mcp/server) for documentation-only access.
 
 ## Development
 
