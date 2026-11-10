@@ -1,0 +1,9 @@
+# Keep generated output collapsed in review; edit Fern inputs to change it.
+src/** linguist-generated=true
+cli/** linguist-generated=true
+tests/wire_test.rs linguist-generated=true
+wiremock/** linguist-generated=true
+reference.md linguist-generated=true
+fern/openapi.json linguist-generated=true
+fern/openapi-overrides.yml linguist-vendored=true
+fern/openapi-parameter-descriptions-overlay.yml linguist-vendored=true
