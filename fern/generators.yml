@@ -1,0 +1,34 @@
+api:
+  specs:
+    - openapi: openapi.json
+      overrides:
+        - openapi-overrides.yml
+        - cli-overrides.yml
+      overlays: openapi-parameter-descriptions-overlay.yml
+      settings:
+        title-as-schema-name: false
+        coerce-enums-to-literals: false
+        respect-nullable-schemas: true
+default-group: cli
+groups:
+  cli:
+    generators:
+      - name: fern-cli-generator
+        version: 0.58.5
+        output:
+          location: local-file-system
+          path: ../generated
+        config:
+          binaryName: vapi
+          customCommands: false
+          generateWireTests: true
+          profiles:
+            enabled: true
+          packageIdentity:
+            name: vapi-cli
+            description: Voice AI for developers - Vapi CLI
+            authors: ["Vapi <support@vapi.ai>"]
+            keywords: ["vapi", "voice", "ai", "cli"]
+            license: MIT
+            repository: https://github.com/VapiAI/cli
+            homepage: https://vapi.ai

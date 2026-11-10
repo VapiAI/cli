@@ -1,224 +1,75 @@
-# Development Guide
+# Development
 
-This guide is for developers working on the Vapi CLI or integrating with different Vapi environments.
+## Requirements
 
-## Environment Configuration
-
-The Vapi CLI supports multiple environments for development and testing purposes. This functionality is designed to be **hidden from end users** but accessible to developers.
-
-### Available Environments
-
-| Environment   | API URL                       | Dashboard URL                       | Use Case               |
-| ------------- | ----------------------------- | ----------------------------------- | ---------------------- |
-| `production`  | `https://api.vapi.ai`         | `https://dashboard.vapi.ai`         | Default, end users     |
-| `staging`     | `https://api.staging.vapi.ai` | `https://dashboard.staging.vapi.ai` | Pre-production testing |
-| `development` | `http://localhost:3000`       | `http://localhost:3001`             | Local development      |
-
-### Configuration Methods
-
-#### 1. Environment Variables (Recommended for Development)
+- Rust 1.99.1, pinned in `rust-toolchain.toml`; rustup installs it on first use.
+- Node.js 22+ for the npm wrapper and Fern CLI.
+- Python 3.11+ for repository scripts.
+- On Linux, `pkg-config`, OpenSSL development headers, and D-Bus development
+  headers for the native credential-store build. Release Linux binaries instead
+  target musl and use the generated file credential store.
 
 ```bash
-# Set environment
-export VAPI_ENV=staging
-
-# Or set URLs directly (overrides environment)
-export VAPI_API_BASE_URL=http://localhost:3000
-export VAPI_DASHBOARD_URL=http://localhost:3001
+cargo build --locked
+make test
 ```
 
-#### 2. CLI Configuration
+CI runs the generated Rust tests, generated mock-server wire tests, Vapi smoke
+checks, and npm installer tests on Linux, macOS, and Windows. No Vapi account or
+live API writes are required. The smoke script can use another compiled binary
+via `VAPI_TEST_BINARY=/absolute/path/to/vapi`.
+
+## Source of truth
+
+`fern/source.json` pins the `VapiAI/docs` commit, source directory, and SHA-256
+hashes for the three vendored SDK inputs. They are copied unchanged from that
+commit: the OpenAPI spec, SDK overrides, and parameter-description overlay.
+`fern/generators.yml` retains the SDK spec import settings. The CLI does not
+maintain its own API client or manually track SDK package releases.
+
+`fern/cli-overrides.yml` contains the only CLI-specific API correction: the
+provider-resource POST's reserved `Content-Type` header is optional, allowing
+Fern's generated test inputs to invoke it. Explicit `--content-type` remains
+available and JSON requests set their content type through the HTTP stack.
+
+Update all three upstream inputs together from a reviewed docs commit:
 
 ```bash
-# Hidden command for developers
-vapi config env staging
-
-# Or set directly
-vapi config set environment staging
+python3 scripts/update-api.py <40-character-docs-commit-sha>
 ```
 
-#### 3. Development Script (Easiest)
+## Generate
+
+Install Fern 5.151.1 (also pinned in `fern/fern.config.json`) and authenticate to
+Vapi's Fern organization. Local-file output still uses Fern's cloud generation.
 
 ```bash
-# Quick setup for local development
-./scripts/dev-env.sh local
-
-# Set up staging environment
-./scripts/dev-env.sh setup staging
-
-# Check current status
-./scripts/dev-env.sh status
-
-# Reset to production
-./scripts/dev-env.sh reset
+npm install -g fern-api@5.151.1
+fern login
+make generate
+make test
 ```
 
-### Priority Order
+The generator is pinned to `fern-cli-generator` 0.58.5. It emits a spec-only CLI
+with named profiles and wire tests enabled. Custom Rust commands are disabled
+so the beta evaluates the generated product directly.
 
-The CLI determines which environment to use in this order:
+**Use `make generate`, not direct generation into the checkout.** The script
+copies Fern inputs into a temporary workspace, generates there, validates the
+expected output, and replaces only these paths:
 
-1. **Direct URL overrides** (`VAPI_API_BASE_URL`, `VAPI_DASHBOARD_URL`)
-2. **Environment variable** (`VAPI_ENV`)
-3. **Config file** (`environment` field)
-4. **Default** (production)
+- `Cargo.toml`, `Cargo.lock`, `reference.md`
+- `src/`, `cli/`, `tests/`, `wiremock/`
 
-### Development Workflow
+This isolates Fern's local-output Git handling from the checkout and preserves
+repository-owned packaging, workflows, docs, licenses, and smoke checks. Do not
+hand-edit generated Rust or wire tests. To check reproducibility without writing
+files, run `python3 scripts/generate.py --check`.
 
-#### Setting Up Local Development
+The upstream spec currently validates with 12 warnings and no errors. Keep
+warnings visible; they are not evidence that every API contract has been tested
+against the live Vapi service.
 
-1. **Start your local services:**
-
-   ```bash
-   # Start API server on localhost:3000
-   # Start dashboard on localhost:3001
-   ```
-
-2. **Configure CLI:**
-
-   ```bash
-   ./scripts/dev-env.sh local
-   ```
-
-3. **Verify setup:**
-
-   ```bash
-   vapi version  # Should show environment info
-   vapi config get
-   ```
-
-4. **Test authentication:**
-   ```bash
-   vapi login  # Opens localhost:3001/auth/cli
-   ```
-
-#### Testing Against Staging
-
-```bash
-# Switch to staging
-export VAPI_ENV=staging
-vapi config set environment staging
-
-# Or use the script
-./scripts/dev-env.sh setup staging
-
-# Test commands
-vapi assistant list
-```
-
-#### Switching Back to Production
-
-```bash
-./scripts/dev-env.sh reset
-# or
-unset VAPI_ENV
-vapi config set environment production
-```
-
-### Environment Detection
-
-The CLI shows environment information when not in production:
-
-```bash
-$ vapi version
-vapi version 0.0.3
-  commit: abc123
-  built at: 2025-01-27
-  built by: dev
-  go version: go1.24.4
-  platform: darwin/arm64
-  environment: staging          # Only shown for non-production
-  api url: https://api.staging.vapi.ai
-```
-
-### For End Users
-
-End users will **never** see environment-related functionality:
-
-- No environment flags in help output
-- Commands are hidden (`vapi config env` is hidden)
-- Default behavior is always production
-- No environment information shown in version (unless non-production)
-
-### Configuration File
-
-The CLI saves configuration to `~/.vapi-cli.yaml`:
-
-```yaml
-api_key: "your-api-key"
-environment: "staging"
-base_url: "https://api.staging.vapi.ai"
-dashboard_url: "https://dashboard.staging.vapi.ai"
-timeout: 30
-```
-
-### Environment Variables Reference
-
-| Variable             | Description            | Example                  |
-| -------------------- | ---------------------- | ------------------------ |
-| `VAPI_ENV`           | Environment name       | `staging`, `development` |
-| `VAPI_API_KEY`       | API key                | `vapi_abc123...`         |
-| `VAPI_API_BASE_URL`  | Override API URL       | `http://localhost:3000`  |
-| `VAPI_DASHBOARD_URL` | Override dashboard URL | `http://localhost:3001`  |
-
-### Testing Authentication Flow
-
-When testing authentication against different environments:
-
-```bash
-# Local development
-export VAPI_DASHBOARD_URL=http://localhost:3001
-vapi login  # Opens localhost:3001/auth/cli
-
-# Staging
-export VAPI_ENV=staging
-vapi login  # Opens dashboard.staging.vapi.ai/auth/cli
-```
-
-### Troubleshooting
-
-#### Check Current Configuration
-
-```bash
-vapi config get  # Shows all settings
-./scripts/dev-env.sh status  # Comprehensive status
-```
-
-#### Reset Everything
-
-```bash
-./scripts/dev-env.sh reset
-rm ~/.vapi-cli.yaml  # Nuclear option
-```
-
-#### Debug Environment Detection
-
-```bash
-# See what environment variables are set
-env | grep VAPI
-
-# Check config file
-cat ~/.vapi-cli.yaml
-```
-
-### Adding New Environments
-
-To add a new environment (e.g., `testing`):
-
-1. Update `pkg/config/config.go`:
-
-   ```go
-   "testing": {
-       Name:         "testing",
-       APIBaseURL:   "https://api.testing.vapi.ai",
-       DashboardURL: "https://dashboard.testing.vapi.ai",
-   },
-   ```
-
-2. Update scripts and documentation as needed.
-
-### Security Considerations
-
-- Environment switching is intentionally hidden from end users
-- API keys are masked in all output
-- Local development uses localhost URLs only
-- Production is always the default and safest option
+`Cargo.toml` and `npm-wrapper/package.json` must have the same version. Change
+the npm version, regenerate with the matching Cargo version (the generation
+script reads it), and run `python3 scripts/check-version.py` before releasing.

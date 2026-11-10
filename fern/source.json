@@ -1,0 +1,10 @@
+{
+  "repository": "VapiAI/docs",
+  "revision": "8caaf48598f54000a8fbcb98cd96f9245f992090",
+  "directory": "fern/apis/api",
+  "sha256": {
+    "openapi.json": "1759abfd0128f4e9911431ee77001fd96afc9073a9baffb7f220ef7d17fcd9a3",
+    "openapi-overrides.yml": "4adc9ec1f3d2353830f8b6c9aeeab43fd5bb4c250ee065da6e4d997a4a1c47a7",
+    "openapi-parameter-descriptions-overlay.yml": "e6907af3aee72fbb0285f7b40dab685a04653a37f30c766785415253d4abf974"
+  }
+}

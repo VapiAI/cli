@@ -1,0 +1,14 @@
+# OpenAPI reserves Content-Type for requestBody.content. The upstream
+# provider-resource endpoint declares it as a required header instead.
+# Fern's IR ignores that header, while the generated runtime requires it.
+# Keep the flag available, but let the HTTP stack set Content-Type when
+# --json is supplied; callers can still choose --content-type explicitly.
+paths:
+  /provider/{provider}/{resourceName}:
+    post:
+      parameters:
+        - name: content-type
+          in: header
+          required: false
+          schema:
+            type: string

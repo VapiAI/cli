@@ -1,8 +1,11 @@
 name: Publish to npm
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
 
 permissions: {}
 
@@ -22,11 +25,12 @@ jobs:
           node-version: "24"
           package-manager-cache: false
 
-      - name: Update package version
+      - name: Verify package version
         working-directory: npm-wrapper
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          npm version "$VERSION" --no-git-tag-version --ignore-scripts
+          node -e 'const v = require("./package.json").version; if (v !== process.env.RELEASE_VERSION) throw new Error(`Package ${v} does not match release ${process.env.RELEASE_VERSION}`)'
 
       - name: Pack npm artifact
         working-directory: npm-wrapper
@@ -63,10 +67,14 @@ jobs:
           path: .release
 
       - name: Publish npm artifact
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
           tarballs=(.release/*.tgz)
           if [[ ${#tarballs[@]} -ne 1 || ! -f "${tarballs[0]}" ]]; then
             echo "::error::Expected exactly one npm package tarball."
             exit 1
           fi
-          npm publish "${tarballs[0]}" --access public --ignore-scripts
+          tag=latest
+          if [[ "$RELEASE_VERSION" == *-* ]]; then tag=next; fi
+          npm publish "${tarballs[0]}" --access public --ignore-scripts --tag "$tag"

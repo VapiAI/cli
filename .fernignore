@@ -1,0 +1,18 @@
+# Repository-owned files; generated Rust and reference.md are replaced.
+fern/
+.github/
+scripts/
+npm-wrapper/
+README.md
+DEVELOPMENT.md
+RELEASING.md
+docs/
+LICENSE
+.gitignore
+.fernignore
+.tool-versions
+rust-toolchain.toml
+Makefile
+dist-workspace.toml
+LICENSE-APACHE
+NOTICE

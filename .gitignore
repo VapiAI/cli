@@ -1,64 +1,11 @@
-# Build artifacts
-/build/
-/vapi
-*.exe
-
-# Generated manual pages
-/man/
-
-# Test artifacts
-coverage.out
-coverage.html
-
-# Binaries for programs and plugins
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-go.work.sum
-
-# Environment variables
-.env
-.env.local
-
-# Build output
+/target/
 /dist/
-
-# Coverage files
-coverage.out
-coverage.html
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# Configuration files (local)
-.vapi-cli.yaml
-
-# Test artifacts
-*.log
-
-# npm wrapper artifacts
-npm-wrapper/bin/
-npm-wrapper/node_modules/
-npm-wrapper/*.tgz
+/generated/
 **/node_modules/
+npm-wrapper/native/
+*.tgz
+.env
+.env.*
+.DS_Store
+/fern/.guest-session
+/fern/.preview/

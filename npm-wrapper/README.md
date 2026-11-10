@@ -1,52 +1,19 @@
-# Vapi CLI
+# @vapi-ai/cli
 
-Voice AI for developers - Official CLI tool for the Vapi platform.
+The native Vapi CLI, generated with Fern. Requires Node.js 22+.
 
-## Installation
-
-```bash
-npm install -g @vapi-ai/cli
-```
-
-## Usage
+After the beta is published:
 
 ```bash
-# Get help
-vapi --help
-
-# Login to your Vapi account
-vapi login
-
-# List your assistants
-vapi assistant list
-
-# List your calls
-vapi call list
-
-# Start webhook listener for development
-vapi listen --forward-to localhost:3000/webhook
+npm install -g @vapi-ai/cli@next
+export VAPI_TOKEN='<private Vapi API key>'
+vapi assistants list
 ```
 
-## Features
+The installer downloads the exact npm version's GitHub release and verifies its
+SHA-256 checksum. macOS Intel/Apple Silicon, Linux x64/ARM64, and Windows x64 are
+supported. Windows requires tar.exe (Windows 10 1803+).
 
-- **Assistant Management** - Create, update, and manage AI assistants
-- **Call Management** - Handle inbound/outbound calls
-- **Phone Number Management** - Manage your Vapi phone numbers
-- **Chat Management** - Text-based conversations with assistants
-- **Webhook Development** - Local webhook forwarding for testing
-- **Tool Management** - Custom functions and integrations
-- **Logs & Debugging** - Comprehensive logging and troubleshooting
-
-## Documentation
-
-Visit [docs.vapi.ai](https://docs.vapi.ai) for complete documentation.
-
-## Support
-
-- [GitHub Issues](https://github.com/VapiAI/cli/issues)
-- [Discord Community](https://discord.gg/vapi)
-- [Documentation](https://docs.vapi.ai)
-
----
-
-Built with ❤️ by the [Vapi](https://vapi.ai) team.
+Version 1 changes command names, credentials, and output and removes legacy
+project scaffolding and webhook forwarding. See the
+[migration guide](https://github.com/VapiAI/cli/blob/main/docs/MIGRATION.md).
