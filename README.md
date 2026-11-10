@@ -1,66 +1,176 @@
 # Vapi CLI
 
-The Vapi command-line interface, generated from Vapi's shared API definitions
-with [Fern's CLI generator](https://buildwithfern.com/learn/cli-generator/get-started/quickstart).
-This branch is the **1.0.0-beta.1 evaluation candidate**, replacing the old Go CLI.
-See the [comparison and recorded decisions](docs/MIGRATION.md).
+Create voice assistants, make calls, and manage your Vapi resources from the
+terminal.
 
-**Staging-only evaluation build; not ready to release.** Fern generates browser
-OAuth login with PKCE and automatic refresh using the registered WorkOS public
-client. The default API server is `https://staging-api.vapi.ai`. API acceptance
-changes, a real-user login/refresh check, production OAuth promotion and Fern
-publishing credential isolation are required before release. No client secret is embedded.
+## Install
 
-## Inspect the generated CLI
-
-Install the pinned [Rust toolchain](https://rustup.rs/), then:
+Install with npm (requires Node.js):
 
 ```bash
-cargo build --locked
-./target/debug/vapi --help
-./target/debug/vapi --schema
-./target/debug/vapi auth login --no-browser
-./target/debug/vapi assistants create --json '{"name":"Example"}' --dry-run
-./target/debug/vapi completion zsh
+npm install --global @vapi-ai/cli
 ```
 
-The current snapshot generates 145 operations in 23 groups. Commands use Fern's
-conventions, such as `assistants get --id <id>` and `phone-numbers list`.
-Controller-derived command names will be shortened at their source in `vapi`'s
-OpenAPI annotations, then flow through the shared API definition.
+Or install with Homebrew:
 
-Deletion sends the API request immediately. Use `--dry-run` to inspect a request
-without sending it. Output defaults to tables in terminals and JSON when piped;
-use explicit `--format json` in scripts. See [reference.md](reference.md) and
-`vapi <group> --help` for the current generated surface.
+```bash
+brew install VapiAI/tap/vapi-cli
+```
 
-## Distribution target
+You can also download a native binary from [GitHub Releases](https://github.com/VapiAI/cli/releases).
 
-Fern generated the checked-in `ci.yml` and `release.yml` workflows for npm,
-GitHub Release downloads/installers, and Homebrew through `VapiAI/homebrew-tap`
-(`vapi-cli`). Version-tag pushes trigger publishing; merging alone does not.
-The npm launcher and platform package manifests are created by the generated
-workflow at release time.
+## Sign in
 
-The publishing preview now succeeds. OAuth acceptance, the generated workflow's
-credential isolation, npm trusted publishing, Homebrew access, and target-runner
-validation remain release gates; see [releasing](RELEASING.md).
+```bash
+vapi auth login
+```
 
-The old custom npm wrapper and publishing workflows are removed. `init`,
-`listen`, legacy configuration migration, and the bundled MCP documentation
-server are also removed. Project initialization belongs in a separate project.
+Complete sign-in in your browser, then check your session:
 
-## Agent skill export
+```bash
+vapi auth status
+```
 
-`vapi generate-skills --output-dir ./skills` exports local Markdown instructions
-for coding agents: one shared guide and one file per API group. It describes
-commands, authentication sources, flags, and output. It does not install the
-files into an IDE or modify agent settings. Its OAuth setup guidance is currently
-incomplete. Keeping this generated command is still a product decision.
+For a terminal without browser access, use `vapi auth login --no-browser` and
+open the printed URL on a device with a browser. Use `vapi auth logout` to remove
+your stored credentials.
 
-## Development
+## Create an assistant
 
-[Development](DEVELOPMENT.md) describes regeneration and API provenance;
-[releasing](RELEASING.md) records OAuth and publishing prerequisites.
-Vapi-specific code is MIT licensed. The generated Fern runtime is attributed in
-[NOTICE](NOTICE) and distributed with [Apache License 2.0](LICENSE-APACHE).
+Create an assistant with a voice, a model, and a short system prompt:
+
+```bash
+vapi assistants create --json '{
+  "name": "My first assistant",
+  "firstMessage": "Hi! I am Alex, your AI assistant. How can I help?",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are Alex, a friendly voice assistant. Keep your answers brief and conversational."
+      }
+    ]
+  },
+  "voice": {
+    "provider": "vapi",
+    "voiceId": "Clara"
+  }
+}'
+```
+
+Save the returned assistant `id`. You can list your assistants or inspect one:
+
+```bash
+vapi assistants list
+vapi assistants get --id YOUR_ASSISTANT_ID
+```
+
+## Make a call
+
+Add or import an outbound phone number in the
+[Vapi dashboard](https://dashboard.vapi.ai), then find its Vapi ID:
+
+```bash
+vapi phone-numbers list
+```
+
+Replace the assistant ID, phone number ID, and destination below with your own
+values. The destination should be a phone number you control, in E.164 format.
+Running this command starts an outbound call:
+
+```bash
+vapi calls create --json '{
+  "assistantId": "YOUR_ASSISTANT_ID",
+  "phoneNumberId": "YOUR_PHONE_NUMBER_ID",
+  "customer": {
+    "number": "+14155550123"
+  }
+}'
+```
+
+Save the returned call `id` to inspect its status and results:
+
+```bash
+vapi calls get --id YOUR_CALL_ID
+vapi calls list --limit 10
+```
+
+See the [outbound calling guide](https://docs.vapi.ai/calls/outbound-calling) for
+phone number setup and other call options.
+
+## Explore and automate
+
+Explore available commands and their options:
+
+```bash
+vapi --help
+vapi assistants create --help
+vapi --schema
+```
+
+Output defaults to tables in a terminal and JSON when piped. Use `--format json`
+for explicit JSON output, or `--query` to select fields:
+
+```bash
+vapi assistants list --format json
+vapi calls list --limit 10 --query '[].id'
+```
+
+Use JSON files for larger configurations, and `--dry-run` to preview a request
+without sending it:
+
+```bash
+vapi assistants create --json - --dry-run < assistant.json
+```
+
+Delete commands send the request immediately, without a confirmation prompt.
+Preview them with `--dry-run` first:
+
+```bash
+vapi assistants delete --id YOUR_ASSISTANT_ID --dry-run
+```
+
+The CLI also includes named profiles, shell completions, and local skill export
+for coding agents. See [the command reference](reference.md),
+`vapi profiles --help`, `vapi completion --help`, and `vapi generate-skills --help`.
+
+## Develop
+
+The CLI is generated from Vapi's shared API definitions with
+[Fern](https://buildwithfern.com/learn/cli-generator/get-started/quickstart).
+Edit the inputs in `fern/` and regenerate to change the API commands.
+
+Clone the repository and install the pinned Rust toolchain, Node.js, and
+Python 3.11 or later; see [development requirements](DEVELOPMENT.md).
+
+```bash
+git clone https://github.com/VapiAI/cli.git
+cd cli
+cargo build --locked
+make test
+```
+
+`make generate` regenerates the CLI. `make generate-publish` also refreshes
+Fern's publishing workflows. [DEVELOPMENT.md](DEVELOPMENT.md) covers API input
+updates, regeneration, and reproducibility checks.
+
+## CI and releases
+
+- `verify.yml` runs Rust tests, API wire tests, and local smoke checks on Linux,
+  macOS, and Windows.
+- Fern's `ci.yml` checks builds on pushes and publishes npm packages from
+  version tags.
+- Fern's `release.yml` plans releases on pull requests and builds GitHub release
+  archives and installers from version tags. Stable releases also update
+  Homebrew.
+
+Maintainers should follow [RELEASING.md](RELEASING.md) for publishing setup and
+the release checklist. [Migration notes](docs/MIGRATION.md) describe changes
+from the previous CLI.
+
+## License
+
+Vapi-specific code is [MIT licensed](LICENSE). The generated Fern runtime is
+attributed in [NOTICE](NOTICE) and distributed under [Apache License 2.0](LICENSE-APACHE).
