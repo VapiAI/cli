@@ -50,7 +50,7 @@ func SetVersion(v, c, d, b string) {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
-	Long:  `Print detailed version information about the Vapi CLI including MCP server compatibility.`,
+	Long:  `Print detailed version information about the Vapi CLI.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("🔧 Vapi CLI v%s\n", version)
 		fmt.Printf("\n📊 Build Information:\n")
@@ -59,12 +59,6 @@ var versionCmd = &cobra.Command{
 		fmt.Printf("  Built by: %s\n", builtBy)
 		fmt.Printf("  Go version: %s\n", runtime.Version())
 		fmt.Printf("  Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
-
-		// Show MCP server compatibility
-		fmt.Printf("\n🧠 MCP Integration:\n")
-		fmt.Printf("  Compatible MCP server: @vapi-ai/mcp-docs-server@%s\n", version)
-		fmt.Printf("  MCP setup: vapi mcp setup\n")
-		fmt.Printf("  MCP status: vapi mcp status\n")
 
 		// Show environment information for developers
 		if cfg, err := config.LoadConfig(); err == nil {

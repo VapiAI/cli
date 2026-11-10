@@ -210,44 +210,11 @@ The `init` command will:
 - Generate example code and components
 - Create environment configuration templates
 
-### MCP Integration - Turn Your IDE into a Vapi Expert
+### MCP and agent skills
 
-Set up Model Context Protocol (MCP) integration to give your IDE's AI assistant complete knowledge about Vapi:
-
-```bash
-# Auto-detect and configure all IDEs
-vapi mcp setup
-
-# Configure a specific IDE
-vapi mcp setup cursor   # For Cursor
-vapi mcp setup windsurf # For Windsurf
-vapi mcp setup vscode   # For VSCode
-
-# Check configuration status
-vapi mcp status
-```
-
-Once configured, your IDE's AI assistant will have access to:
-
-- **Complete Vapi Documentation** - No more hallucinated API info
-- **Code Examples & Templates** - Real working examples
-- **Best Practices & Guides** - Expert-level implementation patterns
-- **Latest Features** - Always up-to-date with new releases
-
-**Supported IDEs:**
-
-- [Cursor](https://cursor.sh) - AI-powered code editor
-- [Windsurf](https://codeium.com/windsurf) - Codeium's AI IDE
-- [VSCode](https://code.visualstudio.com) - With GitHub Copilot
-
-**What this does:**
-
-- Configures your IDE to use the Vapi MCP docs server
-- Creates appropriate configuration files (`.cursor/mcp.json`, etc.)
-- Eliminates AI hallucination about Vapi features and APIs
-- Enables intelligent code suggestions specific to Vapi
-
-Try asking your IDE's AI: _"How do I create a voice assistant with Vapi?"_ and watch it provide accurate, up-to-date information!
+Connect your coding agent to the [hosted Vapi MCP server](https://docs.vapi.ai/sdk/mcp-server)
+using your client's MCP settings. See [VapiAI/skills](https://github.com/VapiAI/skills)
+for public agent skills and installation instructions. Neither requires the Vapi CLI.
 
 ### Configuration
 
@@ -491,7 +458,6 @@ vapi-cli/                          # 🏠 Main repository
 │   ├── call.go                   # Call operations
 │   ├── config.go                 # Configuration
 │   ├── init.go                   # Project integration
-│   ├── mcp.go                    # MCP server setup ✨
 │   └── login.go                  # Authentication
 ├── pkg/                          # Go core packages
 │   ├── auth/                     # Authentication logic

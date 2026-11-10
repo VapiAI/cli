@@ -97,7 +97,6 @@ everything you need to create production-ready voice AI solutions.
 🚀 Getting Started:
   vapi login                    # Authenticate with your Vapi account
   vapi init                     # Initialize Vapi in your project
-  vapi mcp setup                # Set up IDE integration for better development
 
 🎯 Common Tasks:
   vapi assistant list           # View your voice assistants
@@ -143,7 +142,7 @@ func init() {
 		}
 
 		// Skip API key validation for commands that don't need it
-		skipAuthCommands := []string{"login", "config", "init", "completion", "help", "version", "update", "mcp", "auth", "manual"}
+		skipAuthCommands := []string{"login", "config", "init", "completion", "help", "version", "update", "auth", "manual"}
 		for _, skipCmd := range skipAuthCommands {
 			if cmd.Name() == skipCmd || (cmd.Parent() != nil && cmd.Parent().Name() == skipCmd) {
 				return nil

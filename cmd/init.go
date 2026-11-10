@@ -433,17 +433,6 @@ func runInitCommand(cmd *cobra.Command, args []string) error {
 		stepNum++
 	}
 
-	// MCP Integration recommendation (v0.1.9 feature)
-	fmt.Printf("%d. 🧠 Set up IDE Integration (Recommended):\n", stepNum)
-	fmt.Println("   vapi mcp setup")
-	fmt.Println("   This turns your IDE into a Vapi expert with:")
-	fmt.Println("   • Real-time access to 138+ documentation pages")
-	fmt.Println("   • Smart code suggestions and examples")
-	fmt.Println("   • No more hallucinated API information")
-	fmt.Println("   • Works with Cursor, Windsurf, and VSCode")
-	fmt.Println()
-	stepNum++
-
 	// Testing and deployment
 	fmt.Printf("%d. Test and deploy:\n", stepNum)
 	fmt.Println("   - Test your voice integration locally")
