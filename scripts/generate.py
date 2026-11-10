@@ -1,6 +1,9 @@
 """Generate in isolation, then replace only generator-owned files."""
 import argparse
 import filecmp
+import hashlib
+import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -13,6 +16,11 @@ parser.add_argument('--check', action='store_true', help='Fail if regeneration d
 args = parser.parse_args()
 version = tomllib.loads((root / 'Cargo.toml').read_text())['package']['version']
 owned = ['Cargo.toml', 'Cargo.lock', 'reference.md', 'src', 'cli', 'tests', 'wiremock']
+provenance = json.loads((root / 'fern/source.json').read_text())
+for name, expected in provenance['sha256'].items():
+    actual = hashlib.sha256((root / 'fern' / name).read_bytes()).hexdigest()
+    if actual != expected:
+        raise SystemExit(f'Vendored API input differs from fern/source.json: {name}')
 
 
 def identical(left, right):
@@ -25,7 +33,12 @@ def identical(left, right):
 with tempfile.TemporaryDirectory(prefix='vapi-fern-') as temporary:
     work = pathlib.Path(temporary)
     shutil.copytree(root / 'fern', work / 'fern')
-    subprocess.run(['fern', 'generate', '--group', 'cli', '--version', version], cwd=work, check=True)
+    # asdf resolves shims from the child's working directory. Carry the
+    # repository's Node pin into the temporary workspace, too.
+    environment = dict(os.environ)
+    environment.setdefault('ASDF_NODEJS_VERSION', '22.23.4')
+    subprocess.run(['fern', 'generate', '--group', 'cli', '--version', version],
+                   cwd=work, env=environment, check=True)
     generated = work / 'generated'
     for name in owned:
         if not (generated / name).exists():

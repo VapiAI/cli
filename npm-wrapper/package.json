@@ -23,7 +23,6 @@
   },
   "files": [
     "bin/",
-    "native/",
     "install.js",
     "README.md",
     "LICENSE",
