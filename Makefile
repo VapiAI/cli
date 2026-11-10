@@ -8,11 +8,6 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 
-# Node.js parameters for MCP server
-NPM=npm
-MCP_DIR=mcp-docs-server
-MCP_DIST=$(MCP_DIR)/dist
-
 # Binary details
 BINARY_NAME=vapi
 BUILD_DIR=build
@@ -26,8 +21,8 @@ GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 # Build flags - note the lowercase variable names to match main.go
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_TIME) -X main.builtBy=make"
 
-# Default target - build both CLI and MCP server
-all: test build build-mcp
+# Default target - test and build the CLI
+all: test build
 
 # Create build directory
 $(BUILD_DIR):
@@ -38,44 +33,8 @@ build: $(BUILD_DIR)
 	@echo "Building $(BINARY_NAME)..."
 	$(GOBUILD) $(LDFLAGS) -o $(BINARY_PATH) -v
 
-# Build MCP server
-build-mcp:
-	@echo "Building MCP docs server..."
-	@if [ ! -d "$(MCP_DIR)/node_modules" ]; then \
-		echo "Installing MCP server dependencies..."; \
-		cd $(MCP_DIR) && $(NPM) install; \
-	fi
-	@cd $(MCP_DIR) && $(NPM) run build
-	@echo "✅ MCP server built successfully"
-
-# Install MCP server dependencies
-mcp-deps:
-	@echo "Installing MCP server dependencies..."
-	@cd $(MCP_DIR) && $(NPM) install
-
-# Clean MCP server
-clean-mcp:
-	@echo "Cleaning MCP server..."
-	@rm -rf $(MCP_DIR)/dist
-	@rm -rf $(MCP_DIR)/node_modules
-
-# Test MCP server
-test-mcp:
-	@echo "Testing MCP server..."
-	@cd $(MCP_DIR) && $(NPM) test
-
-# Lint MCP server
-lint-mcp:
-	@echo "Linting MCP server..."
-	@cd $(MCP_DIR) && $(NPM) run lint
-
-# Publish MCP server to npm
-publish-mcp:
-	@echo "Publishing MCP server to npm..."
-	@cd $(MCP_DIR) && $(NPM) publish
-
 # Build for all platforms
-build-all: $(BUILD_DIR) build-mcp
+build-all: $(BUILD_DIR)
 	@echo "Building for all platforms..."
 	# macOS AMD64
 	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64
@@ -91,8 +50,8 @@ test:
 	@echo "Running tests..."
 	$(GOTEST) -v ./...
 
-# Run all tests (CLI + MCP server)
-test-all: test test-mcp
+# Alias for all CLI tests
+test-all: test
 
 # Run tests with coverage
 test-coverage:
@@ -108,8 +67,8 @@ clean:
 	rm -rf man
 	rm -f coverage.out coverage.html
 
-# Clean everything (CLI + MCP server)
-clean-all: clean clean-mcp
+# Alias for cleaning CLI artifacts
+clean-all: clean
 
 # Run go mod tidy
 tidy:
@@ -121,16 +80,16 @@ deps:
 	@echo "Downloading dependencies..."
 	$(GOMOD) download
 
-# Install all dependencies (CLI + MCP server)
-deps-all: deps mcp-deps
+# Alias for CLI dependencies
+deps-all: deps
 
 # Run linters
 lint:
 	@echo "Running linters..."
 	golangci-lint run
 
-# Run all linters (CLI + MCP server)
-lint-all: lint lint-mcp
+# Alias for CLI linting
+lint-all: lint
 
 # Generate manual pages
 man-pages: build
@@ -150,14 +109,8 @@ install: build man-pages
 	@command -v mandb >/dev/null 2>&1 && mandb -q $(HOME)/.local/share/man || true
 	@echo "Installed to $(HOME)/.local/bin/$(BINARY_NAME)"
 
-# Install MCP server globally
-install-mcp: build-mcp
-	@echo "Installing MCP server globally..."
-	@cd $(MCP_DIR) && $(NPM) install -g .
-	@echo "✅ MCP server installed globally"
-
-# Install everything
-install-all: install install-mcp
+# Alias for installing the CLI and manual pages
+install-all: install
 
 # Run the binary
 run: build
@@ -188,7 +141,7 @@ version-bump-patch:
 
 # Help target to show available commands
 help:
-	@echo "🚀 Vapi CLI & MCP Server Build System"
+	@echo "🚀 Vapi CLI Build System"
 	@echo ""
 	@echo "📦 CLI Commands:"
 	@echo "  build              Build the CLI binary"
@@ -198,23 +151,6 @@ help:
 	@echo "  lint               Run CLI linters"
 	@echo "  clean              Clean CLI build artifacts"
 	@echo ""
-	@echo "🔧 MCP Server Commands:"
-	@echo "  build-mcp          Build the MCP docs server"
-	@echo "  install-mcp        Install MCP server globally"
-	@echo "  test-mcp           Run MCP server tests"
-	@echo "  lint-mcp           Run MCP server linters" 
-	@echo "  clean-mcp          Clean MCP server artifacts"
-	@echo "  publish-mcp        Publish MCP server to npm"
-	@echo ""
-	@echo "🎯 Combined Commands:"
-	@echo "  all                Build both CLI and MCP server"
-	@echo "  build-all          Build CLI for all platforms + MCP server"
-	@echo "  test-all           Run all tests (CLI + MCP server)"
-	@echo "  lint-all           Run all linters (CLI + MCP server)"
-	@echo "  clean-all          Clean everything"
-	@echo "  deps-all           Install all dependencies"
-	@echo "  install-all        Install CLI and MCP server"
-	@echo ""
 	@echo "📋 Version management:"
 	@echo "  version            Show current version"
 	@echo "  version-set        Set version (requires VERSION=x.y.z)"
@@ -223,9 +159,8 @@ help:
 	@echo "  version-bump-patch Bump patch version (1.2.3 -> 1.2.4)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make all                    # Build everything"
-	@echo "  make install-all            # Install CLI + MCP server"
+	@echo "  make all                    # Test and build the CLI"
+	@echo "  make install-all            # Install CLI and manual pages"
 	@echo "  make version-set VERSION=1.2.3"
-	@echo "  make publish-mcp            # Publish MCP server to npm"
 
-.PHONY: all build build-mcp build-all test test-mcp test-all test-coverage clean clean-mcp clean-all tidy deps mcp-deps deps-all lint lint-mcp lint-all man-pages install install-mcp install-all run publish-mcp help 
+.PHONY: all build build-all test test-all test-coverage clean clean-all tidy deps deps-all lint lint-all man-pages install install-all run help

@@ -446,7 +446,7 @@ The CLI will automatically check for updates periodically and notify you when a 
 
 ## Project Structure
 
-This is a **monorepo** containing both the Go CLI and the TypeScript MCP server:
+The Go CLI is organized as follows:
 
 ```
 vapi-cli/                          # 🏠 Main repository
@@ -465,47 +465,30 @@ vapi-cli/                          # 🏠 Main repository
 │   ├── config/                   # Configuration management
 │   ├── integrations/             # Framework detection
 │   └── output/                   # Output formatting
-├── mcp-docs-server/              # 📦 MCP Server (TypeScript)
-│   ├── src/                      # TypeScript source
-│   │   ├── index.ts              # MCP server entry point
-│   │   ├── server.ts             # Core server logic
-│   │   ├── tools/                # MCP tools (5 tools)
-│   │   ├── resources/            # MCP resources
-│   │   └── utils/                # Utilities & data
-│   ├── dist/                     # Built JavaScript
-│   ├── package.json              # npm package config
-│   └── README.md                 # MCP server docs
 ├── build/                        # Build artifacts (git-ignored)
 ├── main.go                       # Go CLI entry point
-├── Makefile                      # Unified build system ⚡
+├── Makefile                      # CLI build system
 └── README.md                     # This file
 ```
 
-### Monorepo Benefits
-
-- **🔄 Synchronized Development** - CLI and MCP server stay in sync
-- **📦 Single Source of Truth** - All Vapi tooling in one place
-- **🚀 Unified Build System** - `make all` builds everything
-- **🎯 Consistent Versioning** - CLI and MCP server versions aligned
-
 ## Development
 
-This monorepo includes both Go (CLI) and TypeScript (MCP server) components. The unified Makefile handles both.
+The Makefile builds and installs the Go CLI.
 
 ### Quick Start
 
 ```bash
-# Build everything (CLI + MCP server)
+# Test and build the CLI
 make all
 
-# Install everything locally
-make install-all
+# Install the CLI and manual pages locally
+make install
 
-# Test everything
-make test-all
+# Run tests
+make test
 
-# Clean everything
-make clean-all
+# Clean build artifacts
+make clean
 ```
 
 ### Building
@@ -523,32 +506,17 @@ make build-all
 go run main.go
 ```
 
-#### MCP Server (TypeScript)
-
-```bash
-# Build MCP server only
-make build-mcp
-
-# Install MCP server globally
-make install-mcp
-
-# Publish to npm
-make publish-mcp
-```
-
 ### Development Requirements
 
 - **Go 1.21+** - [Install Go](https://golang.org/doc/install)
-- **Node.js 18+** - [Install Node.js](https://nodejs.org/)
 - **golangci-lint** - For Go code linting
-- **npm** - For MCP server dependencies
 
 ```bash
 # macOS
-brew install go node golangci-lint
+brew install go golangci-lint
 
-# Install dependencies for both projects
-make deps-all
+# Install CLI dependencies
+make deps
 ```
 
 ### Testing
