@@ -33,8 +33,8 @@ class CLITest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory(prefix='vapi-smoke-')
         self.addCleanup(self.directory.cleanup)
         self.environment = {k: v for k, v in os.environ.items() if not k.startswith('VAPI_')}
-        self.environment.update(VAPI_TOKEN='local-test-token', NO_PROXY='127.0.0.1',
-                                XDG_CONFIG_HOME=self.directory.name)
+        self.environment.update(NO_PROXY='127.0.0.1', FERN_CLI_CREDENTIAL_STORE='file',
+                                XDG_CONFIG_HOME=self.directory.name, APPDATA=self.directory.name)
         self.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         self.server.requests = []
         self.server.status = 200
@@ -44,6 +44,7 @@ class CLITest(unittest.TestCase):
         self.addCleanup(self.server.server_close)
         self.addCleanup(self.server.shutdown)
         self.base = f'http://127.0.0.1:{self.server.server_port}'
+        self.cli('auth', 'login', '--with-token', stdin='local-test-token\n')
 
     def cli(self, *arguments, stdin=None, success=True):
         result = subprocess.run([str(BINARY), '--base-url', self.base, *arguments],
@@ -70,6 +71,16 @@ class CLITest(unittest.TestCase):
         method, path, headers, _ = self.server.requests[0]
         self.assertEqual((method, path), ('GET', '/assistant/local-assistant'))
         self.assertEqual(headers['authorization'], 'Bearer local-test-token')
+
+    def test_logout_removes_access_and_legacy_env_does_not_restore_it(self):
+        status = self.cli('auth', 'status')
+        self.assertIn('bearer', status.stdout)
+        self.assertNotIn('local-test-token', status.stdout + status.stderr)
+        self.cli('auth', 'logout')
+        self.environment.update(VAPI_TOKEN='ignored-token', VAPI_API_KEY='ignored-api-key')
+        result = self.cli('assistants', 'list', success=False)
+        self.assertIn('Authentication credentials are missing', result.stdout + result.stderr)
+        self.assertEqual(self.server.requests, [])
 
     def test_create_body_from_stdin(self):
         self.cli('assistants', 'create', '--json', '-', stdin='{"name":"From stdin"}')

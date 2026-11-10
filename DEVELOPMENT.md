@@ -28,7 +28,9 @@ commit: the OpenAPI spec, SDK overrides, and parameter-description overlay.
 `fern/generators.yml` retains the SDK spec import settings. The CLI does not
 maintain its own API client or manually track SDK package releases.
 
-`fern/cli-overrides.yml` contains the only CLI-specific API correction: the
+`fern/cli-overrides.yml` adapts authentication and the default server for the
+staging OAuth evaluation, and removes the unused SDK API-key scheme. It also
+contains a CLI-specific API correction: the
 provider-resource POST's reserved `Content-Type` header is optional, allowing
 Fern's generated test inputs to invoke it. Explicit `--content-type` remains
 available and JSON requests set their content type through the HTTP stack.
@@ -41,19 +43,22 @@ python3 scripts/update-api.py <40-character-docs-commit-sha>
 
 ## Generate
 
-Install Fern 5.151.1 (also pinned in `fern/fern.config.json`) and authenticate to
+Install Fern 5.202.0 (also pinned in `fern/fern.config.json`) and authenticate to
 Vapi's Fern organization. Local-file output still uses Fern's cloud generation.
 
 ```bash
-npm install -g fern-api@5.151.1
+npm install -g fern-api@5.202.0
 fern login
 make generate
 make test
 ```
 
-The generator is pinned to `fern-cli-generator` 0.58.5. It emits a spec-only CLI
+The generator is pinned to `fern-cli-generator` 0.59.1. It emits a spec-only CLI
 with named profiles and wire tests enabled. Custom Rust commands are disabled
-so the beta evaluates the generated product directly.
+so the beta evaluates the generated product directly. `auth-schemes` and
+`api.auth` select the generated public PKCE login flow. The matching OpenAPI
+OAuth scheme is required too; check that regenerated `cli/vapi/main.rs` contains
+`PkceLoginFlow` before treating login as implemented.
 
 **Use `make generate`, not direct generation into the checkout.** The script
 copies Fern inputs into a temporary workspace, generates there, validates the

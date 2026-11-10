@@ -1,4 +1,25 @@
+# Staging-only beta registration. Promote the issuer, client and API audience
+# together after live OAuth acceptance; no client secret belongs in this repo.
+auth-schemes:
+  bearer:
+    scheme: oauth
+    type: authorization-code
+    client-id: client_01M721J47S27BS1GSXK1780TSR
+    authorization-url: https://nourishing-mulberry-12-staging.authkit.app/oauth2/authorize
+    token-url: https://nourishing-mulberry-12-staging.authkit.app/oauth2/token
+    refresh-url: https://nourishing-mulberry-12-staging.authkit.app/oauth2/token
+    scopes: [openid, offline_access]
+    redirect-uri:
+      url: http://127.0.0.1:8484/callback
+      ports: [8485, 8486]
+    authorization-parameters:
+      resource: https://api-mcp-poc.vapi.local
+    token-parameters:
+      resource: https://api-mcp-poc.vapi.local
+    refresh-parameters:
+      resource: https://api-mcp-poc.vapi.local
 api:
+  auth: bearer
   specs:
     - openapi: openapi.json
       overrides:
@@ -14,7 +35,7 @@ groups:
   cli:
     generators:
       - name: fern-cli-generator
-        version: 0.58.5
+        version: 0.59.1
         output:
           location: local-file-system
           path: ../generated
@@ -39,7 +60,7 @@ groups:
   publish:
     generators:
       - name: fern-cli-generator
-        version: 0.58.5
+        version: 0.59.1
         output:
           location: npm
           package-name: "@vapi-ai/cli"

@@ -1,7 +1,8 @@
 # Evaluate the Fern CLI beta
 
-Decision: adopt Fern conventions and the generated API foundation. OAuth and
-Fern-managed publishing are required before this candidate is released.
+Decision: adopt Fern conventions and the generated API foundation. The beta
+now has generated OAuth login configured for staging. Live OAuth acceptance,
+production promotion and Fern-managed publishing are required before release.
 It replaces much of the handwritten API plumbing and several dashboard-only
 placeholders with scriptable API operations. It is not yet a drop-in replacement
 for users relying on browser login, project scaffolding, workflows, or local
@@ -11,7 +12,7 @@ webhook forwarding. `init` and `listen` remain removed; command naming should be
 
 - Go CLI at `4149790e4621407c903f73554130fb31a97d9334`, the latest main used for
   this migration, including the removal of MCP/skills setup.
-- Fern CLI generator 0.58.5, Fern CLI 5.151.1, package version 1.0.0-beta.1.
+- Fern CLI generator 0.59.1, Fern CLI 5.202.0, package version 1.0.0-beta.1.
 - Vapi SDK API inputs pinned in `fern/source.json`.
 - The compiled candidate's `--help`, `--schema`, dry runs, generated tests, and
   local mock API requests. No production calls, purchases, or deletions were run.
@@ -31,7 +32,7 @@ snapshot, not a guarantee of all current Vapi API functionality.
 | Tools and phones | List/get/delete worked; several create/update/test paths printed guidance | Spec-driven create/update and other operations | More useful automation; no replacement for custom tool-testing helpers |
 | Campaigns | Working list/get/create/update/delete with guided selections | V1/V2 API operations and contact retrieval | Coverage gain, but long controller-derived command names need a product decision |
 | Workflows | Working list/get/create/delete in the old SDK | No workflow endpoints in this API snapshot | Real removal; use an existing client/dashboard, or add supported endpoints upstream before claiming parity |
-| Browser login | Vapi dashboard callback and local account records | Current inspection build is bearer-only; target is generated OAuth login/refresh | OAuth is required; API client registration and token contract are pending |
+| Browser login | Vapi dashboard callback and local account records | Generated PKCE OAuth login and refresh with a registered staging public client | Staging registration exists; companion API acceptance and live-user validation are release gates |
 | Multiple accounts | `auth switch` and YAML config | Fern profiles; no legacy credential migration | Accept Fern conventions; finalize profile behavior with OAuth |
 | Output | Custom tables/prose and JSON depending on command | JSON when piped, tables in a terminal; explicit formats and JMESPath | Better for automation; existing output parsers must change |
 | Request control | Uneven or limited flags | JSON/stdin input, dry run, base URL override, request flags, retries, schema and spec export | Strong gain; retry and pagination semantics still depend on spec metadata |
@@ -50,7 +51,7 @@ snapshot, not a guarantee of all current Vapi API functionality.
 | Before | Candidate |
 | --- | --- |
 | `export VAPI_API_KEY=...` | OAuth target; no legacy API-key migration |
-| `vapi login` | Target: `vapi auth login` with OAuth; not implemented yet |
+| `vapi login` | `vapi auth login` with OAuth (staging evaluation) |
 | `vapi auth switch staging` | `vapi profiles use staging` |
 | `vapi assistant list` | `vapi assistants list` |
 | `vapi assistant get ID` | `vapi assistants get --id ID` |
@@ -73,7 +74,7 @@ resource command aliases are not installed.
 | --- | --- | --- |
 | Command grammar | Keep Fern's groups, flags, and conventions | Present in generated output |
 | Long controller names | Shorten through annotations in `vapi`, propagated through OpenAPI | Mechanism confirmed; upstream source change remains to be made |
-| Authentication | OAuth, aligned with the other Vapi surfaces | Required; current inspection build is still bearer-only |
+| Authentication | OAuth, aligned with the other Vapi surfaces | Generated PKCE login configured for staging; live acceptance pending |
 | Old credentials | No API-key/YAML compatibility migration | Removed; no new migration path planned |
 | `init` | Separate project | Removed |
 | `listen` | Delete; rebuild only if missed | Removed |
@@ -93,14 +94,15 @@ vapi generate-skills --output-dir /tmp/vapi-cli-skills
 ```
 
 It wrote 24 local files: `vapi-shared/SKILL.md` plus one for each API group,
-such as `vapi-assistants/SKILL.md`. The shared guide documents auth sources,
+such as `vapi-assistants/SKILL.md`. The shared guide lists auth schemes,
 global flags, formats and dry run. Group guides list operations and explain
 how an agent can discover parameters through `--schema`.
 
 It uses deterministic templates over the embedded spec, not an LLM. It does
 not install files into Codex/Claude, configure an IDE, read account resources,
-or embed the user's credential values. Its auth guidance currently reflects
-the bearer inspection build; regenerate and inspect it after OAuth changes.
+or embed the user's credential values. The OAuth build's shared guide labels
+authentication as a "custom auth provider"; it does not explain `auth login`
+or refresh. It is useful for command discovery, but incomplete as an auth guide.
 
 Recommendation remains to keep this built-in exporter because it tracks the
 exact installed CLI, while any automatic agent setup stays outside this repo.
@@ -108,10 +110,10 @@ The user's decision on retaining it is still pending.
 
 ## Remaining integration work
 
-1. Obtain the native CLI's public-client OAuth registration and API token
-   contract. The MCP server's confidential exchange-client credentials are
-   not usable in a distributed CLI. Generate OAuth login and test refresh,
-   org selection/isolation, logout and permission denial.
+1. Deploy the companion API/gateway acceptance change for the registered
+   staging public client. Validate login, refresh, org selection/isolation,
+   logout and permission denial, then promote the production OAuth registration
+   and API server together. See [the OAuth setup](../RELEASING.md).
 2. Put shorter names in `vapi` source annotations. Nest `@ApiExtension` can
    emit `x-fern-sdk-group-name` and `x-fern-sdk-method-name`. Review SDK naming
    changes and V1/V2 collisions, then update the shared API snapshot here.

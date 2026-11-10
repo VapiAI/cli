@@ -4,12 +4,12 @@
 use fern_cli_sdk::app::CliApp;
 use fern_cli_sdk::openapi::OpenApiBinding;
 use fern_cli_sdk::profiles::ProfilesConfig;
-use fern_cli_sdk::auth::{BearerAuth};
+use fern_cli_sdk::auth::{PkceLoginFlow};
 
 fn main() {
     let app = CliApp::new("vapi")
         .profiles(ProfilesConfig::new())
-        .auth(BearerAuth::new("bearer").env("VAPI_TOKEN"))
+        .login_flow(PkceLoginFlow::new("bearer").client_id("client_01M721J47S27BS1GSXK1780TSR").authorization_url("https://nourishing-mulberry-12-staging.authkit.app/oauth2/authorize").token_url("https://nourishing-mulberry-12-staging.authkit.app/oauth2/token").scopes(["openid", "offline_access"]).redirect_ports([8484, 8485, 8486]).authorization_params([("resource", "https://api-mcp-poc.vapi.local")]).token_params([("resource", "https://api-mcp-poc.vapi.local")]).refresh_params([("resource", "https://api-mcp-poc.vapi.local")]))
         .binding(
             OpenApiBinding::new()
                 .spec(include_str!("openapi0.json"))

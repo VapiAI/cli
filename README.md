@@ -5,10 +5,11 @@ with [Fern's CLI generator](https://buildwithfern.com/learn/cli-generator/get-st
 This branch is the **1.0.0-beta.1 evaluation candidate**, replacing the old Go CLI.
 See the [comparison and recorded decisions](docs/MIGRATION.md).
 
-**This draft is not ready to release.** OAuth integration and access to Fern's
-npm/GitHub publishing generator are outstanding. The checked-in inspection build
-still embeds the earlier bearer-auth API spec; it does not implement the agreed
-OAuth login yet. An API-key-based release is not the intended fallback.
+**Staging-only evaluation build; not ready to release.** Fern generates browser
+OAuth login with PKCE and automatic refresh using the registered WorkOS public
+client. The default API server is `https://staging-api.vapi.ai`. API acceptance
+changes, a real-user login/refresh check, production OAuth promotion and Fern
+publishing access are required before release. No client secret is embedded.
 
 ## Inspect the generated CLI
 
@@ -18,6 +19,7 @@ Install the pinned [Rust toolchain](https://rustup.rs/), then:
 cargo build --locked
 ./target/debug/vapi --help
 ./target/debug/vapi --schema
+./target/debug/vapi auth login --no-browser
 ./target/debug/vapi assistants create --json '{"name":"Example"}' --dry-run
 ./target/debug/vapi completion zsh
 ```
@@ -49,8 +51,8 @@ server are also removed. Project initialization belongs in a separate project.
 `vapi generate-skills --output-dir ./skills` exports local Markdown instructions
 for coding agents: one shared guide and one file per API group. It describes
 commands, authentication sources, flags, and output. It does not install the
-files into an IDE or modify agent settings. Keeping this generated command is
-still a product decision; its output must be regenerated after OAuth changes.
+files into an IDE or modify agent settings. Its OAuth setup guidance is currently
+incomplete. Keeping this generated command is still a product decision.
 
 ## Development
 
