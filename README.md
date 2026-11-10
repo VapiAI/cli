@@ -212,55 +212,9 @@ The `init` command will:
 
 ### MCP and agent skills
 
-Choose the integration you need:
-
-| Command | Sets up | Authentication |
-| --- | --- | --- |
-| `vapi mcp setup` | Vapi v2 API MCP server at `https://mcp-v2.vapi.ai/api/mcp` | Current Vapi API key |
-| `vapi skills setup` | Public agent skills from `VapiAI/skills` | No API key to install |
-
-```bash
-# API tools: first sign in, then configure an IDE
-vapi login
-vapi mcp setup cursor
-
-# Install public skills (interactive agent/skill selection)
-vapi skills setup
-vapi skills setup --agent cursor --skill create-assistant
-vapi skills setup --global --agent claude-code --yes
-
-# Inspect configuration without connecting or printing credentials
-vapi mcp status
-```
-
-For MCP setup, omit the IDE to select detected IDEs, or specify `cursor`,
-`windsurf`, or `vscode`. Node.js and `npx` are required: the IDE starts
-`mcp-remote` with `--transport http-only` to connect over Streamable HTTP.
-SSE fallback is disabled.
-
-Setup writes the `vapi` entry and preserves unrelated settings. Cursor uses `~/.cursor/mcp.json`; Windsurf uses
-`~/.codeium/windsurf/mcp_config.json`; VS Code uses `Code/User/mcp.json` inside
-its platform user configuration directory (for example,
-`~/Library/Application Support/Code/User/mcp.json` on macOS).
-The API entry stores your current API key in the user configuration. Keep that
-file private; on POSIX systems setup writes it with mode `0600`. Re-run setup after changing accounts or rotating the key.
-
-**Migration:** Earlier releases used `vapi mcp setup` to launch
-`@vapi-ai/mcp-docs-server` under the `vapi` entry. Run `vapi mcp setup`
-to switch to the v2 connection.
-The API setup replaces that legacy `vapi` entry. The old local documentation
-package is no longer used by setup.
-
-`vapi skills setup` delegates to `npx -y skills add VapiAI/skills` and forwards
-installer options. It requires Node.js 22.20 or later, installs into the current
-project by default, and supports `--global`. It installs skill files for native
-agent discovery; it does not configure MCP or copy the skills repository's MCP
-configuration into your agent.
-
-Documentation search is planned through the v2 MCP connection, with the server
-proxying requests to the documentation backend. The CLI does not configure a
-separate documentation MCP connection. Install skills separately for native
-skill discovery and activation.
+Connect your coding agent to the [hosted Vapi MCP server](https://docs.vapi.ai/sdk/mcp-server)
+using your client's MCP settings. See [VapiAI/skills](https://github.com/VapiAI/skills)
+for public agent skills and installation instructions. Neither requires the Vapi CLI.
 
 ### Configuration
 
@@ -504,7 +458,6 @@ vapi-cli/                          # 🏠 Main repository
 │   ├── call.go                   # Call operations
 │   ├── config.go                 # Configuration
 │   ├── init.go                   # Project integration
-│   ├── mcp.go                    # MCP server setup ✨
 │   └── login.go                  # Authentication
 ├── pkg/                          # Go core packages
 │   ├── auth/                     # Authentication logic

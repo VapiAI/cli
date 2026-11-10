@@ -65,7 +65,6 @@ This command will:
 		fmt.Println("• List assistants: vapi assistant list")
 		fmt.Println("• View call history: vapi call list")
 		fmt.Println("• Initialize project: vapi init")
-		fmt.Println("• Set up IDE integration: vapi mcp setup")
 		fmt.Println()
 		fmt.Println("💡 For more commands, try: vapi --help")
 

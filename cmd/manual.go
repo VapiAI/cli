@@ -137,7 +137,6 @@ func installManualPages(cmd *cobra.Command, args []string) error {
 	fmt.Println("🔍 Usage:")
 	fmt.Println("     man vapi          # Main CLI manual")
 	fmt.Println("     man vapi-call     # Call management")
-	fmt.Println("     man vapi-mcp      # MCP integration")
 	fmt.Println("     man vapi-assistant# Assistant management")
 	fmt.Println()
 	fmt.Println("💡 Try 'man vapi' to test the installation!")
