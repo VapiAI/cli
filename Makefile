@@ -1,4 +1,4 @@
-.PHONY: build test generate preview-publish
+.PHONY: build test generate generate-publish preview-publish
 build:
 	cargo build --locked
 
@@ -8,6 +8,9 @@ test:
 
 generate:
 	python3 scripts/generate.py
+
+generate-publish:
+	python3 scripts/generate.py --publishing
 
 # Preview generates publishing files locally; it never releases a package.
 preview-publish:

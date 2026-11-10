@@ -9,7 +9,7 @@ See the [comparison and recorded decisions](docs/MIGRATION.md).
 OAuth login with PKCE and automatic refresh using the registered WorkOS public
 client. The default API server is `https://staging-api.vapi.ai`. API acceptance
 changes, a real-user login/refresh check, production OAuth promotion and Fern
-publishing access are required before release. No client secret is embedded.
+publishing credential isolation are required before release. No client secret is embedded.
 
 ## Inspect the generated CLI
 
@@ -36,11 +36,15 @@ use explicit `--format json` in scripts. See [reference.md](reference.md) and
 
 ## Distribution target
 
-Fern will manage npm, native GitHub release downloads, and Homebrew through
-`VapiAI/homebrew-tap` (`vapi-cli`). The `publish` generator group uses pull-request
-mode, OIDC npm publishing, and Fern's Homebrew distribution integration. Its
-publishing preview is currently denied by Fern's organization permissions;
-generated publishing files have not been adopted or tested yet.
+Fern generated the checked-in `ci.yml` and `release.yml` workflows for npm,
+GitHub Release downloads/installers, and Homebrew through `VapiAI/homebrew-tap`
+(`vapi-cli`). Version-tag pushes trigger publishing; merging alone does not.
+The npm launcher and platform package manifests are created by the generated
+workflow at release time.
+
+The publishing preview now succeeds. OAuth acceptance, the generated workflow's
+credential isolation, npm trusted publishing, Homebrew access, and target-runner
+validation remain release gates; see [releasing](RELEASING.md).
 
 The old custom npm wrapper and publishing workflows are removed. `init`,
 `listen`, legacy configuration migration, and the bundled MCP documentation

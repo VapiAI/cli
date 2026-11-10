@@ -43,7 +43,7 @@ snapshot, not a guarantee of all current Vapi API functionality.
 | IDE integration | MCP/skills setup already removed from main | No IDE installer; Fern adds `generate-skills` to export API command skills | Preserve the setup removal; decide whether the new export belongs in the public help |
 | Updates | Custom self-update and SDK-update automation | Regenerate from pinned shared API inputs; upgrade binaries via npm/releases | Smaller maintenance surface; self-update command removed |
 | Telemetry | Handwritten PostHog analytics and opt-out configuration | No Vapi PostHog analytics package or analytics config commands | Old telemetry configuration is removed |
-| Distribution | GoReleaser, custom npm wrapper, stale Homebrew, installers, Docker | Fern-managed npm, native downloads and Homebrew configured | Custom wrapper/publisher removed; Fern publishing access is blocked |
+| Distribution | GoReleaser, custom npm wrapper, stale Homebrew, installers, Docker | Fern-managed npm, native downloads and Homebrew configured | Generated npm and release/Homebrew workflows adopted; publishing setup and credential isolation remain |
 | MCP docs server | Separate TypeScript package in the repository | Removed from the new CLI tree | Existing published versions are unaffected; future server maintenance needs its own home |
 
 ## Breaking command examples
@@ -80,9 +80,9 @@ resource command aliases are not installed.
 | `listen` | Delete; rebuild only if missed | Removed |
 | Deletion | Keep immediate deletes and document dry run | Present and tested with local mocks |
 | Output | Keep Fern defaults | Present |
-| Installation | npm, native downloads, and Homebrew | Fern publish group configured; generator permission blocked |
+| Installation | npm, native downloads, and Homebrew | Generated workflows present; credentials and live acceptance pending |
 | MCP docs server | Remove | Removed |
-| Publishing | Fern-managed | Custom publisher and npm wrapper removed; generated publisher pending access |
+| Publishing | Fern-managed | Generated workflows present; release credential boundary needs review |
 | `generate-skills` | User requested more information; keep/remove undecided | Built-in export remains in the inspection build |
 
 ## Skill export: what the command does
@@ -117,9 +117,10 @@ The user's decision on retaining it is still pending.
 2. Put shorter names in `vapi` source annotations. Nest `@ApiExtension` can
    emit `x-fern-sdk-group-name` and `x-fern-sdk-method-name`. Review SDK naming
    changes and V1/V2 collisions, then update the shared API snapshot here.
-3. Enable Fern's publishing-generator access for the `vapi` organization and
-   adopt its actual generated workflow/package files. Configure npm OIDC and
-   Homebrew credentials; do not replace this with another custom publisher.
+3. Review Fern's generated credential boundary against PR #18 before enabling
+   npm trusted publishing. Bootstrap the five missing platform packages,
+   configure OIDC/Homebrew credentials, and validate release builds. The
+   publishing preview now succeeds and its workflows are checked in.
 4. Resolve the skill-export decision, run cross-platform checks and perform
    disposable live API acceptance before publishing. Homebrew begins with
    stable releases because Fern skips prerelease formula updates.

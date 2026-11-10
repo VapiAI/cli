@@ -51,43 +51,70 @@ API-key login is not a release substitute. Track evidence on
 
 ## Fern-managed distribution
 
-`fern/generators.yml` has two groups:
+The publishing preview succeeded after Fern organization access and the Fern
+GitHub App installation for `VapiAI/cli` were approved. The checked-in output is
+unchanged from Fern CLI 5.202.0 / CLI generator 0.59.1:
 
-- `cli`: local-file output used to inspect/build the generated CLI.
-- `publish`: npm package `@vapi-ai/cli`, OIDC, GitHub delivery to `VapiAI/cli` in
-  pull-request mode, and Homebrew formula `vapi-cli` in `VapiAI/homebrew-tap`.
+| File | Behavior |
+| --- | --- |
+| `.github/workflows/ci.yml` | Checks builds on pushes; version tags build and publish five npm platform packages, then the launcher |
+| `.github/workflows/release.yml` | Plans releases on PRs; version tags build archives/installers, create or update the GitHub Release, and update Homebrew for stable releases |
+| `dist-workspace.toml` | cargo-dist targets, installers, Homebrew tap and formula |
 
-Inspect publishing files without publishing:
+The npm launcher and platform package manifests are generated inside `ci.yml`
+at release time. They are not separate checked-in npm package files. npm Linux
+packages use musl; GitHub Release artifacts include both GNU and musl builds.
+
+`fern/generators.yml` has two groups: `cli` for local runtime output and
+`publish` for npm/GitHub delivery in pull-request mode. All preview commands
+below avoid remote PR creation, package publication and release tags:
 
 ```bash
-make preview-publish
+make preview-publish  # inspect full output under generated-publish/
+make generate-publish # adopt runtime and publishing files from an isolated preview
+python3 scripts/generate.py --publishing --check
 ```
 
-The latest attempt failed with “You do not have permission to run this generator
-for organization 'vapi'.” Local-file generation works. Confirm the logged-in
-account's organization membership and CLI publishing-generator access with Fern.
-The local group is for evaluation, not an alternative publishing implementation.
+Keep `verify.yml` for repository checks. Keep Fern's generated workflows in
+sync through `make generate-publish`; do not replace them with another custom
+publisher. Runtime files from the publishing preview match local generation.
 
-Once access is enabled, inspect and adopt Fern's actual generated npm launcher,
-platform packages, release workflow, installers, and Homebrew job. Keep
-`.github/workflows/verify.yml` for repository checks; Fern owns publishing files.
-Review credential boundaries in the generated workflow against the isolation
-requirements established in PR #18 before using it.
+### Release gates
 
-Publishing setup also requires:
+1. Complete live OAuth acceptance and production promotion above.
+2. Resolve the generated publishing credential boundary before enabling npm
+   trusted publishing. In `ci.yml`, the platform publish jobs grant
+   `id-token: write` during Rust compilation; they also execute third-party
+   setup actions and, for stable releases, `npx semver`. This does not preserve
+   PR #18's separation of build/packing from a minimal privileged publisher.
+   The generated release workflow also grants write permissions to planning
+   and build jobs. These files are checked in for review, not release approval.
+3. Bootstrap the five npm platform packages if still absent, then configure
+   trusted publishing for all six packages. The public registry currently has
+   `@vapi-ai/cli` at `latest: 0.2.1`; the five platform names returned 404.
+   Their names are `@vapi-ai/cli-{linux-x64,linux-arm64,darwin-x64,darwin-arm64,win32-x64}`.
+   Use owner `VapiAI`, repository `cli`, workflow `ci.yml`, and no environment
+   for the workflow as currently generated. Recheck these values after the
+   credential-boundary fix. Creating packages is a publishing action; this
+   preview did not do it.
+4. Configure `HOMEBREW_TAP_TOKEN` with tap write access, or configure Fern's
+   GitHub App distribution option and regenerate. Reconcile the tap's old
+   formula/cask entries with `Formula/vapi-cli.rb` before the stable rollout.
+5. Validate release builds on the target runners. npm and cargo-dist build
+   independently; cargo-dist enables `rustls` explicitly while the npm build
+   uses target defaults, so matching profile names alone do not establish
+   byte-identical artifacts. macOS signing in `release.yml` requires all three
+   `CODESIGN_*` secrets; without them those artifacts stay unsigned.
 
-- The Fern GitHub App installed on `VapiAI/cli`.
-- Existing npm platform packages or their initial setup, followed by OIDC
-  trusted-publisher configuration matching Fern's generated workflow. Creating
-  those packages is a separate publishing action, not part of previewing.
-- Homebrew tap write credentials (the default secret is `HOMEBREW_TAP_TOKEN`,
-  or Fern's GitHub App option). The tap already exists, but its old formula/cask
-  entries need to be reconciled with the new generated formula before rollout.
+Once these gates are satisfied, publish by pushing a version tag matching
+`Cargo.toml`, such as `v1.0.0-beta.1`. Merging alone does not publish. The actual
+generated workflows listen for tag pushes; creating a GitHub release can also
+create that tag, but no `release: published` event is configured.
 
-Fern skips Homebrew updates for prereleases. The beta is evaluated through npm
-and native artifacts; the first stable release updates the Homebrew formula.
-Confirm npm prerelease dist-tag handling in the actual generated workflow before
-creating a beta tag. Nothing in this draft has published or bootstrapped packages.
+The beta's npm dist-tag is `beta`, so it does not replace `latest`. Stable
+backports use `backport`; other prereleases use their first identifier.
+Homebrew skips prereleases. No package, tag or GitHub release was published
+while preparing this draft.
 
 See [Fern publishing](https://buildwithfern.com/learn/cli-generator/get-started/publishing)
 and [Fern OAuth support](https://buildwithfern.com/learn/cli-generator/get-started/authentication).

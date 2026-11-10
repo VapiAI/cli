@@ -13,9 +13,12 @@ import tomllib
 root = pathlib.Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--check', action='store_true', help='Fail if regeneration differs; leave the checkout untouched')
+parser.add_argument('--publishing', action='store_true', help='Preview the publishing group and include its generated workflows')
 args = parser.parse_args()
 version = tomllib.loads((root / 'Cargo.toml').read_text())['package']['version']
 owned = ['Cargo.toml', 'Cargo.lock', 'reference.md', 'src', 'cli', 'tests', 'wiremock']
+if args.publishing:
+    owned += ['dist-workspace.toml', '.github/workflows/ci.yml', '.github/workflows/release.yml']
 provenance = json.loads((root / 'fern/source.json').read_text())
 for name, expected in provenance['sha256'].items():
     actual = hashlib.sha256((root / 'fern' / name).read_bytes()).hexdigest()
@@ -37,9 +40,12 @@ with tempfile.TemporaryDirectory(prefix='vapi-fern-') as temporary:
     # repository's Node pin into the temporary workspace, too.
     environment = dict(os.environ)
     environment.setdefault('ASDF_NODEJS_VERSION', '22.23.4')
-    subprocess.run(['fern', 'generate', '--group', 'cli', '--version', version],
+    command = ['fern', 'generate', '--group', 'publish' if args.publishing else 'cli', '--version', version]
+    if args.publishing:
+        command += ['--preview', '--output', str(work / 'generated')]
+    subprocess.run(command,
                    cwd=work, env=environment, check=True)
-    generated = work / 'generated'
+    generated = work / 'generated' / 'fern-cli-generator' if args.publishing else work / 'generated'
     for name in owned:
         if not (generated / name).exists():
             raise SystemExit(f'Fern did not generate expected output: {name}')
@@ -56,5 +62,6 @@ with tempfile.TemporaryDirectory(prefix='vapi-fern-') as temporary:
                     shutil.rmtree(destination)
                 shutil.copytree(source, destination)
             else:
+                destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, destination)
         print('Updated generated CLI. Review git diff before committing.')

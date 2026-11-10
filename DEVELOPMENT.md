@@ -76,14 +76,16 @@ The upstream spec currently validates with 12 warnings and no errors. Keep
 warnings visible; they are not evidence that every API contract has been tested
 against the live Vapi service.
 
-The local group remains a bearer-auth inspection build until the actual OAuth
-client/API contract is available. Do not represent successful local mock tests
-as OAuth acceptance. See RELEASING.md for the required integration.
+The generated runtime uses the registered staging OAuth client. Local mock
+tests do not establish successful OAuth login or live API acceptance. See RELEASING.md for the required integration.
 
 The `publish` group delegates npm, native releases and Homebrew to Fern. Use
 `make preview-publish` to inspect its output in `generated-publish/`. It does
-not publish in preview mode. Access to that group is currently denied by Fern;
-no generated publishing workflow is checked in yet.
+not publish in preview mode. `make generate-publish` adopts the runtime plus
+`dist-workspace.toml`, `.github/workflows/ci.yml` and
+`.github/workflows/release.yml` from that isolated preview. Run
+`python3 scripts/generate.py --publishing --check` to check all generated files.
+The generated npm packaging scripts live inside `ci.yml`.
 
 Command names belong in source OpenAPI annotations in the `vapi` repository.
 For example, Nest's `@ApiExtension('x-fern-sdk-group-name', ['campaigns'])`
