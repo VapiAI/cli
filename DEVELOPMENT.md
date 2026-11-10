@@ -3,11 +3,11 @@
 ## Requirements
 
 - Rust 1.99.1, pinned in `rust-toolchain.toml`; rustup installs it on first use.
-- Node.js 22+ for the npm wrapper and Fern CLI.
+- Node.js 22+ for the Fern CLI.
 - Python 3.11+ for repository scripts.
 - On Linux, `pkg-config`, OpenSSL development headers, and D-Bus development
-  headers for the native credential-store build. Release Linux binaries instead
-  target musl and use the generated file credential store.
+  headers for the local native credential-store build. Fern owns release-target
+  selection; inspect its publishing output before promising a Linux ABI.
 
 ```bash
 cargo build --locked
@@ -15,7 +15,8 @@ make test
 ```
 
 CI runs the generated Rust tests, generated mock-server wire tests, Vapi smoke
-checks, and npm installer tests on Linux, macOS, and Windows. No Vapi account or
+checks on Linux, macOS, and Windows. The verification workflow is configured;
+GitHub has not provided PR workflow results for this candidate. No Vapi account or
 live API writes are required. The smoke script can use another compiled binary
 via `VAPI_TEST_BINARY=/absolute/path/to/vapi`.
 
@@ -62,7 +63,7 @@ expected output, and replaces only these paths:
 - `src/`, `cli/`, `tests/`, `wiremock/`
 
 This isolates Fern's local-output Git handling from the checkout and preserves
-repository-owned packaging, workflows, docs, licenses, and smoke checks. Do not
+repository-owned verification, docs, licenses, and smoke checks. Do not
 hand-edit generated Rust or wire tests. To check reproducibility without writing
 files, run `python3 scripts/generate.py --check`.
 
@@ -70,6 +71,19 @@ The upstream spec currently validates with 12 warnings and no errors. Keep
 warnings visible; they are not evidence that every API contract has been tested
 against the live Vapi service.
 
-`Cargo.toml` and `npm-wrapper/package.json` must have the same version. Change
-the npm version, regenerate with the matching Cargo version (the generation
-script reads it), and run `python3 scripts/check-version.py` before releasing.
+The local group remains a bearer-auth inspection build until the actual OAuth
+client/API contract is available. Do not represent successful local mock tests
+as OAuth acceptance. See RELEASING.md for the required integration.
+
+The `publish` group delegates npm, native releases and Homebrew to Fern. Use
+`make preview-publish` to inspect its output in `generated-publish/`. It does
+not publish in preview mode. Access to that group is currently denied by Fern;
+no generated publishing workflow is checked in yet.
+
+Command names belong in source OpenAPI annotations in the `vapi` repository.
+For example, Nest's `@ApiExtension('x-fern-sdk-group-name', ['campaigns'])`
+and `@ApiExtension('x-fern-sdk-method-name', 'list')` on a controller operation
+produce `vapi campaigns list` when propagated through the shared API inputs.
+Versioned endpoints must receive distinct group/method paths to avoid collisions.
+Those annotations also affect generated SDK names, so review the SDK surface
+when making the upstream change. Do not add command-naming patches here.

@@ -1,4 +1,4 @@
-name: CI
+name: Verify generated CLI
 on:
   push:
     branches: [main]
@@ -21,24 +21,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: '22'
-          package-manager-cache: false
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config
       - name: Install pinned Rust
         run: rustup show
-      - name: Check package versions
-        run: python scripts/check-version.py
       - name: Build and test generated CLI
         run: cargo test --locked
       - name: Test CLI behavior against a local API
         run: python scripts/smoke-test.py
-      - name: Test npm installer
-        working-directory: npm-wrapper
-        run: npm test
-      - name: Check npm package contents
-        working-directory: npm-wrapper
-        run: npm pack --dry-run --ignore-scripts

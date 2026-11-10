@@ -1,10 +1,11 @@
 # Evaluate the Fern CLI beta
 
-Recommendation: adopt the generated API foundation and evaluate it as a beta.
+Decision: adopt Fern conventions and the generated API foundation. OAuth and
+Fern-managed publishing are required before this candidate is released.
 It replaces much of the handwritten API plumbing and several dashboard-only
 placeholders with scriptable API operations. It is not yet a drop-in replacement
 for users relying on browser login, project scaffolding, workflows, or local
-webhook forwarding. Decide on those losses and command naming before stable 1.0.
+webhook forwarding. `init` and `listen` remain removed; command naming should be fixed upstream.
 
 ## What was compared
 
@@ -30,26 +31,26 @@ snapshot, not a guarantee of all current Vapi API functionality.
 | Tools and phones | List/get/delete worked; several create/update/test paths printed guidance | Spec-driven create/update and other operations | More useful automation; no replacement for custom tool-testing helpers |
 | Campaigns | Working list/get/create/update/delete with guided selections | V1/V2 API operations and contact retrieval | Coverage gain, but long controller-derived command names need a product decision |
 | Workflows | Working list/get/create/delete in the old SDK | No workflow endpoints in this API snapshot | Real removal; use an existing client/dashboard, or add supported endpoints upstream before claiming parity |
-| Browser login | Vapi dashboard callback and local account records | Bearer API key from `VAPI_TOKEN`, stdin login, credential store | Browser flow removed; spec has no OAuth flow to generate |
-| Multiple accounts | `auth switch` and YAML config | Named profiles with per-profile credential slots and settings | Good replacement, with different commands and credential precedence |
+| Browser login | Vapi dashboard callback and local account records | Current inspection build is bearer-only; target is generated OAuth login/refresh | OAuth is required; API client registration and token contract are pending |
+| Multiple accounts | `auth switch` and YAML config | Fern profiles; no legacy credential migration | Accept Fern conventions; finalize profile behavior with OAuth |
 | Output | Custom tables/prose and JSON depending on command | JSON when piped, tables in a terminal; explicit formats and JMESPath | Better for automation; existing output parsers must change |
 | Request control | Uneven or limited flags | JSON/stdin input, dry run, base URL override, request flags, retries, schema and spec export | Strong gain; retry and pagination semantics still depend on spec metadata |
 | Deletion | Interactive confirmation | Immediate API request; `--dry-run` available | Intentional breaking behavior; scripts and operators must account for it |
-| Project setup | `init` detected frameworks, installed SDKs and wrote examples/env files | No equivalent with custom commands disabled | Real removal; decide whether users still need a separately maintained setup tool |
-| Webhook forwarding | `listen` hosted a local forwarding HTTP server; it did not establish the advertised public tunnel | No equivalent | Real removal of local forwarding; use a separate tunnel and receiver |
+| Project setup | `init` detected frameworks, installed SDKs and wrote examples/env files | Removed | Accepted: initialization belongs in a separate project |
+| Webhook forwarding | `listen` hosted a local forwarding HTTP server; it did not establish the advertised public tunnel | Removed | Accepted: rebuild later only if missed |
 | Webhook management and logs | Commands mostly printed guidance instead of invoking APIs | No standalone webhook/log command groups in this snapshot | Removes misleading promises, not working CRUD/log retrieval |
 | IDE integration | MCP/skills setup already removed from main | No IDE installer; Fern adds `generate-skills` to export API command skills | Preserve the setup removal; decide whether the new export belongs in the public help |
 | Updates | Custom self-update and SDK-update automation | Regenerate from pinned shared API inputs; upgrade binaries via npm/releases | Smaller maintenance surface; self-update command removed |
 | Telemetry | Handwritten PostHog analytics and opt-out configuration | No Vapi PostHog analytics package or analytics config commands | Old telemetry configuration is removed |
-| Distribution | GoReleaser, npm download wrapper, install scripts, Docker | Generated Rust CLI; adapted npm wrapper and five native release targets | Keep existing package and executable names; Docker and 32-bit ARM are dropped |
+| Distribution | GoReleaser, custom npm wrapper, stale Homebrew, installers, Docker | Fern-managed npm, native downloads and Homebrew configured | Custom wrapper/publisher removed; Fern publishing access is blocked |
 | MCP docs server | Separate TypeScript package in the repository | Removed from the new CLI tree | Existing published versions are unaffected; future server maintenance needs its own home |
 
 ## Breaking command examples
 
 | Before | Candidate |
 | --- | --- |
-| `export VAPI_API_KEY=...` | `export VAPI_TOKEN=...` |
-| `vapi login` | `vapi auth login --with-token` (API key via stdin) |
+| `export VAPI_API_KEY=...` | OAuth target; no legacy API-key migration |
+| `vapi login` | Target: `vapi auth login` with OAuth; not implemented yet |
 | `vapi auth switch staging` | `vapi profiles use staging` |
 | `vapi assistant list` | `vapi assistants list` |
 | `vapi assistant get ID` | `vapi assistants get --id ID` |
@@ -66,23 +67,60 @@ credential overrides the exported token. Inspect `profiles current` and
 `auth status` when switching environments. Resource IDs use named flags; singular
 resource command aliases are not installed.
 
-## Decisions before stable 1.0
+## Recorded product decisions
 
-1. **Command names:** accept plural groups and `--id`, and choose concise method
-   names for campaign/provider/other controller-derived operations in the API
-   spec. Avoid hand-editing generated command code.
-2. **Authentication:** accept API-key login and profiles, or model a supported
-   OAuth flow upstream. Existing dashboard login is not reproduced automatically.
-3. **Custom workflows:** explicitly accept removing `init`, `listen`, and legacy
-   workflows, or restore only the ones people use through Fern custom commands.
-4. **Destructive operations:** accept immediate deletion, or add a separately
-   reviewed UX policy. Dry run exists but is opt-in.
-5. **Real API verification:** test a disposable assistant, chat streaming, file
-   upload, pagination on paginated endpoints, and profiles on each supported OS.
-   Mock success does not prove the shared API spec perfectly describes production.
-6. **Publishing:** validate the native release matrix and existing npm OIDC
-   configuration before tagging. Fern-managed npm/GitHub preview access is still
-   unresolved; the current publication path does not require it.
+| Area | Decision | Implementation status |
+| --- | --- | --- |
+| Command grammar | Keep Fern's groups, flags, and conventions | Present in generated output |
+| Long controller names | Shorten through annotations in `vapi`, propagated through OpenAPI | Mechanism confirmed; upstream source change remains to be made |
+| Authentication | OAuth, aligned with the other Vapi surfaces | Required; current inspection build is still bearer-only |
+| Old credentials | No API-key/YAML compatibility migration | Removed; no new migration path planned |
+| `init` | Separate project | Removed |
+| `listen` | Delete; rebuild only if missed | Removed |
+| Deletion | Keep immediate deletes and document dry run | Present and tested with local mocks |
+| Output | Keep Fern defaults | Present |
+| Installation | npm, native downloads, and Homebrew | Fern publish group configured; generator permission blocked |
+| MCP docs server | Remove | Removed |
+| Publishing | Fern-managed | Custom publisher and npm wrapper removed; generated publisher pending access |
+| `generate-skills` | User requested more information; keep/remove undecided | Built-in export remains in the inspection build |
+
+## Skill export: what the command does
+
+The compiled inspection build was run with:
+
+```bash
+vapi generate-skills --output-dir /tmp/vapi-cli-skills
+```
+
+It wrote 24 local files: `vapi-shared/SKILL.md` plus one for each API group,
+such as `vapi-assistants/SKILL.md`. The shared guide documents auth sources,
+global flags, formats and dry run. Group guides list operations and explain
+how an agent can discover parameters through `--schema`.
+
+It uses deterministic templates over the embedded spec, not an LLM. It does
+not install files into Codex/Claude, configure an IDE, read account resources,
+or embed the user's credential values. Its auth guidance currently reflects
+the bearer inspection build; regenerate and inspect it after OAuth changes.
+
+Recommendation remains to keep this built-in exporter because it tracks the
+exact installed CLI, while any automatic agent setup stays outside this repo.
+The user's decision on retaining it is still pending.
+
+## Remaining integration work
+
+1. Obtain the native CLI's public-client OAuth registration and API token
+   contract. The MCP server's confidential exchange-client credentials are
+   not usable in a distributed CLI. Generate OAuth login and test refresh,
+   org selection/isolation, logout and permission denial.
+2. Put shorter names in `vapi` source annotations. Nest `@ApiExtension` can
+   emit `x-fern-sdk-group-name` and `x-fern-sdk-method-name`. Review SDK naming
+   changes and V1/V2 collisions, then update the shared API snapshot here.
+3. Enable Fern's publishing-generator access for the `vapi` organization and
+   adopt its actual generated workflow/package files. Configure npm OIDC and
+   Homebrew credentials; do not replace this with another custom publisher.
+4. Resolve the skill-export decision, run cross-platform checks and perform
+   disposable live API acceptance before publishing. Homebrew begins with
+   stable releases because Fern skips prerelease formula updates.
 
 The generated provider-resource wire tests initially failed because the spec
 marked reserved `Content-Type` as a required standalone header while Fern's IR

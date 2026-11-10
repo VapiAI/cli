@@ -1,57 +1,68 @@
 # Releasing
 
-The first replacement is `1.0.0-beta.1`, a breaking major over the Go CLI's
-0.2.x releases. Opening or merging the migration PR does not publish anything.
+The replacement targets `1.0.0-beta.1`, a breaking major over the Go CLI's 0.2.x
+releases. Opening or merging this draft must not be treated as release readiness.
+The agreed direction is **OAuth authentication and Fern-managed publishing**.
+There is no repository-owned npm/release workflow fallback.
 
-## Validate
+## OAuth prerequisite
 
-1. Review `docs/MIGRATION.md`, especially removed workflows, authentication,
-   command names, and noninteractive deletion.
-2. Set the same version in `Cargo.toml` and `npm-wrapper/package.json`, regenerate
-   with `make generate`, and run `make test`.
-3. Require CI on Linux, macOS, and Windows to pass. Release binaries also perform
-   version and schema smoke checks on all five target platforms.
-4. Confirm npm trusted publishing authorizes `VapiAI/cli` and the calling
-   `release.yml` workflow for the existing `@vapi-ai/cli` package. This changes
-   the previous workflow identity: npm validates the caller when publishing
-   through a reusable workflow. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
-   No npm token is passed into build or package jobs.
+Fern supports authorization-code login with PKCE and automatic refresh through
+`auth-schemes` in `generators.yml`. The CLI needs a public client registration,
+issuer/authorization/token endpoints, API audience/scopes, and registered
+loopback callback behavior. It must not embed a client secret.
 
-## Publish
+Vapi's WorkOS Connect work currently delegates MCP access through server-side
+token exchange. The API auth provider binds those exchanged tokens to its
+configured exchange client. A native CLI's public-client token cannot be assumed
+to satisfy that contract. Confirm direct CLI token issuance and API/gateway
+acceptance with the OAuth work, then encode the actual contract and regenerate.
+Do not copy the MCP server's exchange credentials into the CLI.
 
-After approval and merge, push a matching tag (for example `v1.0.0-beta.1`).
-The release workflow builds all native binaries before creating a GitHub
-release with archives and `checksums.txt`. It then calls the npm workflow
-explicitly, since releases created with `GITHUB_TOKEN` do not trigger another
-release-event workflow.
+The current generated inspection build still has bearer authentication. It is
+not an implementation of this prerequisite, and API-key login is not an accepted
+release substitute. Validate browser login, org selection, token refresh,
+logout, wrong audience, permission denial, and org isolation before releasing.
 
-Prerelease tags create a GitHub prerelease and publish npm under `next`.
-Stable versions publish under `latest`. The npm installer downloads the exact
-package version's release, verifies its checksum, and installs that binary.
-It never substitutes the latest stable release for a beta or pinned version.
+## Fern-managed distribution
 
-Releases retain `cli_Darwin_*`, `cli_Linux_*`, and `cli_Windows_x86_64.zip`
-archive names for the npm distribution path. Windows archives are ZIP files;
-Unix archives are tar.gz files. Native archives include license notices.
+`fern/generators.yml` has two groups:
 
-The npm workflow retains separate package and publish jobs: the job with OIDC
-publishing permission has no checkout, does not restore caches, and publishes
-the prebuilt tarball with lifecycle scripts disabled. Users run the installer
-only when they install the published package.
+- `cli`: local-file output used to inspect/build the generated CLI.
+- `publish`: npm package `@vapi-ai/cli`, OIDC, GitHub delivery to `VapiAI/cli` in
+  pull-request mode, and Homebrew formula `vapi-cli` in `VapiAI/homebrew-tap`.
 
-Do not create a stable 1.0.0 until the beta's UX decisions are accepted. The old
-Docker images, Go installers, and Go self-update command are retired by this
-migration; npm or manual release downloads are the supported v1 channels.
+Inspect publishing files without publishing:
 
-## Fern-managed publishing
+```bash
+make preview-publish
+```
 
-The local-file generator works with the current Fern login. An attempted
-npm/GitHub preview failed with “You do not have permission to run this generator
-for organization 'vapi'.” This PR therefore uses generated Rust plus
-repository-owned release/npm workflows. No Fern npm or GitHub publish was run.
+The latest attempt failed with “You do not have permission to run this generator
+for organization 'vapi'.” Local-file generation works. Confirm the logged-in
+account's organization membership and CLI publishing-generator access with Fern.
+The local group is for evaluation, not an alternative publishing implementation.
 
-After Fern confirms publishing access, a separate change can add a publishing
-group to `VapiAI/docs` with `output.location: npm`, package `@vapi-ai/cli`, OIDC,
-and `github.mode: pull-request`. Compare its generated workflow with the
-credential isolation here before replacing the release path. See
-[Fern publishing](https://buildwithfern.com/learn/cli-generator/get-started/publishing).
+Once access is enabled, inspect and adopt Fern's actual generated npm launcher,
+platform packages, release workflow, installers, and Homebrew job. Keep
+`.github/workflows/verify.yml` for repository checks; Fern owns publishing files.
+Review credential boundaries in the generated workflow against the isolation
+requirements established in PR #18 before using it.
+
+Publishing setup also requires:
+
+- The Fern GitHub App installed on `VapiAI/cli`.
+- Existing npm platform packages or their initial setup, followed by OIDC
+  trusted-publisher configuration matching Fern's generated workflow. Creating
+  those packages is a separate publishing action, not part of previewing.
+- Homebrew tap write credentials (the default secret is `HOMEBREW_TAP_TOKEN`,
+  or Fern's GitHub App option). The tap already exists, but its old formula/cask
+  entries need to be reconciled with the new generated formula before rollout.
+
+Fern skips Homebrew updates for prereleases. The beta is evaluated through npm
+and native artifacts; the first stable release updates the Homebrew formula.
+Confirm npm prerelease dist-tag handling in the actual generated workflow before
+creating a beta tag. Nothing in this draft has published or bootstrapped packages.
+
+See [Fern publishing](https://buildwithfern.com/learn/cli-generator/get-started/publishing)
+and [Fern OAuth support](https://buildwithfern.com/learn/cli-generator/get-started/authentication).

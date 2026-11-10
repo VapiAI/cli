@@ -2,10 +2,10 @@
 /dist/
 /generated/
 **/node_modules/
-npm-wrapper/native/
 *.tgz
 .env
 .env.*
 .DS_Store
 /fern/.guest-session
 /fern/.preview/
+/generated-publish/

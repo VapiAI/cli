@@ -18,10 +18,14 @@ groups:
         output:
           location: local-file-system
           path: ../generated
-        config:
+        config: &cli-config
           binaryName: vapi
           customCommands: false
           generateWireTests: true
+          distribution:
+            homebrew:
+              tap: VapiAI/homebrew-tap
+              formula: vapi-cli
           profiles:
             enabled: true
           packageIdentity:
@@ -32,3 +36,15 @@ groups:
             license: MIT
             repository: https://github.com/VapiAI/cli
             homepage: https://vapi.ai
+  publish:
+    generators:
+      - name: fern-cli-generator
+        version: 0.58.5
+        output:
+          location: npm
+          package-name: "@vapi-ai/cli"
+          token: OIDC
+        github:
+          repository: VapiAI/cli
+          mode: pull-request
+        config: *cli-config

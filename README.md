@@ -1,79 +1,60 @@
 # Vapi CLI
 
-The Vapi command-line interface, generated from the same API definitions used by
-Vapi's server SDKs with [Fern's CLI generator](https://buildwithfern.com/learn/cli-generator/get-started/quickstart).
+The Vapi command-line interface, generated from Vapi's shared API definitions
+with [Fern's CLI generator](https://buildwithfern.com/learn/cli-generator/get-started/quickstart).
+This branch is the **1.0.0-beta.1 evaluation candidate**, replacing the old Go CLI.
+See the [comparison and recorded decisions](docs/MIGRATION.md).
 
-This branch is the **1.0.0-beta.1 candidate** replacing the handwritten Go CLI.
-It has breaking command, authentication, and output changes. See the
-[comparison and migration guide](docs/MIGRATION.md) before upgrading.
+**This draft is not ready to release.** OAuth integration and access to Fern's
+npm/GitHub publishing generator are outstanding. The checked-in inspection build
+still embeds the earlier bearer-auth API spec; it does not implement the agreed
+OAuth login yet. An API-key-based release is not the intended fallback.
 
-## Try the candidate
+## Inspect the generated CLI
 
-The beta has not been published yet. Install the pinned [Rust toolchain](https://rustup.rs/), then:
+Install the pinned [Rust toolchain](https://rustup.rs/), then:
 
 ```bash
 cargo build --locked
 ./target/debug/vapi --help
-export VAPI_TOKEN='<your private Vapi API key>'
-./target/debug/vapi assistants list --limit 5
-./target/debug/vapi assistants get --id '<assistant-id>'
+./target/debug/vapi --schema
+./target/debug/vapi assistants create --json '{"name":"Example"}' --dry-run
+./target/debug/vapi completion zsh
 ```
 
-After a beta release is published, Node.js 22+ users can install the same native CLI:
+The current snapshot generates 145 operations in 23 groups. Commands use Fern's
+conventions, such as `assistants get --id <id>` and `phone-numbers list`.
+Controller-derived command names will be shortened at their source in `vapi`'s
+OpenAPI annotations, then flow through the shared API definition.
 
-```bash
-npm install -g @vapi-ai/cli@next
-```
+Deletion sends the API request immediately. Use `--dry-run` to inspect a request
+without sending it. Output defaults to tables in terminals and JSON when piped;
+use explicit `--format json` in scripts. See [reference.md](reference.md) and
+`vapi <group> --help` for the current generated surface.
 
-Supported release platforms: macOS Intel and Apple Silicon, Linux x64 and ARM64
-(static musl binaries), and Windows x64. Windows installation requires `tar.exe`
-(available on Windows 10 1803+). Releases provide native archives and SHA-256 checksums.
+## Distribution target
 
-## Authentication
+Fern will manage npm, native GitHub release downloads, and Homebrew through
+`VapiAI/homebrew-tap` (`vapi-cli`). The `publish` generator group uses pull-request
+mode, OIDC npm publishing, and Fern's Homebrew distribution integration. Its
+publishing preview is currently denied by Fern's organization permissions;
+generated publishing files have not been adopted or tested yet.
 
-`VAPI_TOKEN` replaces `VAPI_API_KEY`. The old `~/.vapi-cli.yaml` is not imported.
-The generated `vapi auth login --with-token` reads an API key from stdin and stores
-it in the OS credential store. This spec declares bearer authentication, so
-`vapi auth login` does **not** reproduce the old dashboard browser login flow.
+The old custom npm wrapper and publishing workflows are removed. `init`,
+`listen`, legacy configuration migration, and the bundled MCP documentation
+server are also removed. Project initialization belongs in a separate project.
 
-Named profiles replace account switching:
+## Agent skill export
 
-```bash
-vapi profiles create staging --from-env
-vapi profiles use staging
-vapi assistants list --profile staging
-vapi auth status
-```
-
-A selected profile's stored credential takes precedence over `VAPI_TOKEN`.
-Use `vapi profiles current` to inspect which profile applies.
-
-## API commands
-
-```bash
-vapi assistants create --json '{"name":"Example"}' --dry-run
-vapi assistants create --json - < assistant.json
-vapi calls list --limit 10 --format json
-vapi phone-numbers list
-vapi squads list
-vapi assistants get --id '<assistant-id>' --query name
-vapi --schema
-vapi completion zsh
-```
-
-API deletions execute without the old confirmation prompt. Use `--dry-run` to
-inspect requests before sending them. Use explicit `--format json` in scripts;
-interactive output defaults to a table, while piped output defaults to JSON.
-
-See [reference.md](reference.md) for generated endpoint documentation and run
-`vapi <group> --help` for exact commands. Some endpoints currently inherit long
-controller names from the API spec; the migration guide records these rough edges.
+`vapi generate-skills --output-dir ./skills` exports local Markdown instructions
+for coding agents: one shared guide and one file per API group. It describes
+commands, authentication sources, flags, and output. It does not install the
+files into an IDE or modify agent settings. Keeping this generated command is
+still a product decision; its output must be regenerated after OAuth changes.
 
 ## Development
 
-The checked-in Rust runtime, embedded API spec, reference, and wire tests are
-Fern output. [Development](DEVELOPMENT.md) describes regeneration and API provenance;
-[releasing](RELEASING.md) describes beta and stable publishing.
-
+[Development](DEVELOPMENT.md) describes regeneration and API provenance;
+[releasing](RELEASING.md) records OAuth and publishing prerequisites.
 Vapi-specific code is MIT licensed. The generated Fern runtime is attributed in
 [NOTICE](NOTICE) and distributed with [Apache License 2.0](LICENSE-APACHE).

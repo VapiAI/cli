@@ -1,8 +1,7 @@
 # Repository-owned files; generated Rust and reference.md are replaced.
 fern/
-.github/
+.github/workflows/verify.yml
 scripts/
-npm-wrapper/
 README.md
 DEVELOPMENT.md
 RELEASING.md
@@ -13,6 +12,5 @@ LICENSE
 .tool-versions
 rust-toolchain.toml
 Makefile
-dist-workspace.toml
 LICENSE-APACHE
 NOTICE
