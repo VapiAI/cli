@@ -1,6 +1,7 @@
 {
   "name": "@vapi-ai/mcp-docs-server",
   "version": "0.1.9",
+  "private": true,
   "description": "Model Context Protocol server providing access to Vapi documentation, examples, and knowledge base",
   "main": "dist/index.js",
   "bin": {
@@ -59,8 +60,5 @@
     "dist",
     "README.md",
     "LICENSE"
-  ],
-  "publishConfig": {
-    "access": "public"
-  }
+  ]
 }

@@ -1,57 +1,48 @@
-# @vapi-ai/mcp-docs-server
+# @vapi-ai/mcp-docs-server (deprecated)
 
-[![npm version](https://badge.fury.io/js/@vapi-ai%2Fmcp-docs-server.svg)](https://badge.fury.io/js/@vapi-ai%2Fmcp-docs-server)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> **Deprecated and no longer maintained.** This legacy local documentation server
+> has been replaced by the [Vapi MCP server](https://github.com/VapiAI/mcp-server)
+> and the [Fern documentation MCP](https://docs.vapi.ai/_mcp/server).
+> All published versions are deprecated on npm. This directory is retained for
+> historical reference and is excluded from the CLI build and installation.
 
-**Turn your IDE into a Vapi expert!** 🎯
+## Use the current MCP server
 
-This is a Model Context Protocol (MCP) server that provides direct access to live Vapi documentation from docs.vapi.ai. It fetches real documentation, examples, and API references, integrating seamlessly with AI-powered IDEs like Cursor, Windsurf, and VSCode.
+Connect your agent to **`https://mcp.vapi.ai/mcp`** using the
+[Vapi MCP setup guide](https://docs.vapi.ai/sdk/mcp-server).
+For local stdio use, the current package is **`@vapi-ai/mcp-server`**.
+Follow its [README](https://github.com/VapiAI/mcp-server#readme) for authentication
+and configuration.
 
-## ✨ Features
+The current MCP package includes **`ask_vapi_docs`**, which forwards documentation
+questions to Fern and returns documentation passages and source URLs. It also
+provides tools for managing Vapi assistants, calls, phone numbers, and other
+resources. Check your connection's tool list for availability.
 
-- 📚 **Live Documentation Access** - Fetches real docs from docs.vapi.ai
-- 💻 **Real Examples** - Links to actual working code in Vapi docs
-- 🔧 **Current API Reference** - Always up-to-date API documentation
-- 📖 **Official Guides** - Step-by-step tutorials from Vapi
-- 📋 **Real Changelog** - Latest updates from actual Vapi changelog
-- 🔍 **Smart Search** - Search across all live Vapi documentation
-- 🎯 **Always Fresh** - Documentation cached and auto-refreshed
+## Documentation-only access
 
-## 🚀 Installation
+For documentation without Vapi account access, connect directly to Fern's
+**`https://docs.vapi.ai/_mcp/server`** endpoint. It exposes `searchDocs` and does
+not require a Vapi API key. For clients that need a local stdio adapter:
 
-The server is automatically configured when you run `vapi mcp setup` from the [Vapi CLI](https://github.com/VapiAI/cli).
+```json
+{
+  "mcpServers": {
+    "vapi-docs": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://docs.vapi.ai/_mcp/server"]
+    }
+  }
+}
+```
 
-## 🛠️ Available Tools
+## Migrate an existing installation
 
-- `search_documentation` - Search Vapi documentation for specific topics
-- `get_examples` - Get code examples for specific Vapi features
-- `get_guides` - Access step-by-step guides for implementing features
-- `get_api_reference` - Get detailed API reference information
-- `get_changelog` - Get recent changes, updates, and new features
+Remove any MCP client entry that launches `@vapi-ai/mcp-docs-server`, including
+entries written by older versions of `vapi mcp setup`. Add one of the supported
+connections above, then restart your client. Existing configurations are not
+changed automatically.
 
-## 🎯 Example Usage
+## License
 
-Once configured, you can ask your IDE's AI assistant questions like:
-
-- **"How do I create a voice assistant with Vapi?"**
-- **"Show me examples of making phone calls"**
-- **"What are the latest Vapi features?"**
-- **"How do I set up webhooks for function calling?"**
-- **"Give me the API reference for creating assistants"**
-
-The AI will automatically use the MCP tools to provide accurate, up-to-date information!
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- **[Vapi Website](https://vapi.ai)** - Voice AI platform
-- **[Vapi Documentation](https://docs.vapi.ai)** - Complete docs
-- **[Vapi CLI](https://github.com/VapiAI/cli)** - Command-line tool
-- **[Vapi Discord](https://discord.gg/vapi)** - Community support
-
----
-
-Made with ❤️ by the [Vapi](https://vapi.ai) team
+[MIT](./LICENSE).
