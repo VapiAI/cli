@@ -74,6 +74,8 @@ pub struct HttpConfig {
     /// `<NAME>_USER_AGENT_SUFFIX` env var when set. `None` means fall back
     /// to the env var (or no suffix).
     user_agent_suffix_override: Option<Arc<str>>,
+    /// Parsed command names for Vapi request attribution; excludes argument values.
+    vapi_client_command: Option<Arc<str>>,
 }
 
 /// Transport-neutral view of the resolved HTTP/TLS configuration.
@@ -139,6 +141,7 @@ impl HttpConfig {
             extra_root_certs: Vec::new(),
             extra_root_certs_pem: Vec::new(),
             user_agent_suffix_override: None,
+            vapi_client_command: None,
         })
     }
 
@@ -181,6 +184,39 @@ impl HttpConfig {
             .filter(|s| !s.is_empty() && HeaderValue::from_str(s).is_ok())
             .map(Arc::from);
         self
+    }
+
+    /// Capture only clap's resolved subcommand names, never parameter values.
+    pub(crate) fn with_vapi_client_command(mut self, matches: &clap::ArgMatches) -> Self {
+        let mut names = Vec::new();
+        let mut current = matches;
+        while let Some((name, subcommand)) = current.subcommand() {
+            names.push(name);
+            current = subcommand;
+        }
+        let command = names.join("_");
+        // Match the API's client-attribution token contract. Omit an unknown
+        // spelling rather than truncating it into a different command name.
+        self.vapi_client_command = (!command.is_empty()
+            && command.len() <= 64
+            && command.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-'))
+            .then(|| Arc::from(command));
+        self
+    }
+
+    fn vapi_client_header(&self) -> String {
+        // A CLI invocation is one process. Share its correlation ID across
+        // clients, retries and pagination without changing idempotency keys.
+        static RUN_ID: LazyLock<String> = LazyLock::new(generate_idempotency_key);
+        let mut value = format!("cli/{}", env!("CARGO_PKG_VERSION"));
+        if let Some(command) = &self.vapi_client_command {
+            value.push_str(&format!("; command={command}"));
+        }
+        value.push_str(&format!("; run={}", RUN_ID.as_str()));
+        if first_env_truthy(["CI"]).is_some() {
+            value.push_str("; ci");
+        }
+        value
     }
 
     /// CLI binary name (e.g. `"bigcommerce"`).
@@ -343,11 +379,15 @@ impl HttpConfig {
 
         let mut builder = reqwest::Client::builder();
         let user_agent = self.user_agent();
+        let mut headers = HeaderMap::new();
         if let Ok(header_value) = HeaderValue::from_str(&user_agent) {
-            let mut headers = HeaderMap::new();
             headers.insert(USER_AGENT, header_value);
-            builder = builder.default_headers(headers);
         }
+        if self.name.as_ref() == "vapi" {
+            headers.insert("x-vapi-client", HeaderValue::from_str(&self.vapi_client_header())
+                .expect("Vapi attribution contains only validated ASCII tokens"));
+        }
+        builder = builder.default_headers(headers);
 
         // --- Compile-time trust roots (from CliApp::extra_root_cert) ---
         for cert in &self.extra_root_certs {

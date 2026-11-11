@@ -1,11 +1,11 @@
-# Temporary Fern fixes
+# Fern output patches
 
 `scripts/generate.py` applies these patches to the pinned generator's isolated
 output before checking or copying it, for both `cli` and `publish`. It checks
 each patch before application and fails if the context has changed. Review
 these patches when upgrading Fern; remove a patch once the upstream generator
-has the corresponding fix. CI checks schema discovery performance rather than
-requiring this particular implementation.
+supplies the corresponding behavior. CI checks behavior rather than requiring
+a particular implementation.
 
 ## Schema reference expansion (CLI generator 0.59.1)
 
@@ -40,3 +40,30 @@ time, OS-reported peak resident memory, and output size. Build with
 `cargo build --release --locked` first. It runs in Linux CI and supports Linux
 and macOS locally. These checks continue to apply after the patch is replaced
 by an upstream fix.
+
+## Vapi client attribution (CLI generator 0.59.1)
+
+`fern-cli-0.59.1-vapi-client.patch` adds Vapi's first-party attribution to the
+HTTP client for the `vapi` binary:
+
+```text
+X-Vapi-Client: cli/<version>; command=assistants_list; run=<uuid>[; ci]
+User-Agent: vapi-cli/<version>
+```
+
+The version comes from `CARGO_PKG_VERSION`, keeping it synchronized with
+`--version` without a second version constant. Command tokens are joined from
+clap's resolved subcommand names with underscores; argument values are excluded.
+The token is omitted if it does not meet the API's lowercase ASCII token and
+64-character limit. The run ID is created once per process and reused across
+clients, retries, and pagination. A truthy `CI` variable (`1`, `true`, `yes`, or
+`on`, case insensitive) adds the bare `ci` flag.
+
+Fern still composes the User-Agent and optional downstream suffix. No
+`X-Vapi-Source` header is added. This customization uses the output patch
+mechanism to derive the header's version and invocation metadata at runtime.
+Replace it with generator configuration when that supports these values.
+
+`scripts/smoke-test.py` checks the actual GET, POST, and DELETE request headers,
+per-invocation run IDs, retry correlation, CI detection, and suffix precedence
+against a local HTTP server.

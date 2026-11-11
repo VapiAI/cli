@@ -49,12 +49,12 @@ with tempfile.TemporaryDirectory(prefix='vapi-fern-') as temporary:
     for name in owned:
         if not (generated / name).exists():
             raise SystemExit(f'Fern did not generate expected output: {name}')
-    # Keep temporary upstream fixes reproducible for both output groups. A
+    # Keep runtime fixes and CLI customizations reproducible for both groups. A
     # changed generator must match each patch before anything is adopted.
     for patch in sorted((root / 'patches').glob('*.patch')):
         subprocess.run(['git', 'apply', '--check', str(patch)], cwd=generated, check=True)
         subprocess.run(['git', 'apply', str(patch)], cwd=generated, check=True)
-        print(f'Applied temporary Fern fix: {patch.name}', flush=True)
+        print(f'Applied Fern output patch: {patch.name}', flush=True)
     changed = [name for name in owned if not identical(generated / name, root / name)]
     if args.check:
         if changed:

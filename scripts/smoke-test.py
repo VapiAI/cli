@@ -6,11 +6,14 @@ from pathlib import Path
 import subprocess
 import tempfile
 import threading
+import tomllib
 import unittest
 from urllib.parse import unquote
+from uuid import UUID
 
 ROOT = Path(__file__).resolve().parent.parent
 BINARY = Path(os.environ.get('VAPI_TEST_BINARY', ROOT / 'target/debug' / ('vapi.exe' if os.name == 'nt' else 'vapi')))
+VERSION = tomllib.loads((ROOT / 'Cargo.toml').read_text())['package']['version']
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -18,7 +21,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         size = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(size)
         self.server.requests.append((self.command, self.path, dict(self.headers), body))
-        self.send_response(self.server.status)
+        status = self.server.statuses.pop(0) if self.server.statuses else self.server.status
+        self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
         self.wfile.write(json.dumps(self.server.response).encode())
@@ -34,11 +38,13 @@ class CLITest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory(prefix='vapi-smoke-')
         self.addCleanup(self.directory.cleanup)
         self.environment = {k: v for k, v in os.environ.items() if not k.startswith('VAPI_')}
+        self.environment.pop('CI', None)
         self.environment.update(NO_PROXY='127.0.0.1', FERN_CLI_CREDENTIAL_STORE='file',
                                 XDG_CONFIG_HOME=self.directory.name, APPDATA=self.directory.name)
         self.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         self.server.requests = []
         self.server.status = 200
+        self.server.statuses = []
         self.server.response = {'id': 'local-assistant', 'name': 'Preview'}
         thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         thread.start()
@@ -56,6 +62,43 @@ class CLITest(unittest.TestCase):
         else:
             self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         return result
+
+    def assert_client_headers(self, headers, command, suffix=None, ci=False):
+        value = headers.get('x-vapi-client')
+        self.assertIsNotNone(value)
+        self.assertLessEqual(len(value), 256)
+        product, *parameters = [part.strip() for part in value.split(';')]
+        self.assertEqual(product, f'cli/{VERSION}')
+        fields = dict(part.split('=', 1) for part in parameters if '=' in part)
+        self.assertEqual(set(fields), {'command', 'run'})
+        self.assertEqual(fields['command'], command)
+        self.assertEqual(UUID(fields['run']).version, 4)
+        self.assertEqual([part for part in parameters if '=' not in part], ['ci'] if ci else [])
+        user_agent = f'vapi-cli/{VERSION}' + (f' {suffix}' if suffix else '')
+        self.assertEqual(headers.get('user-agent'), user_agent)
+        return fields['run']
+
+    def test_client_identity_preserved_with_user_agent_suffix(self):
+        self.environment['VAPI_USER_AGENT_SUFFIX'] = 'downstream/1.0'
+        self.cli('assistants', 'list')
+        first_run = self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', 'downstream/1.0')
+        self.cli('assistants', 'list', '--user-agent-suffix', 'wrapper/2.0')
+        second_run = self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', 'wrapper/2.0')
+        self.assertNotEqual(first_run, second_run)
+
+    def test_client_ci_flag(self):
+        for value, expected in [('true', True), ('1', True), ('false', False), ('0', False)]:
+            with self.subTest(ci=value):
+                self.environment['CI'] = value
+                self.cli('assistants', 'list')
+                self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', ci=expected)
+
+    def test_client_run_is_stable_across_retries(self):
+        self.server.statuses = [503, 200]
+        self.cli('assistants', 'list', '--retries', '1')
+        self.assertEqual(len(self.server.requests), 2)
+        runs = [self.assert_client_headers(request[2], 'assistants_list') for request in self.server.requests]
+        self.assertEqual(runs[0], runs[1])
 
     def test_schema_and_removed_commands(self):
         schema = json.loads(self.cli('--schema').stdout)
@@ -121,6 +164,7 @@ class CLITest(unittest.TestCase):
         method, path, headers, _ = self.server.requests[0]
         self.assertEqual((method, path), ('GET', '/assistant/local-assistant'))
         self.assertEqual(headers['authorization'], 'Bearer local-test-token')
+        self.assert_client_headers(headers, 'assistants_get')
 
     def test_logout_removes_access_and_legacy_env_does_not_restore_it(self):
         status = self.cli('auth', 'status')
@@ -156,6 +200,7 @@ class CLITest(unittest.TestCase):
             method, actual_path, headers, body = request
             self.assertEqual((method, actual_path), ('POST', path))
             self.assertEqual(headers['authorization'], 'Bearer local-test-token')
+            self.assert_client_headers(headers, 'assistants_create' if path == '/assistant' else 'calls_create')
             self.assertEqual(json.loads(body), expected)
 
     def test_invalid_input_fails_before_sending_requests(self):
@@ -177,6 +222,7 @@ class CLITest(unittest.TestCase):
         self.assertEqual(self.server.requests, [])
         self.cli('assistants', 'delete', '--id', 'preview', stdin='')
         self.assertEqual(self.server.requests[0][:2], ('DELETE', '/assistant/preview'))
+        self.assert_client_headers(self.server.requests[0][2], 'assistants_delete')
 
     def test_api_errors_exit_nonzero(self):
         self.server.status = 401

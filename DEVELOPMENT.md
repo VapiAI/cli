@@ -85,10 +85,10 @@ expected output, and replaces only these paths:
 
 This isolates Fern's local-output Git handling from the checkout and preserves
 repository-owned verification, docs, licenses, and smoke checks. Do not
-hand-edit generated Rust or wire tests. Temporary upstream runtime fixes live in
+hand-edit generated Rust or wire tests. Runtime fixes and CLI attribution live in
 [`patches/`](patches/README.md) and are applied to both output groups before
 comparison or adoption. Regeneration fails if a patch no longer applies; review
-and remove it once Fern supplies the fix. To check reproducibility without
+and remove it once Fern supplies the behavior. To check reproducibility without
 writing files, run `python3 scripts/generate.py --check`.
 
 The upstream spec currently validates with 12 warnings and no errors. Keep
