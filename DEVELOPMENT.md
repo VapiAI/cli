@@ -20,6 +20,13 @@ GitHub has not provided PR workflow results for this candidate. No Vapi account 
 live API writes are required. The smoke script can use another compiled binary
 via `VAPI_TEST_BINARY=/absolute/path/to/vapi`.
 
+Linux CI also runs `python3 scripts/check-performance.py` against root and
+assistant list/create schema discovery. Each command must finish within five
+seconds, use at most 256 MiB of resident memory, and produce at most 4 MiB of
+valid JSON. The checker stops commands that exceed a budget, so a regression
+does not exhaust the runner. It also runs with `make test` on Linux and macOS
+and accepts `VAPI_TEST_BINARY` for comparing builds.
+
 ## Source of truth
 
 `fern/source.json` pins the `VapiAI/docs` commit, source directory, and SHA-256

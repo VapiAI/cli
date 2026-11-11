@@ -4,8 +4,8 @@
 output before checking or copying it, for both `cli` and `publish`. It checks
 each patch before application and fails if the context has changed. Review
 these patches when upgrading Fern; remove a patch once the upstream generator
-has the corresponding fix. CI also checks that each patch can be reversed from
-the checkout, so a generated pull request cannot silently drop the fix.
+has the corresponding fix. CI checks schema discovery performance rather than
+requiring this particular implementation.
 
 ## Schema reference expansion (CLI generator 0.59.1)
 
@@ -34,3 +34,8 @@ cargo build --locked
 ```
 
 Schema discovery requires no login or API requests.
+
+`python3 scripts/check-performance.py` checks the compiled CLI's schema discovery
+time, memory use, and output size. It runs in Linux CI and supports Linux and
+macOS locally. These checks continue to apply after the patch is replaced by
+an upstream fix.
