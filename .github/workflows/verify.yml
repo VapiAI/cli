@@ -21,6 +21,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Check temporary Fern fixes are present
+        shell: python
+        run: |
+          import pathlib, subprocess
+          for patch in sorted(pathlib.Path('patches').glob('*.patch')):
+              subprocess.run(['git', 'apply', '--reverse', '--check', str(patch)], check=True)
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config
