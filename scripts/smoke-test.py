@@ -9,7 +9,6 @@ import threading
 import tomllib
 import unittest
 from urllib.parse import unquote
-from uuid import UUID
 
 ROOT = Path(__file__).resolve().parent.parent
 BINARY = Path(os.environ.get('VAPI_TEST_BINARY', ROOT / 'target/debug' / ('vapi.exe' if os.name == 'nt' else 'vapi')))
@@ -70,21 +69,20 @@ class CLITest(unittest.TestCase):
         product, *parameters = [part.strip() for part in value.split(';')]
         self.assertEqual(product, f'cli/{VERSION}')
         fields = dict(part.split('=', 1) for part in parameters if '=' in part)
-        self.assertEqual(set(fields), {'command', 'run'})
+        self.assertEqual(set(fields), {'command'})
         self.assertEqual(fields['command'], command)
-        self.assertEqual(UUID(fields['run']).version, 4)
         self.assertEqual([part for part in parameters if '=' not in part], ['ci'] if ci else [])
         user_agent = f'vapi-cli/{VERSION}' + (f' {suffix}' if suffix else '')
         self.assertEqual(headers.get('user-agent'), user_agent)
-        return fields['run']
+        return value
 
     def test_client_identity_preserved_with_user_agent_suffix(self):
         self.environment['VAPI_USER_AGENT_SUFFIX'] = 'downstream/1.0'
         self.cli('assistants', 'list')
-        first_run = self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', 'downstream/1.0')
+        first_identity = self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', 'downstream/1.0')
         self.cli('assistants', 'list', '--user-agent-suffix', 'wrapper/2.0')
-        second_run = self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', 'wrapper/2.0')
-        self.assertNotEqual(first_run, second_run)
+        second_identity = self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', 'wrapper/2.0')
+        self.assertEqual(first_identity, second_identity)
 
     def test_client_ci_flag(self):
         for value, expected in [('true', True), ('1', True), ('false', False), ('0', False)]:
@@ -93,12 +91,12 @@ class CLITest(unittest.TestCase):
                 self.cli('assistants', 'list')
                 self.assert_client_headers(self.server.requests[-1][2], 'assistants_list', ci=expected)
 
-    def test_client_run_is_stable_across_retries(self):
+    def test_client_identity_is_stable_across_retries(self):
         self.server.statuses = [503, 200]
         self.cli('assistants', 'list', '--retries', '1')
         self.assertEqual(len(self.server.requests), 2)
-        runs = [self.assert_client_headers(request[2], 'assistants_list') for request in self.server.requests]
-        self.assertEqual(runs[0], runs[1])
+        identities = [self.assert_client_headers(request[2], 'assistants_list') for request in self.server.requests]
+        self.assertEqual(identities[0], identities[1])
 
     def test_schema_and_removed_commands(self):
         schema = json.loads(self.cli('--schema').stdout)

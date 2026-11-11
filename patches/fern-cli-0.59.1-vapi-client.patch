@@ -17,7 +17,7 @@
          })
      }
  
-@@ -181,6 +184,39 @@
+@@ -181,6 +184,35 @@
              .filter(|s| !s.is_empty() && HeaderValue::from_str(s).is_ok())
              .map(Arc::from);
          self
@@ -42,14 +42,10 @@
 +    }
 +
 +    fn vapi_client_header(&self) -> String {
-+        // A CLI invocation is one process. Share its correlation ID across
-+        // clients, retries and pagination without changing idempotency keys.
-+        static RUN_ID: LazyLock<String> = LazyLock::new(generate_idempotency_key);
 +        let mut value = format!("cli/{}", env!("CARGO_PKG_VERSION"));
 +        if let Some(command) = &self.vapi_client_command {
 +            value.push_str(&format!("; command={command}"));
 +        }
-+        value.push_str(&format!("; run={}", RUN_ID.as_str()));
 +        if first_env_truthy(["CI"]).is_some() {
 +            value.push_str("; ci");
 +        }
@@ -57,7 +53,7 @@
      }
  
      /// CLI binary name (e.g. `"bigcommerce"`).
-@@ -343,11 +379,15 @@
+@@ -343,11 +375,15 @@
  
          let mut builder = reqwest::Client::builder();
          let user_agent = self.user_agent();

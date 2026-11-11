@@ -47,7 +47,7 @@ by an upstream fix.
 HTTP client for the `vapi` binary:
 
 ```text
-X-Vapi-Client: cli/<version>; command=assistants_list; run=<uuid>[; ci]
+X-Vapi-Client: cli/<version>; command=assistants_list[; ci]
 User-Agent: vapi-cli/<version>
 ```
 
@@ -55,8 +55,7 @@ The version comes from `CARGO_PKG_VERSION`, keeping it synchronized with
 `--version` without a second version constant. Command tokens are joined from
 clap's resolved subcommand names with underscores; argument values are excluded.
 The token is omitted if it does not meet the API's lowercase ASCII token and
-64-character limit. The run ID is created once per process and reused across
-clients, retries, and pagination. A truthy `CI` variable (`1`, `true`, `yes`, or
+64-character limit. A truthy `CI` variable (`1`, `true`, `yes`, or
 `on`, case insensitive) adds the bare `ci` flag.
 
 Fern still composes the User-Agent and optional downstream suffix. No
@@ -65,5 +64,5 @@ mechanism to derive the header's version and invocation metadata at runtime.
 Replace it with generator configuration when that supports these values.
 
 `scripts/smoke-test.py` checks the actual GET, POST, and DELETE request headers,
-per-invocation run IDs, retry correlation, CI detection, and suffix precedence
+retry attribution, CI detection, and suffix precedence
 against a local HTTP server.

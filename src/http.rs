@@ -205,14 +205,10 @@ impl HttpConfig {
     }
 
     fn vapi_client_header(&self) -> String {
-        // A CLI invocation is one process. Share its correlation ID across
-        // clients, retries and pagination without changing idempotency keys.
-        static RUN_ID: LazyLock<String> = LazyLock::new(generate_idempotency_key);
         let mut value = format!("cli/{}", env!("CARGO_PKG_VERSION"));
         if let Some(command) = &self.vapi_client_command {
             value.push_str(&format!("; command={command}"));
         }
-        value.push_str(&format!("; run={}", RUN_ID.as_str()));
         if first_env_truthy(["CI"]).is_some() {
             value.push_str("; ci");
         }
