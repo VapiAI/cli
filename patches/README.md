@@ -35,7 +35,8 @@ cargo build --locked
 
 Schema discovery requires no login or API requests.
 
-`python3 scripts/check-performance.py` checks the compiled CLI's schema discovery
-time, memory use, and output size. It runs in Linux CI and supports Linux and
-macOS locally. These checks continue to apply after the patch is replaced by
-an upstream fix.
+`python3 scripts/check-performance.py` checks the release CLI's schema discovery
+time, OS-reported peak resident memory, and output size. Build with
+`cargo build --release --locked` first. It runs in Linux CI and supports Linux
+and macOS locally. These checks continue to apply after the patch is replaced
+by an upstream fix.

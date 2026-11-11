@@ -5,6 +5,7 @@
 - Rust 1.99.1, pinned in `rust-toolchain.toml`; rustup installs it on first use.
 - Node.js 22+ for the Fern CLI.
 - Python 3.11+ for repository scripts.
+- `/usr/bin/time` for performance checks (GNU `time` on Linux; included on macOS).
 - On Linux, `pkg-config`, OpenSSL development headers, and D-Bus development
   headers for the local native credential-store build. Fern owns release-target
   selection; inspect its publishing output before promising a Linux ABI.
@@ -20,12 +21,20 @@ GitHub has not provided PR workflow results for this candidate. No Vapi account 
 live API writes are required. The smoke script can use another compiled binary
 via `VAPI_TEST_BINARY=/absolute/path/to/vapi`.
 
-Linux CI also runs `python3 scripts/check-performance.py` against root and
-assistant list/create schema discovery. Each command must finish within five
-seconds, use at most 256 MiB of resident memory, and produce at most 4 MiB of
-valid JSON. The checker stops commands that exceed a budget, so a regression
-does not exhaust the runner. It also runs with `make test` on Linux and macOS
-and accepts `VAPI_TEST_BINARY` for comparing builds.
+Linux CI builds the release CLI and runs `python3 scripts/check-performance.py`
+against root and assistant list/create schema discovery. Each command runs five
+times and must finish within 500 ms, use at most 128 MiB of peak resident memory,
+and produce at most 2 MiB of valid JSON. `/usr/bin/time` reports peak memory
+after exit; there is no active memory sampling. A timeout stops hangs.
+
+The checks also run with `make test` on Linux and macOS. For repeated local
+measurements, build with `cargo build --release --locked`, then run
+`python3 scripts/check-performance.py --runs 20`. The summary reports p50, p95,
+and maximum wall time, plus maximum peak RSS and output size. One untimed
+`--version` invocation warms the OS loader and file cache before the measurements
+(with a two-second timeout). Every measured run must meet the limits. Each is a
+fresh process, so normal per-invocation startup remains part of the measurement.
+Use `VAPI_TEST_BINARY=/absolute/path/to/vapi` to compare another build.
 
 ## Source of truth
 

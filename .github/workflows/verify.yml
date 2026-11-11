@@ -23,11 +23,14 @@ jobs:
           python-version: '3.12'
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config time
       - name: Install pinned Rust
         run: rustup show
       - name: Build and test generated CLI
         run: cargo test --locked
+      - name: Build release CLI for performance checks
+        if: runner.os == 'Linux'
+        run: cargo build --release --locked
       - name: Check schema discovery performance
         if: runner.os == 'Linux'
         run: python scripts/check-performance.py

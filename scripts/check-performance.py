@@ -1,85 +1,98 @@
-"""Check schema discovery performance without credentials or API requests."""
+"""Check release CLI schema performance using OS-reported peak resident memory."""
+import argparse
 import json
+import math
 import os
 from pathlib import Path
+import re
+import signal
+import statistics
 import subprocess
 import sys
 import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
-BINARY = Path(os.environ.get('VAPI_TEST_BINARY', ROOT / 'target/debug/vapi')).resolve()
-MAX_SECONDS = 5
-MAX_RSS_BYTES = 256 * 1024 * 1024
-MAX_OUTPUT_BYTES = 4 * 1024 * 1024
+BINARY = Path(os.environ.get('VAPI_TEST_BINARY', ROOT / 'target/release/vapi')).resolve()
+MAX_SECONDS = 0.5
+MAX_RSS_BYTES = 128 * 1024 * 1024
+MAX_OUTPUT_BYTES = 2 * 1024 * 1024
 COMMANDS = [('--schema',), ('assistants', 'list', '--schema'),
             ('assistants', 'create', '--schema')]
 
 
-def resident_bytes(process):
-    if sys.platform.startswith('linux'):
-        try:
-            status = Path(f'/proc/{process.pid}/status').read_text()
-        except FileNotFoundError:
-            return 0  # The child exited between polling and reading its status.
-        for line in status.splitlines():
-            if line.startswith('VmHWM:'):
-                return int(line.split()[1]) * 1024
-        if process.poll() is not None:
-            return 0
-        raise RuntimeError('Child memory usage is unavailable in /proc')
-    result = subprocess.run(['ps', '-o', 'rss=', '-p', str(process.pid)],
-                            capture_output=True, text=True, timeout=1)
-    if result.returncode == 0 and result.stdout.strip():
-        return int(result.stdout.strip()) * 1024
-    if process.poll() is not None:
-        return 0
-    raise RuntimeError('Unable to measure child resident memory with ps')
+def cli_environment(directory):
+    environment = {k: v for k, v in os.environ.items() if not k.startswith('VAPI_')}
+    environment.update(FERN_CLI_CREDENTIAL_STORE='file', LC_ALL='C',
+                       XDG_CONFIG_HOME=directory, APPDATA=directory)
+    return environment
+
+
+def warm_up():
+    with tempfile.TemporaryDirectory(prefix='vapi-performance-warmup-') as directory:
+        subprocess.run([str(BINARY), '--version'], cwd=directory,
+                       env=cli_environment(directory), stdin=subprocess.DEVNULL,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                       check=True, timeout=2)
+    print('Untimed warmup: --version', flush=True)
 
 
 def check_command(arguments):
     with tempfile.TemporaryDirectory(prefix='vapi-performance-') as directory:
-        environment = {k: v for k, v in os.environ.items() if not k.startswith('VAPI_')}
-        environment.update(FERN_CLI_CREDENTIAL_STORE='file',
-                           XDG_CONFIG_HOME=directory, APPDATA=directory)
-        with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
-            started = time.monotonic()
-            process = subprocess.Popen([str(BINARY), *arguments], cwd=directory,
-                                       env=environment, stdin=subprocess.DEVNULL,
-                                       stdout=stdout, stderr=stderr)
-            peak_rss = 0
+        # BSD time reports bytes; GNU time's %M reports KiB. Both obtain the
+        # child's peak RSS from the OS after exit, without active sampling.
+        flags = ['-l'] if sys.platform == 'darwin' else ['-f', 'VAPI_MAX_RSS_KIB=%M']
+        with tempfile.TemporaryFile() as stdout:
+            started = time.perf_counter()
+            process = subprocess.Popen(['/usr/bin/time', *flags, str(BINARY), *arguments],
+                                       cwd=directory, env=cli_environment(directory),
+                                       stdin=subprocess.DEVNULL, stdout=stdout,
+                                       stderr=subprocess.PIPE, start_new_session=True)
             try:
-                while process.poll() is None:
-                    peak_rss = max(peak_rss, resident_bytes(process))
-                    elapsed = time.monotonic() - started
-                    if elapsed > MAX_SECONDS:
-                        raise AssertionError(f'exceeded {MAX_SECONDS}s runtime budget')
-                    if peak_rss > MAX_RSS_BYTES:
-                        raise AssertionError('exceeded 256 MiB resident memory budget')
-                    if os.fstat(stdout.fileno()).st_size > MAX_OUTPUT_BYTES:
-                        raise AssertionError('exceeded 4 MiB output budget')
-                    time.sleep(0.02)
-            finally:
-                if process.poll() is None:
-                    process.kill()
-                process.wait(timeout=3)
-            elapsed = time.monotonic() - started
-            size = os.fstat(stdout.fileno()).st_size
-            stderr.seek(0)
-            assert process.returncode == 0, stderr.read(4096).decode(errors='replace')
+                remaining = max(0, MAX_SECONDS - (time.perf_counter() - started))
+                _, stderr = process.communicate(timeout=remaining)
+            except subprocess.TimeoutExpired:
+                # Kill both time and the CLI, including any descendants.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.communicate(timeout=3)
+                raise AssertionError(f'exceeded {MAX_SECONDS}s runtime budget') from None
+            elapsed = time.perf_counter() - started
+            error_text = stderr.decode(errors='replace')
+            assert process.returncode == 0, error_text
             assert elapsed <= MAX_SECONDS, f'exceeded {MAX_SECONDS}s runtime budget'
-            assert size <= MAX_OUTPUT_BYTES, 'exceeded 4 MiB output budget'
+            pattern = r'(\d+)\s+maximum resident set size' if sys.platform == 'darwin' else r'VAPI_MAX_RSS_KIB=(\d+)'
+            usage = re.search(pattern, error_text)
+            assert usage, f'Peak resident memory missing from /usr/bin/time output: {error_text}'
+            peak_rss = int(usage.group(1)) * (1 if sys.platform == 'darwin' else 1024)
+            assert peak_rss <= MAX_RSS_BYTES, 'exceeded 128 MiB peak resident memory budget'
+            size = os.fstat(stdout.fileno()).st_size
+            assert size <= MAX_OUTPUT_BYTES, 'exceeded 2 MiB output budget'
             stdout.seek(0)
             json.load(stdout)
-            print(f'{" ".join(arguments)}: {elapsed:.2f}s, '
-                  f'{peak_rss / 1024 / 1024:.1f} MiB RSS, {size:,} bytes', flush=True)
+            return elapsed, peak_rss, size
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--runs', type=int, default=5, help='Measured runs per command (default: 5)')
+    args = parser.parse_args()
+    if args.runs < 1:
+        parser.error('--runs must be positive')
     if sys.platform != 'darwin' and not sys.platform.startswith('linux'):
-        raise SystemExit('Performance checks require Linux or macOS memory accounting')
+        parser.error('Performance checks require Linux or macOS /usr/bin/time')
+    warm_up()
     for command in COMMANDS:
         try:
-            check_command(command)
+            samples = [check_command(command) for _ in range(args.runs)]
         except (AssertionError, RuntimeError) as error:
             raise SystemExit(f'{" ".join(command)}: {error}') from error
+        durations = sorted(sample[0] for sample in samples)
+        p95 = durations[math.ceil(0.95 * len(durations)) - 1]
+        print(f'{" ".join(command)} ({args.runs} runs): '
+              f'p50 {statistics.median(durations) * 1000:.1f} ms, '
+              f'p95 {p95 * 1000:.1f} ms, max {max(durations) * 1000:.1f} ms; '
+              f'peak {max(sample[1] for sample in samples) / 1024 / 1024:.1f} MiB RSS; '
+              f'max {max(sample[2] for sample in samples):,} bytes', flush=True)
