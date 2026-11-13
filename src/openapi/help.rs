@@ -6,7 +6,7 @@
 //! See [ADR-0006](../../../docs/adr/0006-schema-flag-agent-contract.md) for
 //! the design contract this renderer implements.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use serde_json::{json, Map, Value};
 
@@ -420,14 +420,13 @@ fn build_operation_schema(
     if let Some(availability) = method.availability {
         output["availability"] = json!(availability.as_str());
     }
-    // Per ADR-0006: surface the canonical 2xx response as `output`, with
-    // every `$ref` followed and inlined so the agent has a
-    // self-contained JSON Schema in one round-trip. Cycles break by
-    // emitting a `$ref` at the second encounter of the same name in a
-    // chain.
+    // Render the response root inline, but retain nested named references.
+    // Materialize their reachable definitions once below rather than expanding
+    // a shared schema graph into an exponentially larger tree.
+    let mut referenced_schemas = BTreeSet::new();
     if let Some(response_ref) = method.response.as_ref().and_then(|r| r.schema_ref.as_deref()) {
-        if let Some(rendered) = render_ref(schemas, response_ref, &mut HashSet::new()) {
-            output["output"] = rendered;
+        if let Some(schema) = schemas.get(response_ref) {
+            output["output"] = render_json_schema(schemas, schema, &mut referenced_schemas);
         }
     }
 
@@ -468,7 +467,6 @@ fn build_operation_schema(
                 .get_mut("properties")
                 .and_then(|v| v.as_object_mut())
                 .expect("input.properties must be object");
-            let mut render_visited: HashSet<String> = HashSet::new();
             // Track which body fields survived the collision check.
             // body_required entries are only propagated for these — a
             // body field that lost the collision must NOT elevate its
@@ -482,7 +480,7 @@ fn build_operation_schema(
                 if props_map.contains_key(name) {
                     continue;
                 }
-                let mut rendered = render_property(schemas, prop, &mut render_visited);
+                let mut rendered = render_property(schemas, prop, &mut referenced_schemas);
                 if let Value::Object(map) = &mut rendered {
                     map.insert("location".into(), json!("body"));
                 }
@@ -509,6 +507,22 @@ fn build_operation_schema(
             sorted.sort();
             *req_array = sorted.into_iter().map(Value::String).collect();
         }
+    }
+    // Each referenced definition is rendered at most once. References inside
+    // definitions enqueue more work; self/mutual references simply point back
+    // into this same table. Sorted traversal keeps the output deterministic.
+    let mut definitions = Map::new();
+    while let Some(name) = referenced_schemas.pop_first() {
+        if definitions.contains_key(&name) {
+            continue;
+        }
+        if let Some(schema) = schemas.get(&name) {
+            let rendered = render_json_schema(schemas, schema, &mut referenced_schemas);
+            definitions.insert(name, rendered);
+        }
+    }
+    if !definitions.is_empty() {
+        output["$defs"] = Value::Object(definitions);
     }
     output
 }
@@ -603,33 +617,34 @@ fn merge_schema_properties(
     }
 }
 
-/// Inline the schema named `ref_name` from `schemas`, following nested
-/// `$ref`s recursively. `visited` is a stack of names currently being
-/// expanded — re-encountering a name in `visited` emits a `{"$ref": name}`
-/// node to break the cycle. Returns `None` only when the top-level ref
-/// itself is unresolved (so the caller can omit the field).
+/// Queue a named schema for the operation's shared definition table. Returning
+/// a reference instead of recursively inlining it bounds work to the reachable
+/// schema graph, including highly connected graphs that contain no cycles.
+/// Returns `None` for an unresolved name, preserving the inline fallback.
 fn render_ref(
     schemas: &HashMap<String, JsonSchema>,
     ref_name: &str,
-    visited: &mut HashSet<String>,
+    referenced_schemas: &mut BTreeSet<String>,
 ) -> Option<Value> {
-    if visited.contains(ref_name) {
-        return Some(json!({ "$ref": ref_name }));
+    if !schemas.contains_key(ref_name) {
+        return None;
     }
-    let schema = schemas.get(ref_name)?;
-    visited.insert(ref_name.to_string());
-    let rendered = render_json_schema(schemas, schema, visited);
-    visited.remove(ref_name);
-    Some(rendered)
+    referenced_schemas.insert(ref_name.to_string());
+    // Escape the JSON Pointer token before URI-fragment encoding it.
+    let token = ref_name.replace('~', "~0").replace('/', "~1");
+    const FRAGMENT_TOKEN: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+        .remove(b'~').remove(b'-').remove(b'.').remove(b'_');
+    let token = percent_encoding::utf8_percent_encode(&token, FRAGMENT_TOKEN);
+    Some(json!({ "$ref": format!("#/$defs/{token}") }))
 }
 
 fn render_json_schema(
     schemas: &HashMap<String, JsonSchema>,
     schema: &JsonSchema,
-    visited: &mut HashSet<String>,
+    referenced_schemas: &mut BTreeSet<String>,
 ) -> Value {
     if let Some(ref_name) = schema.schema_ref.as_deref() {
-        if let Some(rendered) = render_ref(schemas, ref_name, visited) {
+        if let Some(rendered) = render_ref(schemas, ref_name, referenced_schemas) {
             return rendered;
         }
     }
@@ -646,7 +661,7 @@ fn render_json_schema(
     if !schema.properties.is_empty() {
         let mut props: BTreeMap<String, Value> = BTreeMap::new();
         for (name, prop) in &schema.properties {
-            props.insert(name.clone(), render_property(schemas, prop, visited));
+            props.insert(name.clone(), render_property(schemas, prop, referenced_schemas));
         }
         out.insert("properties".into(), json!(props));
     }
@@ -656,28 +671,28 @@ fn render_json_schema(
         out.insert("required".into(), json!(req));
     }
     if let Some(items) = &schema.items {
-        out.insert("items".into(), render_property(schemas, items, visited));
+        out.insert("items".into(), render_property(schemas, items, referenced_schemas));
     }
     if !schema.one_of.is_empty() {
         out.insert(
             "oneOf".into(),
-            json!(schema.one_of.iter().map(|p| render_property(schemas, p, visited)).collect::<Vec<_>>()),
+            json!(schema.one_of.iter().map(|p| render_property(schemas, p, referenced_schemas)).collect::<Vec<_>>()),
         );
     }
     if !schema.any_of.is_empty() {
         out.insert(
             "anyOf".into(),
-            json!(schema.any_of.iter().map(|p| render_property(schemas, p, visited)).collect::<Vec<_>>()),
+            json!(schema.any_of.iter().map(|p| render_property(schemas, p, referenced_schemas)).collect::<Vec<_>>()),
         );
     }
     if !schema.all_of.is_empty() {
         out.insert(
             "allOf".into(),
-            json!(schema.all_of.iter().map(|p| render_property(schemas, p, visited)).collect::<Vec<_>>()),
+            json!(schema.all_of.iter().map(|p| render_property(schemas, p, referenced_schemas)).collect::<Vec<_>>()),
         );
     }
     if let Some(ap) = &schema.additional_properties {
-        out.insert("additionalProperties".into(), render_property(schemas, ap, visited));
+        out.insert("additionalProperties".into(), render_property(schemas, ap, referenced_schemas));
     }
     Value::Object(out)
 }
@@ -685,10 +700,10 @@ fn render_json_schema(
 fn render_property(
     schemas: &HashMap<String, JsonSchema>,
     prop: &JsonSchemaProperty,
-    visited: &mut HashSet<String>,
+    referenced_schemas: &mut BTreeSet<String>,
 ) -> Value {
     if let Some(ref_name) = prop.schema_ref.as_deref() {
-        if let Some(rendered) = render_ref(schemas, ref_name, visited) {
+        if let Some(rendered) = render_ref(schemas, ref_name, referenced_schemas) {
             return rendered;
         }
     }
@@ -714,7 +729,7 @@ fn render_property(
         out.insert("enum".into(), json!(enums));
     }
     if let Some(items) = &prop.items {
-        out.insert("items".into(), render_property(schemas, items, visited));
+        out.insert("items".into(), render_property(schemas, items, referenced_schemas));
     }
     // Nested object properties carry their own `required` list (lowered
     // by the parser into JsonSchemaProperty.required). Emit it so an
@@ -729,7 +744,7 @@ fn render_property(
     if !prop.properties.is_empty() {
         let mut props: BTreeMap<String, Value> = BTreeMap::new();
         for (name, inner) in &prop.properties {
-            props.insert(name.clone(), render_property(schemas, inner, visited));
+            props.insert(name.clone(), render_property(schemas, inner, referenced_schemas));
         }
         out.insert("properties".into(), json!(props));
     }
@@ -768,23 +783,23 @@ fn render_property(
     if !prop.one_of.is_empty() {
         out.insert(
             "oneOf".into(),
-            json!(prop.one_of.iter().map(|p| render_property(schemas, p, visited)).collect::<Vec<_>>()),
+            json!(prop.one_of.iter().map(|p| render_property(schemas, p, referenced_schemas)).collect::<Vec<_>>()),
         );
     }
     if !prop.any_of.is_empty() {
         out.insert(
             "anyOf".into(),
-            json!(prop.any_of.iter().map(|p| render_property(schemas, p, visited)).collect::<Vec<_>>()),
+            json!(prop.any_of.iter().map(|p| render_property(schemas, p, referenced_schemas)).collect::<Vec<_>>()),
         );
     }
     if !prop.all_of.is_empty() {
         out.insert(
             "allOf".into(),
-            json!(prop.all_of.iter().map(|p| render_property(schemas, p, visited)).collect::<Vec<_>>()),
+            json!(prop.all_of.iter().map(|p| render_property(schemas, p, referenced_schemas)).collect::<Vec<_>>()),
         );
     }
     if let Some(ap) = &prop.additional_properties {
-        out.insert("additionalProperties".into(), render_property(schemas, ap, visited));
+        out.insert("additionalProperties".into(), render_property(schemas, ap, referenced_schemas));
     }
     Value::Object(out)
 }
@@ -1136,10 +1151,8 @@ mod tests {
 
     #[test]
     fn test_output_cycle_detection_emits_ref_pointer_on_self_reference() {
-        // Per ADR-0006: cycles in the response schema (e.g. User.manager:
-        // User) must not produce infinite expansion. When the renderer
-        // re-encounters a ref currently in its expansion stack, it emits
-        // {"$ref": name} to break the loop.
+        // A self-reference must point to the shared definition table rather
+        // than recursively expanding or leaving an unresolvable type name.
         use crate::openapi::discovery::{JsonSchema, JsonSchemaProperty, SchemaRef};
         let mut user_props = HashMap::new();
         user_props.insert(
@@ -1181,9 +1194,108 @@ mod tests {
         // The recursive `manager` slot must break with a $ref pointer,
         // not infinite-loop.
         assert_eq!(
-            output["properties"]["manager"]["$ref"], "User",
+            output["properties"]["manager"]["$ref"], "#/$defs/User",
             "self-referential schema should emit $ref to break the cycle: {output}",
         );
+        assert_local_refs_resolve(&schema, &schema);
+    }
+
+    #[test]
+    fn test_shared_response_graph_is_linear_and_refs_resolve() {
+        use crate::openapi::discovery::SchemaRef;
+        let mut schemas = HashMap::from([(
+            "Leaf".to_string(),
+            JsonSchema { schema_type: Some("string".to_string()), ..Default::default() },
+        )]);
+        let mut previous = "Leaf".to_string();
+        for depth in 0..12 {
+            let name = format!("Level{depth}");
+            let prop = JsonSchemaProperty { schema_ref: Some(previous), ..Default::default() };
+            schemas.insert(name.clone(), JsonSchema {
+                schema_type: Some("object".to_string()),
+                properties: HashMap::from([("left".to_string(), prop.clone()), ("right".to_string(), prop)]),
+                required: vec!["left".to_string()],
+                ..Default::default()
+            });
+            previous = name;
+        }
+        let method = RestMethod {
+            response: Some(SchemaRef { schema_ref: Some(previous), ..Default::default() }),
+            ..Default::default()
+        };
+        let value = build_operation_schema(&["items"], "list", &method, &schemas);
+        // There are exponentially many paths but only twelve reachable named
+        // definitions below the response root. Do not duplicate those paths.
+        assert_eq!(value["$defs"].as_object().unwrap().len(), 12);
+        assert!(serde_json::to_vec(&value).unwrap().len() < 8_000);
+        assert_eq!(value["output"]["required"], json!(["left"]));
+        assert_eq!(value["output"]["properties"]["left"]["$ref"], "#/$defs/Level10");
+        assert_local_refs_resolve(&value, &value);
+    }
+
+    #[test]
+    fn test_mutually_recursive_request_and_response_share_definitions() {
+        use crate::openapi::discovery::SchemaRef;
+        let mut schemas = HashMap::new();
+        for (name, target) in [("Request", "A"), ("A", "B"), ("B", "A")] {
+            schemas.insert(name.to_string(), JsonSchema {
+                schema_type: Some("object".to_string()),
+                properties: HashMap::from([("child".to_string(), JsonSchemaProperty {
+                    schema_ref: Some(target.to_string()), ..Default::default()
+                })]),
+                required: vec!["child".to_string()],
+                ..Default::default()
+            });
+        }
+        let method = RestMethod {
+            request: Some(SchemaRef { schema_ref: Some("Request".to_string()), ..Default::default() }),
+            response: Some(SchemaRef { schema_ref: Some("A".to_string()), ..Default::default() }),
+            ..Default::default()
+        };
+        let value = build_operation_schema(&["items"], "create", &method, &schemas);
+        assert_eq!(value["$defs"].as_object().unwrap().len(), 2);
+        assert_eq!(value["input"]["properties"]["child"]["$ref"], "#/$defs/A");
+        assert_eq!(value["input"]["properties"]["child"]["location"], "body");
+        assert_eq!(value["input"]["required"], json!(["child"]));
+        assert_local_refs_resolve(&value, &value);
+    }
+
+    #[test]
+    fn test_schema_reference_names_are_pointer_and_fragment_escaped() {
+        use crate::openapi::discovery::SchemaRef;
+        let name = "a/b~c %日本#";
+        let schemas = HashMap::from([
+            (name.to_string(), JsonSchema { schema_type: Some("string".to_string()), ..Default::default() }),
+            ("Response".to_string(), JsonSchema {
+                schema_type: Some("array".to_string()),
+                items: Some(Box::new(JsonSchemaProperty { schema_ref: Some(name.to_string()), ..Default::default() })),
+                ..Default::default()
+            }),
+        ]);
+        let method = RestMethod {
+            response: Some(SchemaRef { schema_ref: Some("Response".to_string()), ..Default::default() }),
+            ..Default::default()
+        };
+        let value = build_operation_schema(&["items"], "list", &method, &schemas);
+        assert_eq!(value["output"]["items"]["$ref"], "#/$defs/a~1b~0c%20%25%E6%97%A5%E6%9C%AC%23");
+        assert_local_refs_resolve(&value, &value);
+    }
+
+    fn assert_local_refs_resolve(root: &Value, node: &Value) {
+        match node {
+            Value::Object(map) => {
+                if let Some(Value::String(reference)) = map.get("$ref") {
+                    let fragment = reference.strip_prefix('#').expect("reference must be local");
+                    let pointer = percent_encoding::percent_decode_str(fragment).decode_utf8().unwrap();
+                    assert!(root.pointer(&pointer).is_some(), "unresolved reference: {reference}");
+                }
+                for value in map.values() { assert_local_refs_resolve(root, value); }
+            }
+            Value::Array(values) => {
+                for value in values { assert_local_refs_resolve(root, value); }
+            }
+            _ => {}
+        }
     }
 
     #[test]
