@@ -4,4 +4,5 @@ cli/** linguist-generated=true
 tests/wire_test.rs linguist-generated=true
 wiremock/** linguist-generated=true
 reference.md linguist-generated=true
-.fern/replay.lock linguist-generated=true
+# Replay embeds unified diff context whose whitespace must be preserved.
+.fern/replay.lock linguist-generated=true -whitespace

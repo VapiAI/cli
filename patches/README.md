@@ -1,8 +1,10 @@
 # Fern output patches
 
 These files retain reviewable copies of the CLI runtime fixes. Fern Replay's
-native `.fern/replay.lock` tracks the equivalent customization commit above a
-pure `[fern-generated]` baseline and carries it into centrally generated PRs.
+native `.fern/replay.lock` tracks the schema customization above a pure `[fern-generated]` baseline.
+`src/http.rs` is protected by `.fernignore` to retain request attribution because
+Replay rejects the generated file's embedded public test certificate. Review
+that HTTP runtime against fresh output when upgrading the pinned generator.
 Generation is configured in `VapiAI/docs`, alongside the server SDKs; no local
 patch-application or API-vendoring script is required.
 
@@ -62,7 +64,8 @@ The token is omitted if it does not meet the API's lowercase ASCII token and
 `on`, case insensitive) adds the bare `ci` flag.
 
 Fern still composes the User-Agent and optional downstream suffix. No
-`X-Vapi-Source` header is added. This customization derives the header's version and invocation metadata at runtime.
+`X-Vapi-Source` header is added. This customization derives the header's version
+and invocation metadata at runtime.
 Replace it with generator configuration when that supports these values.
 
 `scripts/smoke-test.py` checks the actual GET, POST, and DELETE request headers,

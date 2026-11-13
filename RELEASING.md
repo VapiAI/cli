@@ -66,16 +66,16 @@ at release time. They are not separate checked-in npm package files. npm Linux
 packages use musl; GitHub Release artifacts include both GNU and musl builds.
 
 Generation is configured in the `cli-sdk` group of
-[`VapiAI/docs`](https://github.com/VapiAI/docs/blob/main/fern/apis/api/generators.yml),
+[`VapiAI/docs`](https://github.com/VapiAI/docs/blob/main/fern/apis/cli/generators.yml),
 alongside the server SDKs. Run its **Release CLI** workflow with a version to
 open a generated pull request here. It refreshes runtime and publishing files;
-Fern Replay preserves the runtime customizations and `.fernignore` preserves
+Fern Replay preserves schema customizations and `.fernignore` retains request attribution and `.fernignore` preserves
 the repository-owned docs and checks. No CLI-specific API snapshots are needed.
 
 For a local publishing preview, run from the docs checkout:
 
 ```bash
-fern generate --api api --group cli-sdk --version 1.0.0-beta.1 --preview
+fern generate --api cli --group cli-sdk --version 1.0.0-beta.1 --preview
 ```
 
 Keep `verify.yml` for repository checks and keep Fern's generated publishing

@@ -128,5 +128,5 @@ The user's decision on retaining it is still pending.
 
 The generated provider-resource wire tests initially failed because the spec
 marked reserved `Content-Type` as a required standalone header while Fern's IR
-removed it. `VapiAI/docs/fern/apis/api/cli-openapi-overrides.yml` makes it optional for
+removed it. `VapiAI/docs/fern/apis/cli/openapi-overrides.yml` makes it optional for
 the CLI without editing other SDK inputs or generated Rust.

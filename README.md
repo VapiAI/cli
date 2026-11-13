@@ -140,7 +140,7 @@ for coding agents. See [the command reference](reference.md),
 
 The CLI is generated from Vapi's shared API definitions with
 [Fern](https://buildwithfern.com/learn/cli-generator/get-started/quickstart).
-The `cli-sdk` group in [VapiAI/docs](https://github.com/VapiAI/docs/blob/main/fern/apis/api/generators.yml)
+The `cli-sdk` group in [VapiAI/docs](https://github.com/VapiAI/docs/blob/main/fern/apis/cli/generators.yml)
 uses the same API definition and naming overrides as the server SDKs, then opens
 generated pull requests here. CLI-specific settings retain OAuth with PKCE.
 
