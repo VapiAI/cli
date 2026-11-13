@@ -1,143 +1,32 @@
 # DO NOT EDIT MANUALLY - Managed by Fern Replay
 version: "1.0"
 generations:
-  - commit_sha: e26e70fe847617edd81ea0d86d48f7a4800507c0
-    tree_hash: bedbd134ece8b115e258405839bec20fef87d74c
-    timestamp: 2026-11-13T20:19:27.832Z
+  - commit_sha: 3cb7c739e3cb297e2dc598b8e272908927d4c133
+    tree_hash: d1ea5962bd0b5f5b6532838882b3a9a2ccf56507
+    timestamp: 2026-11-13T20:27:59.076Z
     cli_version: 5.169.0
     generator_versions:
       fern-cli-generator: 0.59.1
-current_generation: e26e70fe847617edd81ea0d86d48f7a4800507c0
+current_generation: 3cb7c739e3cb297e2dc598b8e272908927d4c133
 patches:
-  - id: patch-743b8fe7
-    content_hash: sha256:965d351efee72e1fbfeeccf8fc6001d5e329d135416f437027c7b88a81278119
-    original_commit: 743b8fe7510de6396eab7bd7f661be2c3ca7b2a8
-    original_message: PAL-1311 Preserve schema performance and request attribution with Fern Replay
+  - id: patch-24b44f4e
+    content_hash: sha256:b700d5b10a18777cc33b06ce6e98bc82ac3ecad152f4c3e3182ba9942718e732
+    original_commit: 24b44f4e032a19e8ca28d8a78d62fdd5d949f3c4
+    original_message: PAL-1311 Retain bounded schema discovery with Fern Replay
     original_author: Chris Garber <chris.garber@vapi.ai>
-    base_generation: e26e70fe847617edd81ea0d86d48f7a4800507c0
+    base_generation: 3cb7c739e3cb297e2dc598b8e272908927d4c133
     files:
-      - src/http.rs
-      - src/openapi/binding.rs
       - src/openapi/help.rs
     patch_content: |+
-      From 743b8fe7510de6396eab7bd7f661be2c3ca7b2a8 Mon Sep 17 00:00:00 2001
+      From 24b44f4e032a19e8ca28d8a78d62fdd5d949f3c4 Mon Sep 17 00:00:00 2001
       From: Chris Garber <chris.garber@vapi.ai>
-      Date: Fri, 13 Nov 2026 15:18:56 -0500
-      Subject: [PATCH] PAL-1311 Preserve schema performance and request attribution
-       with Fern Replay
+      Date: Fri, 13 Nov 2026 15:27:13 -0500
+      Subject: [PATCH] PAL-1311 Retain bounded schema discovery with Fern Replay
 
       ---
-       src/http.rs            |  40 +++++++-
-       src/openapi/binding.rs |   6 +-
-       src/openapi/help.rs    | 202 ++++++++++++++++++++++++++++++++---------
-       3 files changed, 198 insertions(+), 50 deletions(-)
+       src/openapi/help.rs | 202 ++++++++++++++++++++++++++++++++++----------
+       1 file changed, 157 insertions(+), 45 deletions(-)
 
-      diff --git a/src/http.rs b/src/http.rs
-      index 049796a..26dcc68 100644
-      --- a/src/http.rs
-      +++ b/src/http.rs
-      @@ -74,6 +74,8 @@ pub struct HttpConfig {
-           /// `<NAME>_USER_AGENT_SUFFIX` env var when set. `None` means fall back
-           /// to the env var (or no suffix).
-           user_agent_suffix_override: Option<Arc<str>>,
-      +    /// Parsed command names for Vapi request attribution; excludes argument values.
-      +    vapi_client_command: Option<Arc<str>>,
-       }
-       
-       /// Transport-neutral view of the resolved HTTP/TLS configuration.
-      @@ -139,6 +141,7 @@ impl HttpConfig {
-                   extra_root_certs: Vec::new(),
-                   extra_root_certs_pem: Vec::new(),
-                   user_agent_suffix_override: None,
-      +            vapi_client_command: None,
-               })
-           }
-       
-      @@ -183,6 +186,35 @@ impl HttpConfig {
-               self
-           }
-       
-      +    /// Capture only clap's resolved subcommand names, never parameter values.
-      +    pub(crate) fn with_vapi_client_command(mut self, matches: &clap::ArgMatches) -> Self {
-      +        let mut names = Vec::new();
-      +        let mut current = matches;
-      +        while let Some((name, subcommand)) = current.subcommand() {
-      +            names.push(name);
-      +            current = subcommand;
-      +        }
-      +        let command = names.join("_");
-      +        // Match the API's client-attribution token contract. Omit an unknown
-      +        // spelling rather than truncating it into a different command name.
-      +        self.vapi_client_command = (!command.is_empty()
-      +            && command.len() <= 64
-      +            && command.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-'))
-      +            .then(|| Arc::from(command));
-      +        self
-      +    }
-      +
-      +    fn vapi_client_header(&self) -> String {
-      +        let mut value = format!("cli/{}", env!("CARGO_PKG_VERSION"));
-      +        if let Some(command) = &self.vapi_client_command {
-      +            value.push_str(&format!("; command={command}"));
-      +        }
-      +        if first_env_truthy(["CI"]).is_some() {
-      +            value.push_str("; ci");
-      +        }
-      +        value
-      +    }
-      +
-           /// CLI binary name (e.g. `"bigcommerce"`).
-           pub fn name(&self) -> &str {
-               &self.name
-      @@ -343,11 +375,15 @@ impl HttpConfig {
-       
-               let mut builder = reqwest::Client::builder();
-               let user_agent = self.user_agent();
-      +        let mut headers = HeaderMap::new();
-               if let Ok(header_value) = HeaderValue::from_str(&user_agent) {
-      -            let mut headers = HeaderMap::new();
-                   headers.insert(USER_AGENT, header_value);
-      -            builder = builder.default_headers(headers);
-               }
-      +        if self.name.as_ref() == "vapi" {
-      +            headers.insert("x-vapi-client", HeaderValue::from_str(&self.vapi_client_header())
-      +                .expect("Vapi attribution contains only validated ASCII tokens"));
-      +        }
-      +        builder = builder.default_headers(headers);
-       
-               // --- Compile-time trust roots (from CliApp::extra_root_cert) ---
-               for cert in &self.extra_root_certs {
-      diff --git a/src/openapi/binding.rs b/src/openapi/binding.rs
-      index 5ea8dc3..4dc8396 100644
-      --- a/src/openapi/binding.rs
-      +++ b/src/openapi/binding.rs
-      @@ -844,7 +844,7 @@ impl Binding for OpenApiBinding {
-                   // a clone so the client this request builds carries it.
-                   let http_config = prepared.http_config.clone().with_user_agent_suffix_override(
-                       crate::cli_args::resolve_user_agent_suffix_override(root_matches),
-      -            );
-      +            ).with_vapi_client_command(root_matches);
-       
-                   // Read --output flag for binary response file writing. The literal
-                   // `-` is a stdout sentinel (curl/wget convention) and bypasses
-      @@ -967,7 +967,7 @@ impl Binding for OpenApiBinding {
-               );
-               let http_config = entry.http_config.with_user_agent_suffix_override(
-                   crate::cli_args::resolve_user_agent_suffix_override(matches),
-      -        );
-      +        ).with_vapi_client_command(matches);
-               let ctx = super::AppContext::new(
-                   entry.doc,
-                   entry.auth_provider,
-      @@ -1005,7 +1005,7 @@ impl Binding for OpenApiBinding {
-               let entry = super::app::BindingEntry {
-                   http_config: entry.http_config.with_user_agent_suffix_override(
-                       crate::cli_args::resolve_user_agent_suffix_override(matches),
-      -            ),
-      +            ).with_vapi_client_command(matches),
-                   ..entry
-               };
-               match existing {
       diff --git a/src/openapi/help.rs b/src/openapi/help.rs
       index bb868bc..e1bf5e7 100644
       --- a/src/openapi/help.rs
@@ -488,6 +377,58 @@ patches:
            }
        
            #[test]
+      -- 
+      2.54.0 (Apple Git-157)
+
+  - id: patch-74f67801
+    content_hash: sha256:7113f1aaa81b1112ad13080898b94d6e2c2344d7e4bcdf9cf5eb0d679354426b
+    original_commit: 74f67801908774bb043fb4cc92f3f5a0ac7aa638
+    original_message: PAL-1311 Retain parsed command attribution with Fern Replay
+    original_author: Chris Garber <chris.garber@vapi.ai>
+    base_generation: 3cb7c739e3cb297e2dc598b8e272908927d4c133
+    files:
+      - src/openapi/binding.rs
+    patch_content: |+
+      From 74f67801908774bb043fb4cc92f3f5a0ac7aa638 Mon Sep 17 00:00:00 2001
+      From: Chris Garber <chris.garber@vapi.ai>
+      Date: Fri, 13 Nov 2026 15:27:58 -0500
+      Subject: [PATCH] PAL-1311 Retain parsed command attribution with Fern Replay
+
+      ---
+       src/openapi/binding.rs | 6 +++---
+       1 file changed, 3 insertions(+), 3 deletions(-)
+
+      diff --git a/src/openapi/binding.rs b/src/openapi/binding.rs
+      index 5ea8dc3..4dc8396 100644
+      --- a/src/openapi/binding.rs
+      +++ b/src/openapi/binding.rs
+      @@ -844,7 +844,7 @@ impl Binding for OpenApiBinding {
+                   // a clone so the client this request builds carries it.
+                   let http_config = prepared.http_config.clone().with_user_agent_suffix_override(
+                       crate::cli_args::resolve_user_agent_suffix_override(root_matches),
+      -            );
+      +            ).with_vapi_client_command(root_matches);
+       
+                   // Read --output flag for binary response file writing. The literal
+                   // `-` is a stdout sentinel (curl/wget convention) and bypasses
+      @@ -967,7 +967,7 @@ impl Binding for OpenApiBinding {
+               );
+               let http_config = entry.http_config.with_user_agent_suffix_override(
+                   crate::cli_args::resolve_user_agent_suffix_override(matches),
+      -        );
+      +        ).with_vapi_client_command(matches);
+               let ctx = super::AppContext::new(
+                   entry.doc,
+                   entry.auth_provider,
+      @@ -1005,7 +1005,7 @@ impl Binding for OpenApiBinding {
+               let entry = super::app::BindingEntry {
+                   http_config: entry.http_config.with_user_agent_suffix_override(
+                       crate::cli_args::resolve_user_agent_suffix_override(matches),
+      -            ),
+      +            ).with_vapi_client_command(matches),
+                   ..entry
+               };
+               match existing {
       -- 
       2.54.0 (Apple Git-157)
 

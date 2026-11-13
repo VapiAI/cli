@@ -43,8 +43,8 @@ under `cli-sdk`. It consumes the shared OpenAPI definition, naming overrides,
 parameter-description overlay and import settings directly. This repository
 does not vendor a second API definition or generator configuration.
 
-The CLI's separate Fern API workspace select public-client OAuth with PKCE,
-refresh, and the staging default server. They do not change the other SDKs'
+The CLI's separate Fern API workspace selects public-client OAuth with PKCE,
+refresh, and the staging default server. It does not change the other SDKs'
 authentication. Its `openapi-overrides.yml` also makes the provider-resource
 POST's reserved `Content-Type` header optional; explicit `--content-type` remains
 available and JSON requests set their content type through the HTTP stack.
@@ -77,8 +77,8 @@ runtime, wire tests and publishing workflows remain managed by Fern.
 
 Fern Replay's native `.fern/replay.lock` records the schema-renderer changes
 on top of a pure `[fern-generated]` baseline. Central pull-request generation
-reapplies these changes rather than requiring
-a separate CLI regeneration script. Commit future runtime customizations here;
+reapplies the schema and command-attribution binding changes without a separate
+CLI regeneration script. Commit future runtime customizations here;
 review Replay's report and resolve conflicts in the generated PR. Do not disable
 Replay for this generator while the schema fix is needed.
 
