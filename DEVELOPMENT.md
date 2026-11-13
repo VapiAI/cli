@@ -75,7 +75,7 @@ promoted together after live acceptance; see [RELEASING.md](RELEASING.md).
 performance checks, toolchain and patch references from generation. Generated
 runtime, wire tests and publishing workflows remain managed by Fern.
 
-Fern Replay's native `.fern/replay.lock` records the schema-renderer changes
+Fern Replay's native `.fern/replay.lock` records the schema-renderer and command-binding changes
 on top of a pure `[fern-generated]` baseline. Central pull-request generation
 reapplies the schema and command-attribution binding changes without a separate
 CLI regeneration script. Commit future runtime customizations here;

@@ -53,7 +53,7 @@ API-key login is not a release substitute. Track evidence on
 
 The publishing preview succeeded after Fern organization access and the Fern
 GitHub App installation for `VapiAI/cli` were approved. The checked-in output is
-unchanged from Fern CLI 5.202.0 / CLI generator 0.59.1:
+unchanged from the shared publishing preview (Fern CLI 5.169.0 / generator 0.59.1):
 
 | File | Behavior |
 | --- | --- |
@@ -69,8 +69,8 @@ Generation is configured in the `cli-sdk` group of
 [`VapiAI/docs`](https://github.com/VapiAI/docs/blob/main/fern/apis/cli/generators.yml),
 alongside the server SDKs. Run its **Release CLI** workflow with a version to
 open a generated pull request here. It refreshes runtime and publishing files;
-Fern Replay preserves schema customizations and `.fernignore` retains request attribution and `.fernignore` preserves
-the repository-owned docs and checks. No CLI-specific API snapshots are needed.
+Fern Replay preserves the schema and command-binding customizations.
+`.fernignore` retains request attribution and the repository-owned docs and checks. No CLI-specific API snapshots are needed.
 
 For a local publishing preview, run from the docs checkout:
 

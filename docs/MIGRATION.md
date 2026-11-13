@@ -12,7 +12,7 @@ webhook forwarding. `init` and `listen` remain removed; command naming should be
 
 - Go CLI at `4149790e4621407c903f73554130fb31a97d9334`, the latest main used for
   this migration, including the removal of MCP/skills setup.
-- Fern CLI generator 0.59.1, Fern CLI 5.202.0, package version 1.0.0-beta.1.
+- Fern CLI generator 0.59.1, shared Fern CLI pin 5.169.0, package version 1.0.0-beta.1.
 - Shared SDK API inputs and the `cli-sdk` generator group in `VapiAI/docs`.
 - The compiled candidate's `--help`, `--schema`, dry runs, generated tests, and
   local mock API requests. No production calls, purchases, or deletions were run.

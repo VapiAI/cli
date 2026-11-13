@@ -1,7 +1,7 @@
 # Fern output patches
 
 These files retain reviewable copies of the CLI runtime fixes. Fern Replay's
-native `.fern/replay.lock` tracks the schema customization above a pure `[fern-generated]` baseline.
+native `.fern/replay.lock` tracks the schema and command-binding customizations above a pure `[fern-generated]` baseline.
 `src/http.rs` is protected by `.fernignore` to retain request attribution because
 Replay rejects the generated file's embedded public test certificate. Review
 that HTTP runtime against fresh output when upgrading the pinned generator.
