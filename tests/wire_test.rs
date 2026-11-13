@@ -1141,38 +1141,38 @@ async fn wire_update_2() {
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_monorecordingdownload() {
-    run_case("callartifactcontroller_monorecordingdownload").await;
+async fn wire_download_mono_recording() {
+    run_case("download_mono_recording").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_stereorecordingdownload() {
-    run_case("callartifactcontroller_stereorecordingdownload").await;
+async fn wire_download_stereo_recording() {
+    run_case("download_stereo_recording").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_videorecordingdownload() {
-    run_case("callartifactcontroller_videorecordingdownload").await;
+async fn wire_download_video_recording() {
+    run_case("download_video_recording").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_customerrecordingdownload() {
-    run_case("callartifactcontroller_customerrecordingdownload").await;
+async fn wire_download_customer_recording() {
+    run_case("download_customer_recording").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_assistantrecordingdownload() {
-    run_case("callartifactcontroller_assistantrecordingdownload").await;
+async fn wire_download_assistant_recording() {
+    run_case("download_assistant_recording").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_pcapdownload() {
-    run_case("callartifactcontroller_pcapdownload").await;
+async fn wire_download_pcap() {
+    run_case("download_pcap").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_calllogsdownload() {
-    run_case("callartifactcontroller_calllogsdownload").await;
+async fn wire_download_call_logs() {
+    run_case("download_call_logs").await;
 }
 
 #[tokio::test]
@@ -1201,61 +1201,6 @@ async fn wire_createresponse() {
 }
 
 #[tokio::test]
-async fn wire_campaigncontroller_findall() {
-    run_case("campaigncontroller_findall").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_create() {
-    run_case("campaigncontroller_create").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_findallv2() {
-    run_case("campaigncontroller_findallv2").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_createv2() {
-    run_case("campaigncontroller_createv2").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_findonev2() {
-    run_case("campaigncontroller_findonev2").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_removev2() {
-    run_case("campaigncontroller_removev2").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_updatev2() {
-    run_case("campaigncontroller_updatev2").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_findone() {
-    run_case("campaigncontroller_findone").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_remove() {
-    run_case("campaigncontroller_remove").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_update() {
-    run_case("campaigncontroller_update").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_getcampaignv2contacts() {
-    run_case("campaigncontroller_getcampaignv2contacts").await;
-}
-
-#[tokio::test]
 async fn wire_list_4() {
     run_case("list_4").await;
 }
@@ -1263,6 +1208,31 @@ async fn wire_list_4() {
 #[tokio::test]
 async fn wire_create_4() {
     run_case("create_4").await;
+}
+
+#[tokio::test]
+async fn wire_list_v2() {
+    run_case("list_v2").await;
+}
+
+#[tokio::test]
+async fn wire_create_v2() {
+    run_case("create_v2").await;
+}
+
+#[tokio::test]
+async fn wire_get_v2() {
+    run_case("get_v2").await;
+}
+
+#[tokio::test]
+async fn wire_delete_v2() {
+    run_case("delete_v2").await;
+}
+
+#[tokio::test]
+async fn wire_update_v2() {
+    run_case("update_v2").await;
 }
 
 #[tokio::test]
@@ -1281,28 +1251,8 @@ async fn wire_update_3() {
 }
 
 #[tokio::test]
-async fn wire_trafficallocationcontroller_findallpaginated() {
-    run_case("trafficallocationcontroller_findallpaginated").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_create() {
-    run_case("trafficallocationcontroller_create").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_latestget() {
-    run_case("trafficallocationcontroller_latestget").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_metricsget() {
-    run_case("trafficallocationcontroller_metricsget").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_findone() {
-    run_case("trafficallocationcontroller_findone").await;
+async fn wire_list_contacts_v2() {
+    run_case("list_contacts_v2").await;
 }
 
 #[tokio::test]
@@ -1313,11 +1263,6 @@ async fn wire_list_5() {
 #[tokio::test]
 async fn wire_create_5() {
     run_case("create_5").await;
-}
-
-#[tokio::test]
-async fn wire_phonenumbercontroller_findallpaginated() {
-    run_case("phonenumbercontroller_findallpaginated").await;
 }
 
 #[tokio::test]
@@ -1346,18 +1291,18 @@ async fn wire_create_6() {
 }
 
 #[tokio::test]
+async fn wire_get_latest() {
+    run_case("get_latest").await;
+}
+
+#[tokio::test]
+async fn wire_get_metrics() {
+    run_case("get_metrics").await;
+}
+
+#[tokio::test]
 async fn wire_get_6() {
     run_case("get_6").await;
-}
-
-#[tokio::test]
-async fn wire_delete_6() {
-    run_case("delete_6").await;
-}
-
-#[tokio::test]
-async fn wire_update_5() {
-    run_case("update_5").await;
 }
 
 #[tokio::test]
@@ -1371,8 +1316,38 @@ async fn wire_create_7() {
 }
 
 #[tokio::test]
+async fn wire_list_paginated() {
+    run_case("list_paginated").await;
+}
+
+#[tokio::test]
 async fn wire_get_7() {
     run_case("get_7").await;
+}
+
+#[tokio::test]
+async fn wire_delete_6() {
+    run_case("delete_6").await;
+}
+
+#[tokio::test]
+async fn wire_update_5() {
+    run_case("update_5").await;
+}
+
+#[tokio::test]
+async fn wire_list_8() {
+    run_case("list_8").await;
+}
+
+#[tokio::test]
+async fn wire_create_8() {
+    run_case("create_8").await;
+}
+
+#[tokio::test]
+async fn wire_get_8() {
+    run_case("get_8").await;
 }
 
 #[tokio::test]
@@ -1386,408 +1361,433 @@ async fn wire_update_6() {
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_findall() {
-    run_case("knowledgebasev2controller_findall").await;
+async fn wire_list_9() {
+    run_case("list_9").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_create() {
-    run_case("knowledgebasev2controller_create").await;
+async fn wire_create_9() {
+    run_case("create_9").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_filesget() {
-    run_case("knowledgebasev2controller_filesget").await;
+async fn wire_get_9() {
+    run_case("get_9").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_fileattach() {
-    run_case("knowledgebasev2controller_fileattach").await;
+async fn wire_delete_8() {
+    run_case("delete_8").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_filedetach() {
-    run_case("knowledgebasev2controller_filedetach").await;
+async fn wire_update_7() {
+    run_case("update_7").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_fileretry() {
-    run_case("knowledgebasev2controller_fileretry").await;
+async fn wire_list_10() {
+    run_case("list_10").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_findone() {
-    run_case("knowledgebasev2controller_findone").await;
+async fn wire_create_10() {
+    run_case("create_10").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_remove() {
-    run_case("knowledgebasev2controller_remove").await;
+async fn wire_list_files() {
+    run_case("list_files").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_update() {
-    run_case("knowledgebasev2controller_update").await;
+async fn wire_attach_file() {
+    run_case("attach_file").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_findall() {
-    run_case("structuredoutputcontroller_findall").await;
+async fn wire_detach_file() {
+    run_case("detach_file").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_create() {
-    run_case("structuredoutputcontroller_create").await;
+async fn wire_retry_file() {
+    run_case("retry_file").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_findone() {
-    run_case("structuredoutputcontroller_findone").await;
+async fn wire_get_10() {
+    run_case("get_10").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_remove() {
-    run_case("structuredoutputcontroller_remove").await;
+async fn wire_delete_9() {
+    run_case("delete_9").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_update() {
-    run_case("structuredoutputcontroller_update").await;
+async fn wire_update_8() {
+    run_case("update_8").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_run() {
-    run_case("structuredoutputcontroller_run").await;
+async fn wire_list_11() {
+    run_case("list_11").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_findall() {
-    run_case("personalitycontroller_findall").await;
+async fn wire_create_11() {
+    run_case("create_11").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_create() {
-    run_case("personalitycontroller_create").await;
+async fn wire_get_11() {
+    run_case("get_11").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_findone() {
-    run_case("personalitycontroller_findone").await;
+async fn wire_delete_10() {
+    run_case("delete_10").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_remove() {
-    run_case("personalitycontroller_remove").await;
+async fn wire_update_9() {
+    run_case("update_9").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_update() {
-    run_case("personalitycontroller_update").await;
+async fn wire_run() {
+    run_case("run").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_findall() {
-    run_case("scenariocontroller_findall").await;
+async fn wire_list_12() {
+    run_case("list_12").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_create() {
-    run_case("scenariocontroller_create").await;
+async fn wire_create_12() {
+    run_case("create_12").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_findone() {
-    run_case("scenariocontroller_findone").await;
+async fn wire_get_12() {
+    run_case("get_12").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_remove() {
-    run_case("scenariocontroller_remove").await;
+async fn wire_delete_11() {
+    run_case("delete_11").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_update() {
-    run_case("scenariocontroller_update").await;
+async fn wire_update_10() {
+    run_case("update_10").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_findall() {
-    run_case("simulationruncontroller_findall").await;
+async fn wire_list_13() {
+    run_case("list_13").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_create() {
-    run_case("simulationruncontroller_create").await;
+async fn wire_create_13() {
+    run_case("create_13").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_findone() {
-    run_case("simulationruncontroller_findone").await;
+async fn wire_get_13() {
+    run_case("get_13").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_cancelgroup() {
-    run_case("simulationruncontroller_cancelgroup").await;
+async fn wire_delete_12() {
+    run_case("delete_12").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_finditems() {
-    run_case("simulationruncontroller_finditems").await;
+async fn wire_update_11() {
+    run_case("update_11").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_finditem() {
-    run_case("simulationruncontroller_finditem").await;
+async fn wire_list_14() {
+    run_case("list_14").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_cancelitem() {
-    run_case("simulationruncontroller_cancelitem").await;
+async fn wire_create_14() {
+    run_case("create_14").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_generatesuggestions() {
-    run_case("simulationruncontroller_generatesuggestions").await;
+async fn wire_get_14() {
+    run_case("get_14").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_findall() {
-    run_case("simulationsuitecontroller_findall").await;
+async fn wire_cancel() {
+    run_case("cancel").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_create() {
-    run_case("simulationsuitecontroller_create").await;
+async fn wire_list_items() {
+    run_case("list_items").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_duplicate() {
-    run_case("simulationsuitecontroller_duplicate").await;
+async fn wire_get_item() {
+    run_case("get_item").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_findone() {
-    run_case("simulationsuitecontroller_findone").await;
+async fn wire_cancel_item() {
+    run_case("cancel_item").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_remove() {
-    run_case("simulationsuitecontroller_remove").await;
+async fn wire_generate_suggestions() {
+    run_case("generate_suggestions").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_update() {
-    run_case("simulationsuitecontroller_update").await;
+async fn wire_list_15() {
+    run_case("list_15").await;
 }
 
 #[tokio::test]
-async fn wire_simulationonboardingcontroller_requirementsdraft() {
-    run_case("simulationonboardingcontroller_requirementsdraft").await;
+async fn wire_create_15() {
+    run_case("create_15").await;
 }
 
 #[tokio::test]
-async fn wire_simulationonboardingcontroller_suitecreate() {
-    run_case("simulationonboardingcontroller_suitecreate").await;
+async fn wire_duplicate() {
+    run_case("duplicate").await;
 }
 
 #[tokio::test]
-async fn wire_simulationonboardingcontroller_suiteupdate() {
-    run_case("simulationonboardingcontroller_suiteupdate").await;
+async fn wire_get_15() {
+    run_case("get_15").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_findall() {
-    run_case("simulationcontroller_findall").await;
+async fn wire_delete_13() {
+    run_case("delete_13").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_create() {
-    run_case("simulationcontroller_create").await;
+async fn wire_update_12() {
+    run_case("update_12").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_getconcurrency() {
-    run_case("simulationcontroller_getconcurrency").await;
+async fn wire_draft_requirements() {
+    run_case("draft_requirements").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_findone() {
-    run_case("simulationcontroller_findone").await;
+async fn wire_generate() {
+    run_case("generate").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_remove() {
-    run_case("simulationcontroller_remove").await;
+async fn wire_revise() {
+    run_case("revise").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_update() {
-    run_case("simulationcontroller_update").await;
+async fn wire_list_16() {
+    run_case("list_16").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_findall() {
-    run_case("insightcontroller_findall").await;
+async fn wire_create_16() {
+    run_case("create_16").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_create() {
-    run_case("insightcontroller_create").await;
+async fn wire_get_concurrency() {
+    run_case("get_concurrency").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_findone() {
-    run_case("insightcontroller_findone").await;
+async fn wire_get_16() {
+    run_case("get_16").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_remove() {
-    run_case("insightcontroller_remove").await;
+async fn wire_delete_14() {
+    run_case("delete_14").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_update() {
-    run_case("insightcontroller_update").await;
+async fn wire_update_13() {
+    run_case("update_13").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_run() {
-    run_case("insightcontroller_run").await;
+async fn wire_list_17() {
+    run_case("list_17").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_preview() {
-    run_case("insightcontroller_preview").await;
+async fn wire_create_17() {
+    run_case("create_17").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_findall() {
-    run_case("boardcontroller_findall").await;
+async fn wire_get_17() {
+    run_case("get_17").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_create() {
-    run_case("boardcontroller_create").await;
+async fn wire_delete_15() {
+    run_case("delete_15").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_metricsoverviewensure() {
-    run_case("boardcontroller_metricsoverviewensure").await;
+async fn wire_update_14() {
+    run_case("update_14").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_findone() {
-    run_case("boardcontroller_findone").await;
+async fn wire_run_1() {
+    run_case("run_1").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_remove() {
-    run_case("boardcontroller_remove").await;
+async fn wire_preview() {
+    run_case("preview").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_update() {
-    run_case("boardcontroller_update").await;
+async fn wire_list_18() {
+    run_case("list_18").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_getpaginated() {
-    run_case("evalcontroller_getpaginated").await;
+async fn wire_create_18() {
+    run_case("create_18").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_create() {
-    run_case("evalcontroller_create").await;
+async fn wire_ensure_metrics_overview() {
+    run_case("ensure_metrics_overview").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_get() {
-    run_case("evalcontroller_get").await;
+async fn wire_get_18() {
+    run_case("get_18").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_remove() {
-    run_case("evalcontroller_remove").await;
+async fn wire_delete_16() {
+    run_case("delete_16").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_update() {
-    run_case("evalcontroller_update").await;
+async fn wire_update_15() {
+    run_case("update_15").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_getrun() {
-    run_case("evalcontroller_getrun").await;
+async fn wire_list_19() {
+    run_case("list_19").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_removerun() {
-    run_case("evalcontroller_removerun").await;
+async fn wire_create_19() {
+    run_case("create_19").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_getrunspaginated() {
-    run_case("evalcontroller_getrunspaginated").await;
+async fn wire_get_19() {
+    run_case("get_19").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_run() {
-    run_case("evalcontroller_run").await;
+async fn wire_delete_17() {
+    run_case("delete_17").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_get() {
-    run_case("scorecardcontroller_get").await;
+async fn wire_update_16() {
+    run_case("update_16").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_remove() {
-    run_case("scorecardcontroller_remove").await;
+async fn wire_get_run() {
+    run_case("get_run").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_update() {
-    run_case("scorecardcontroller_update").await;
+async fn wire_delete_run() {
+    run_case("delete_run").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_getpaginated() {
-    run_case("scorecardcontroller_getpaginated").await;
+async fn wire_list_runs() {
+    run_case("list_runs").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_create() {
-    run_case("scorecardcontroller_create").await;
+async fn wire_run_2() {
+    run_case("run_2").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_getproviderresourcespaginated() {
-    run_case("providerresourcecontroller_getproviderresourcespaginated").await;
+async fn wire_get_20() {
+    run_case("get_20").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_createproviderresource() {
-    run_case("providerresourcecontroller_createproviderresource").await;
+async fn wire_delete_18() {
+    run_case("delete_18").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_getproviderresource() {
-    run_case("providerresourcecontroller_getproviderresource").await;
+async fn wire_update_17() {
+    run_case("update_17").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_deleteproviderresource() {
-    run_case("providerresourcecontroller_deleteproviderresource").await;
+async fn wire_list_20() {
+    run_case("list_20").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_updateproviderresource() {
-    run_case("providerresourcecontroller_updateproviderresource").await;
+async fn wire_create_20() {
+    run_case("create_20").await;
 }
 
 #[tokio::test]
-async fn wire_get_8() {
-    run_case("get_8").await;
+async fn wire_list_21() {
+    run_case("list_21").await;
+}
+
+#[tokio::test]
+async fn wire_create_21() {
+    run_case("create_21").await;
+}
+
+#[tokio::test]
+async fn wire_get_21() {
+    run_case("get_21").await;
+}
+
+#[tokio::test]
+async fn wire_delete_19() {
+    run_case("delete_19").await;
+}
+
+#[tokio::test]
+async fn wire_update_18() {
+    run_case("update_18").await;
+}
+
+#[tokio::test]
+async fn wire_get_22() {
+    run_case("get_22").await;
 }
 
 #[tokio::test]
@@ -1866,38 +1866,38 @@ async fn wire_update_2_error() {
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_monorecordingdownload_error() {
-    run_case("callartifactcontroller_monorecordingdownload_error").await;
+async fn wire_download_mono_recording_error() {
+    run_case("download_mono_recording_error").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_stereorecordingdownload_error() {
-    run_case("callartifactcontroller_stereorecordingdownload_error").await;
+async fn wire_download_stereo_recording_error() {
+    run_case("download_stereo_recording_error").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_videorecordingdownload_error() {
-    run_case("callartifactcontroller_videorecordingdownload_error").await;
+async fn wire_download_video_recording_error() {
+    run_case("download_video_recording_error").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_customerrecordingdownload_error() {
-    run_case("callartifactcontroller_customerrecordingdownload_error").await;
+async fn wire_download_customer_recording_error() {
+    run_case("download_customer_recording_error").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_assistantrecordingdownload_error() {
-    run_case("callartifactcontroller_assistantrecordingdownload_error").await;
+async fn wire_download_assistant_recording_error() {
+    run_case("download_assistant_recording_error").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_pcapdownload_error() {
-    run_case("callartifactcontroller_pcapdownload_error").await;
+async fn wire_download_pcap_error() {
+    run_case("download_pcap_error").await;
 }
 
 #[tokio::test]
-async fn wire_callartifactcontroller_calllogsdownload_error() {
-    run_case("callartifactcontroller_calllogsdownload_error").await;
+async fn wire_download_call_logs_error() {
+    run_case("download_call_logs_error").await;
 }
 
 #[tokio::test]
@@ -1926,61 +1926,6 @@ async fn wire_createresponse_error() {
 }
 
 #[tokio::test]
-async fn wire_campaigncontroller_findall_error() {
-    run_case("campaigncontroller_findall_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_create_error() {
-    run_case("campaigncontroller_create_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_findallv2_error() {
-    run_case("campaigncontroller_findallv2_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_createv2_error() {
-    run_case("campaigncontroller_createv2_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_findonev2_error() {
-    run_case("campaigncontroller_findonev2_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_removev2_error() {
-    run_case("campaigncontroller_removev2_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_updatev2_error() {
-    run_case("campaigncontroller_updatev2_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_findone_error() {
-    run_case("campaigncontroller_findone_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_remove_error() {
-    run_case("campaigncontroller_remove_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_update_error() {
-    run_case("campaigncontroller_update_error").await;
-}
-
-#[tokio::test]
-async fn wire_campaigncontroller_getcampaignv2contacts_error() {
-    run_case("campaigncontroller_getcampaignv2contacts_error").await;
-}
-
-#[tokio::test]
 async fn wire_list_4_error() {
     run_case("list_4_error").await;
 }
@@ -1988,6 +1933,31 @@ async fn wire_list_4_error() {
 #[tokio::test]
 async fn wire_create_4_error() {
     run_case("create_4_error").await;
+}
+
+#[tokio::test]
+async fn wire_list_v2_error() {
+    run_case("list_v2_error").await;
+}
+
+#[tokio::test]
+async fn wire_create_v2_error() {
+    run_case("create_v2_error").await;
+}
+
+#[tokio::test]
+async fn wire_get_v2_error() {
+    run_case("get_v2_error").await;
+}
+
+#[tokio::test]
+async fn wire_delete_v2_error() {
+    run_case("delete_v2_error").await;
+}
+
+#[tokio::test]
+async fn wire_update_v2_error() {
+    run_case("update_v2_error").await;
 }
 
 #[tokio::test]
@@ -2006,28 +1976,8 @@ async fn wire_update_3_error() {
 }
 
 #[tokio::test]
-async fn wire_trafficallocationcontroller_findallpaginated_error() {
-    run_case("trafficallocationcontroller_findallpaginated_error").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_create_error() {
-    run_case("trafficallocationcontroller_create_error").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_latestget_error() {
-    run_case("trafficallocationcontroller_latestget_error").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_metricsget_error() {
-    run_case("trafficallocationcontroller_metricsget_error").await;
-}
-
-#[tokio::test]
-async fn wire_trafficallocationcontroller_findone_error() {
-    run_case("trafficallocationcontroller_findone_error").await;
+async fn wire_list_contacts_v2_error() {
+    run_case("list_contacts_v2_error").await;
 }
 
 #[tokio::test]
@@ -2038,11 +1988,6 @@ async fn wire_list_5_error() {
 #[tokio::test]
 async fn wire_create_5_error() {
     run_case("create_5_error").await;
-}
-
-#[tokio::test]
-async fn wire_phonenumbercontroller_findallpaginated_error() {
-    run_case("phonenumbercontroller_findallpaginated_error").await;
 }
 
 #[tokio::test]
@@ -2071,18 +2016,18 @@ async fn wire_create_6_error() {
 }
 
 #[tokio::test]
+async fn wire_get_latest_error() {
+    run_case("get_latest_error").await;
+}
+
+#[tokio::test]
+async fn wire_get_metrics_error() {
+    run_case("get_metrics_error").await;
+}
+
+#[tokio::test]
 async fn wire_get_6_error() {
     run_case("get_6_error").await;
-}
-
-#[tokio::test]
-async fn wire_delete_6_error() {
-    run_case("delete_6_error").await;
-}
-
-#[tokio::test]
-async fn wire_update_5_error() {
-    run_case("update_5_error").await;
 }
 
 #[tokio::test]
@@ -2096,8 +2041,38 @@ async fn wire_create_7_error() {
 }
 
 #[tokio::test]
+async fn wire_list_paginated_error() {
+    run_case("list_paginated_error").await;
+}
+
+#[tokio::test]
 async fn wire_get_7_error() {
     run_case("get_7_error").await;
+}
+
+#[tokio::test]
+async fn wire_delete_6_error() {
+    run_case("delete_6_error").await;
+}
+
+#[tokio::test]
+async fn wire_update_5_error() {
+    run_case("update_5_error").await;
+}
+
+#[tokio::test]
+async fn wire_list_8_error() {
+    run_case("list_8_error").await;
+}
+
+#[tokio::test]
+async fn wire_create_8_error() {
+    run_case("create_8_error").await;
+}
+
+#[tokio::test]
+async fn wire_get_8_error() {
+    run_case("get_8_error").await;
 }
 
 #[tokio::test]
@@ -2111,406 +2086,431 @@ async fn wire_update_6_error() {
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_findall_error() {
-    run_case("knowledgebasev2controller_findall_error").await;
+async fn wire_list_9_error() {
+    run_case("list_9_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_create_error() {
-    run_case("knowledgebasev2controller_create_error").await;
+async fn wire_create_9_error() {
+    run_case("create_9_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_filesget_error() {
-    run_case("knowledgebasev2controller_filesget_error").await;
+async fn wire_get_9_error() {
+    run_case("get_9_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_fileattach_error() {
-    run_case("knowledgebasev2controller_fileattach_error").await;
+async fn wire_delete_8_error() {
+    run_case("delete_8_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_filedetach_error() {
-    run_case("knowledgebasev2controller_filedetach_error").await;
+async fn wire_update_7_error() {
+    run_case("update_7_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_fileretry_error() {
-    run_case("knowledgebasev2controller_fileretry_error").await;
+async fn wire_list_10_error() {
+    run_case("list_10_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_findone_error() {
-    run_case("knowledgebasev2controller_findone_error").await;
+async fn wire_create_10_error() {
+    run_case("create_10_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_remove_error() {
-    run_case("knowledgebasev2controller_remove_error").await;
+async fn wire_list_files_error() {
+    run_case("list_files_error").await;
 }
 
 #[tokio::test]
-async fn wire_knowledgebasev2controller_update_error() {
-    run_case("knowledgebasev2controller_update_error").await;
+async fn wire_attach_file_error() {
+    run_case("attach_file_error").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_findall_error() {
-    run_case("structuredoutputcontroller_findall_error").await;
+async fn wire_detach_file_error() {
+    run_case("detach_file_error").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_create_error() {
-    run_case("structuredoutputcontroller_create_error").await;
+async fn wire_retry_file_error() {
+    run_case("retry_file_error").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_findone_error() {
-    run_case("structuredoutputcontroller_findone_error").await;
+async fn wire_get_10_error() {
+    run_case("get_10_error").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_remove_error() {
-    run_case("structuredoutputcontroller_remove_error").await;
+async fn wire_delete_9_error() {
+    run_case("delete_9_error").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_update_error() {
-    run_case("structuredoutputcontroller_update_error").await;
+async fn wire_update_8_error() {
+    run_case("update_8_error").await;
 }
 
 #[tokio::test]
-async fn wire_structuredoutputcontroller_run_error() {
-    run_case("structuredoutputcontroller_run_error").await;
+async fn wire_list_11_error() {
+    run_case("list_11_error").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_findall_error() {
-    run_case("personalitycontroller_findall_error").await;
+async fn wire_create_11_error() {
+    run_case("create_11_error").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_create_error() {
-    run_case("personalitycontroller_create_error").await;
+async fn wire_get_11_error() {
+    run_case("get_11_error").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_findone_error() {
-    run_case("personalitycontroller_findone_error").await;
+async fn wire_delete_10_error() {
+    run_case("delete_10_error").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_remove_error() {
-    run_case("personalitycontroller_remove_error").await;
+async fn wire_update_9_error() {
+    run_case("update_9_error").await;
 }
 
 #[tokio::test]
-async fn wire_personalitycontroller_update_error() {
-    run_case("personalitycontroller_update_error").await;
+async fn wire_run_error() {
+    run_case("run_error").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_findall_error() {
-    run_case("scenariocontroller_findall_error").await;
+async fn wire_list_12_error() {
+    run_case("list_12_error").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_create_error() {
-    run_case("scenariocontroller_create_error").await;
+async fn wire_create_12_error() {
+    run_case("create_12_error").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_findone_error() {
-    run_case("scenariocontroller_findone_error").await;
+async fn wire_get_12_error() {
+    run_case("get_12_error").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_remove_error() {
-    run_case("scenariocontroller_remove_error").await;
+async fn wire_delete_11_error() {
+    run_case("delete_11_error").await;
 }
 
 #[tokio::test]
-async fn wire_scenariocontroller_update_error() {
-    run_case("scenariocontroller_update_error").await;
+async fn wire_update_10_error() {
+    run_case("update_10_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_findall_error() {
-    run_case("simulationruncontroller_findall_error").await;
+async fn wire_list_13_error() {
+    run_case("list_13_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_create_error() {
-    run_case("simulationruncontroller_create_error").await;
+async fn wire_create_13_error() {
+    run_case("create_13_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_findone_error() {
-    run_case("simulationruncontroller_findone_error").await;
+async fn wire_get_13_error() {
+    run_case("get_13_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_cancelgroup_error() {
-    run_case("simulationruncontroller_cancelgroup_error").await;
+async fn wire_delete_12_error() {
+    run_case("delete_12_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_finditems_error() {
-    run_case("simulationruncontroller_finditems_error").await;
+async fn wire_update_11_error() {
+    run_case("update_11_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_finditem_error() {
-    run_case("simulationruncontroller_finditem_error").await;
+async fn wire_list_14_error() {
+    run_case("list_14_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_cancelitem_error() {
-    run_case("simulationruncontroller_cancelitem_error").await;
+async fn wire_create_14_error() {
+    run_case("create_14_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationruncontroller_generatesuggestions_error() {
-    run_case("simulationruncontroller_generatesuggestions_error").await;
+async fn wire_get_14_error() {
+    run_case("get_14_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_findall_error() {
-    run_case("simulationsuitecontroller_findall_error").await;
+async fn wire_cancel_error() {
+    run_case("cancel_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_create_error() {
-    run_case("simulationsuitecontroller_create_error").await;
+async fn wire_list_items_error() {
+    run_case("list_items_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_duplicate_error() {
-    run_case("simulationsuitecontroller_duplicate_error").await;
+async fn wire_get_item_error() {
+    run_case("get_item_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_findone_error() {
-    run_case("simulationsuitecontroller_findone_error").await;
+async fn wire_cancel_item_error() {
+    run_case("cancel_item_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_remove_error() {
-    run_case("simulationsuitecontroller_remove_error").await;
+async fn wire_generate_suggestions_error() {
+    run_case("generate_suggestions_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationsuitecontroller_update_error() {
-    run_case("simulationsuitecontroller_update_error").await;
+async fn wire_list_15_error() {
+    run_case("list_15_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationonboardingcontroller_requirementsdraft_error() {
-    run_case("simulationonboardingcontroller_requirementsdraft_error").await;
+async fn wire_create_15_error() {
+    run_case("create_15_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationonboardingcontroller_suitecreate_error() {
-    run_case("simulationonboardingcontroller_suitecreate_error").await;
+async fn wire_duplicate_error() {
+    run_case("duplicate_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationonboardingcontroller_suiteupdate_error() {
-    run_case("simulationonboardingcontroller_suiteupdate_error").await;
+async fn wire_get_15_error() {
+    run_case("get_15_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_findall_error() {
-    run_case("simulationcontroller_findall_error").await;
+async fn wire_delete_13_error() {
+    run_case("delete_13_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_create_error() {
-    run_case("simulationcontroller_create_error").await;
+async fn wire_update_12_error() {
+    run_case("update_12_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_getconcurrency_error() {
-    run_case("simulationcontroller_getconcurrency_error").await;
+async fn wire_draft_requirements_error() {
+    run_case("draft_requirements_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_findone_error() {
-    run_case("simulationcontroller_findone_error").await;
+async fn wire_generate_error() {
+    run_case("generate_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_remove_error() {
-    run_case("simulationcontroller_remove_error").await;
+async fn wire_revise_error() {
+    run_case("revise_error").await;
 }
 
 #[tokio::test]
-async fn wire_simulationcontroller_update_error() {
-    run_case("simulationcontroller_update_error").await;
+async fn wire_list_16_error() {
+    run_case("list_16_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_findall_error() {
-    run_case("insightcontroller_findall_error").await;
+async fn wire_create_16_error() {
+    run_case("create_16_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_create_error() {
-    run_case("insightcontroller_create_error").await;
+async fn wire_get_concurrency_error() {
+    run_case("get_concurrency_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_findone_error() {
-    run_case("insightcontroller_findone_error").await;
+async fn wire_get_16_error() {
+    run_case("get_16_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_remove_error() {
-    run_case("insightcontroller_remove_error").await;
+async fn wire_delete_14_error() {
+    run_case("delete_14_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_update_error() {
-    run_case("insightcontroller_update_error").await;
+async fn wire_update_13_error() {
+    run_case("update_13_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_run_error() {
-    run_case("insightcontroller_run_error").await;
+async fn wire_list_17_error() {
+    run_case("list_17_error").await;
 }
 
 #[tokio::test]
-async fn wire_insightcontroller_preview_error() {
-    run_case("insightcontroller_preview_error").await;
+async fn wire_create_17_error() {
+    run_case("create_17_error").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_findall_error() {
-    run_case("boardcontroller_findall_error").await;
+async fn wire_get_17_error() {
+    run_case("get_17_error").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_create_error() {
-    run_case("boardcontroller_create_error").await;
+async fn wire_delete_15_error() {
+    run_case("delete_15_error").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_metricsoverviewensure_error() {
-    run_case("boardcontroller_metricsoverviewensure_error").await;
+async fn wire_update_14_error() {
+    run_case("update_14_error").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_findone_error() {
-    run_case("boardcontroller_findone_error").await;
+async fn wire_run_1_error() {
+    run_case("run_1_error").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_remove_error() {
-    run_case("boardcontroller_remove_error").await;
+async fn wire_preview_error() {
+    run_case("preview_error").await;
 }
 
 #[tokio::test]
-async fn wire_boardcontroller_update_error() {
-    run_case("boardcontroller_update_error").await;
+async fn wire_list_18_error() {
+    run_case("list_18_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_getpaginated_error() {
-    run_case("evalcontroller_getpaginated_error").await;
+async fn wire_create_18_error() {
+    run_case("create_18_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_create_error() {
-    run_case("evalcontroller_create_error").await;
+async fn wire_ensure_metrics_overview_error() {
+    run_case("ensure_metrics_overview_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_get_error() {
-    run_case("evalcontroller_get_error").await;
+async fn wire_get_18_error() {
+    run_case("get_18_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_remove_error() {
-    run_case("evalcontroller_remove_error").await;
+async fn wire_delete_16_error() {
+    run_case("delete_16_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_update_error() {
-    run_case("evalcontroller_update_error").await;
+async fn wire_update_15_error() {
+    run_case("update_15_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_getrun_error() {
-    run_case("evalcontroller_getrun_error").await;
+async fn wire_list_19_error() {
+    run_case("list_19_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_removerun_error() {
-    run_case("evalcontroller_removerun_error").await;
+async fn wire_create_19_error() {
+    run_case("create_19_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_getrunspaginated_error() {
-    run_case("evalcontroller_getrunspaginated_error").await;
+async fn wire_get_19_error() {
+    run_case("get_19_error").await;
 }
 
 #[tokio::test]
-async fn wire_evalcontroller_run_error() {
-    run_case("evalcontroller_run_error").await;
+async fn wire_delete_17_error() {
+    run_case("delete_17_error").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_get_error() {
-    run_case("scorecardcontroller_get_error").await;
+async fn wire_update_16_error() {
+    run_case("update_16_error").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_remove_error() {
-    run_case("scorecardcontroller_remove_error").await;
+async fn wire_get_run_error() {
+    run_case("get_run_error").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_update_error() {
-    run_case("scorecardcontroller_update_error").await;
+async fn wire_delete_run_error() {
+    run_case("delete_run_error").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_getpaginated_error() {
-    run_case("scorecardcontroller_getpaginated_error").await;
+async fn wire_list_runs_error() {
+    run_case("list_runs_error").await;
 }
 
 #[tokio::test]
-async fn wire_scorecardcontroller_create_error() {
-    run_case("scorecardcontroller_create_error").await;
+async fn wire_run_2_error() {
+    run_case("run_2_error").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_getproviderresourcespaginated_error() {
-    run_case("providerresourcecontroller_getproviderresourcespaginated_error").await;
+async fn wire_get_20_error() {
+    run_case("get_20_error").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_createproviderresource_error() {
-    run_case("providerresourcecontroller_createproviderresource_error").await;
+async fn wire_delete_18_error() {
+    run_case("delete_18_error").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_getproviderresource_error() {
-    run_case("providerresourcecontroller_getproviderresource_error").await;
+async fn wire_update_17_error() {
+    run_case("update_17_error").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_deleteproviderresource_error() {
-    run_case("providerresourcecontroller_deleteproviderresource_error").await;
+async fn wire_list_20_error() {
+    run_case("list_20_error").await;
 }
 
 #[tokio::test]
-async fn wire_providerresourcecontroller_updateproviderresource_error() {
-    run_case("providerresourcecontroller_updateproviderresource_error").await;
+async fn wire_create_20_error() {
+    run_case("create_20_error").await;
 }
 
 #[tokio::test]
-async fn wire_get_8_error() {
-    run_case("get_8_error").await;
+async fn wire_list_21_error() {
+    run_case("list_21_error").await;
+}
+
+#[tokio::test]
+async fn wire_create_21_error() {
+    run_case("create_21_error").await;
+}
+
+#[tokio::test]
+async fn wire_get_21_error() {
+    run_case("get_21_error").await;
+}
+
+#[tokio::test]
+async fn wire_delete_19_error() {
+    run_case("delete_19_error").await;
+}
+
+#[tokio::test]
+async fn wire_update_18_error() {
+    run_case("update_18_error").await;
+}
+
+#[tokio::test]
+async fn wire_get_22_error() {
+    run_case("get_22_error").await;
 }

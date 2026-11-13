@@ -109,7 +109,7 @@ Updates the specified fields of the assistant identified by its ID.
 
 ### `vapi board`
 
-#### `vapi board controller-create`
+#### `vapi board create`
 
 Create Board
 
@@ -119,7 +119,33 @@ Create Board
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi board controller-find-all`
+#### `vapi board delete`
+
+Delete Board
+
+`DELETE /reporting/board/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi board ensure-metrics-overview`
+
+Get Default Metrics Overview Board
+
+`GET /reporting/board/default/metrics-overview`
+
+#### `vapi board get`
+
+Get Board
+
+`GET /reporting/board/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi board list`
 
 Get Boards
 
@@ -140,33 +166,7 @@ Get Boards
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi board controller-find-one`
-
-Get Board
-
-`GET /reporting/board/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi board controller-metrics-overview-ensure`
-
-Get Default Metrics Overview Board
-
-`GET /reporting/board/default/metrics-overview`
-
-#### `vapi board controller-remove`
-
-Delete Board
-
-`DELETE /reporting/board/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi board controller-update`
+#### `vapi board update`
 
 Update Board
 
@@ -180,76 +180,6 @@ Update Board
 ---
 
 ### `vapi calls`
-
-#### `vapi calls call-artifact-controller-assistant-recording-download`
-
-Download Call Assistant Recording
-
-`GET /call/{id}/assistant-recording`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
-
-#### `vapi calls call-artifact-controller-call-logs-download`
-
-Download Call Logs
-
-`GET /call/{id}/call-logs`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
-
-#### `vapi calls call-artifact-controller-customer-recording-download`
-
-Download Call Customer Recording
-
-`GET /call/{id}/customer-recording`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
-
-#### `vapi calls call-artifact-controller-mono-recording-download`
-
-Download Call Mono Recording
-
-`GET /call/{id}/mono-recording`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
-
-#### `vapi calls call-artifact-controller-pcap-download`
-
-Download Call Packet Capture (pcap)
-
-`GET /call/{id}/pcap`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
-
-#### `vapi calls call-artifact-controller-stereo-recording-download`
-
-Download Call Stereo Recording
-
-`GET /call/{id}/stereo-recording`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
-
-#### `vapi calls call-artifact-controller-video-recording-download`
-
-Download Call Video Recording
-
-`GET /call/{id}/video-recording`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | Call ID |
 
 #### `vapi calls create`
 
@@ -270,6 +200,76 @@ Deletes the call identified by its ID.
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `vapi calls download-assistant-recording`
+
+Download Call Assistant Recording
+
+`GET /call/{id}/assistant-recording`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
+
+#### `vapi calls download-call-logs`
+
+Download Call Logs
+
+`GET /call/{id}/call-logs`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
+
+#### `vapi calls download-customer-recording`
+
+Download Call Customer Recording
+
+`GET /call/{id}/customer-recording`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
+
+#### `vapi calls download-mono-recording`
+
+Download Call Mono Recording
+
+`GET /call/{id}/mono-recording`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
+
+#### `vapi calls download-pcap`
+
+Download Call Packet Capture (pcap)
+
+`GET /call/{id}/pcap`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
+
+#### `vapi calls download-stereo-recording`
+
+Download Call Stereo Recording
+
+`GET /call/{id}/stereo-recording`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
+
+#### `vapi calls download-video-recording`
+
+Download Call Video Recording
+
+`GET /call/{id}/video-recording`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | Call ID |
 
 #### `vapi calls get`
 
@@ -319,7 +319,7 @@ Updates the call identified by its ID.
 
 ### `vapi campaigns`
 
-#### `vapi campaigns campaign-controller-create`
+#### `vapi campaigns create`
 
 Creates an outbound calling campaign that calls a set of customers.
 
@@ -329,7 +329,7 @@ Creates an outbound calling campaign that calls a set of customers.
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi campaigns campaign-controller-create-v2`
+#### `vapi campaigns create-v2`
 
 Create Campaign V2
 
@@ -339,7 +339,50 @@ Create Campaign V2
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi campaigns campaign-controller-find-all`
+#### `vapi campaigns delete`
+
+Deletes the outbound calling campaign identified by its ID.
+
+`DELETE /campaign/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the campaign. |
+
+#### `vapi campaigns delete-v2`
+
+Delete Campaign
+
+`DELETE /v2/campaign/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi campaigns get`
+
+Returns the outbound calling campaign identified by its ID.
+
+`GET /campaign/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the campaign. |
+
+#### `vapi campaigns get-v2`
+
+Get Campaign V2
+
+`GET /v2/campaign/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+| `--include-counters` | `boolean` | No | When true, the response includes `contactCounters` and `callMetrics`.
+These are aggregate queries over the campaign's contacts and events, so
+they are opt-in rather than paid for on every read. Defaults to false. |
+
+#### `vapi campaigns list`
 
 Returns outbound calling campaigns for the authenticated organization. Filter results by campaign ID, status, or creation and update timestamps.
 
@@ -362,7 +405,31 @@ Returns outbound calling campaigns for the authenticated organization. Filter re
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi campaigns campaign-controller-find-all-v2`
+#### `vapi campaigns list-contacts-v2`
+
+Get Campaign V2 Contacts
+
+`GET /v2/campaign/{id}/contacts`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+| `--status` | `contact.pending | contact.dispatched | contact.completed | contact.failed | contact.skipped | contact.predial-failed[]` | No | This is the status to filter contacts by. Pass once or multiple times to
+filter on any of the provided statuses. |
+| `--limit` | `number` | No | This is the maximum number of contacts to return. Defaults to 50. |
+| `--sort-by` | `position | status` | No | This is the column to sort by. Defaults to `position` — the order contacts
+were uploaded, which is also dial order.
+
+`status` sorts by the enum's declaration order rather than alphabetically,
+which means it reads as a lifecycle: pending, dispatched, completed,
+failed, skipped, predial-failed.
+
+Only columns on `campaign_contact` are sortable. Call-level values such as
+cost or duration live on the call and are attached after this query, so
+sorting by them here would only reorder the current page. |
+| `--page` | `number` | No | This is the page number to return. Defaults to 1. |
+
+#### `vapi campaigns list-v2`
 
 List Campaigns V2
 
@@ -390,74 +457,7 @@ read. Defaults to false. |
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi campaigns campaign-controller-find-one`
-
-Returns the outbound calling campaign identified by its ID.
-
-`GET /campaign/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the campaign. |
-
-#### `vapi campaigns campaign-controller-find-one-v2`
-
-Get Campaign V2
-
-`GET /v2/campaign/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-| `--include-counters` | `boolean` | No | When true, the response includes `contactCounters` and `callMetrics`.
-These are aggregate queries over the campaign's contacts and events, so
-they are opt-in rather than paid for on every read. Defaults to false. |
-
-#### `vapi campaigns campaign-controller-get-campaign-v2-contacts`
-
-Get Campaign V2 Contacts
-
-`GET /v2/campaign/{id}/contacts`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-| `--status` | `contact.pending | contact.dispatched | contact.completed | contact.failed | contact.skipped | contact.predial-failed[]` | No | This is the status to filter contacts by. Pass once or multiple times to
-filter on any of the provided statuses. |
-| `--limit` | `number` | No | This is the maximum number of contacts to return. Defaults to 50. |
-| `--sort-by` | `position | status` | No | This is the column to sort by. Defaults to `position` — the order contacts
-were uploaded, which is also dial order.
-
-`status` sorts by the enum's declaration order rather than alphabetically,
-which means it reads as a lifecycle: pending, dispatched, completed,
-failed, skipped, predial-failed.
-
-Only columns on `campaign_contact` are sortable. Call-level values such as
-cost or duration live on the call and are attached after this query, so
-sorting by them here would only reorder the current page. |
-| `--page` | `number` | No | This is the page number to return. Defaults to 1. |
-
-#### `vapi campaigns campaign-controller-remove`
-
-Deletes the outbound calling campaign identified by its ID.
-
-`DELETE /campaign/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the campaign. |
-
-#### `vapi campaigns campaign-controller-remove-v2`
-
-Delete Campaign
-
-`DELETE /v2/campaign/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi campaigns campaign-controller-update`
+#### `vapi campaigns update`
 
 Updates the outbound calling campaign identified by its ID. Campaigns can be ended by updating their status to `ended`.
 
@@ -468,7 +468,7 @@ Updates the outbound calling campaign identified by its ID. Campaigns can be end
 | `--id` | `string (uuid)` | Yes | The unique identifier of the campaign. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi campaigns campaign-controller-update-v2`
+#### `vapi campaigns update-v2`
 
 Update Campaign
 
@@ -555,7 +555,7 @@ List Chats
 
 ### `vapi eval`
 
-#### `vapi eval controller-create`
+#### `vapi eval create`
 
 Creates a reusable eval that defines a mock conversation and checkpoints for evaluating assistant responses and tool calls.
 
@@ -565,7 +565,27 @@ Creates a reusable eval that defines a mock conversation and checkpoints for eva
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi eval controller-get`
+#### `vapi eval delete`
+
+Deletes the eval definition identified by its ID.
+
+`DELETE /eval/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the eval definition. |
+
+#### `vapi eval delete-run`
+
+Deletes the eval run identified by its ID.
+
+`DELETE /eval/run/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the eval run. |
+
+#### `vapi eval get`
 
 Returns the eval definition identified by its ID.
 
@@ -575,7 +595,17 @@ Returns the eval definition identified by its ID.
 |------|------|----------|-------------|
 | `--id` | `string (uuid)` | Yes | The unique identifier of the eval definition. |
 
-#### `vapi eval controller-get-paginated`
+#### `vapi eval get-run`
+
+Returns the eval run identified by its ID.
+
+`GET /eval/run/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the eval run. |
+
+#### `vapi eval list`
 
 Returns eval definitions for the authenticated organization. Filter results by ID or creation and update timestamps.
 
@@ -597,17 +627,7 @@ Returns eval definitions for the authenticated organization. Filter results by I
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi eval controller-get-run`
-
-Returns the eval run identified by its ID.
-
-`GET /eval/run/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the eval run. |
-
-#### `vapi eval controller-get-runs-paginated`
+#### `vapi eval list-runs`
 
 Returns eval runs for the authenticated organization. Filter results by ID or creation and update timestamps.
 
@@ -630,27 +650,7 @@ Returns eval runs for the authenticated organization. Filter results by ID or cr
 | `--page` | `number` | No | This is the page number to return. Defaults to 1. |
 | `--sort-order` | `ASC | DESC` | No | This is the sort order for pagination. Defaults to 'DESC'. |
 
-#### `vapi eval controller-remove`
-
-Deletes the eval definition identified by its ID.
-
-`DELETE /eval/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the eval definition. |
-
-#### `vapi eval controller-remove-run`
-
-Deletes the eval run identified by its ID.
-
-`DELETE /eval/run/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the eval run. |
-
-#### `vapi eval controller-run`
+#### `vapi eval run`
 
 Runs a saved or transient eval against an assistant or squad and creates an eval-run record containing the results.
 
@@ -660,7 +660,7 @@ Runs a saved or transient eval against an assistant or squad and creates an eval
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi eval controller-update`
+#### `vapi eval update`
 
 Updates the eval definition identified by its ID.
 
@@ -730,7 +730,7 @@ Updates the name of the uploaded file identified by its ID.
 
 ### `vapi insight`
 
-#### `vapi insight controller-create`
+#### `vapi insight create`
 
 Creates a saved reporting insight that queries call data and presents the results as a bar chart, pie chart, line chart, or text value.
 
@@ -740,7 +740,27 @@ Creates a saved reporting insight that queries call data and presents the result
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi insight controller-find-all`
+#### `vapi insight delete`
+
+Deletes the reporting insight identified by its ID.
+
+`DELETE /reporting/insight/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the reporting insight. |
+
+#### `vapi insight get`
+
+Returns the reporting insight identified by its ID.
+
+`GET /reporting/insight/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the reporting insight. |
+
+#### `vapi insight list`
 
 Returns saved reporting insights for the authenticated organization. Filter results by ID or creation and update timestamps.
 
@@ -762,17 +782,7 @@ Returns saved reporting insights for the authenticated organization. Filter resu
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi insight controller-find-one`
-
-Returns the reporting insight identified by its ID.
-
-`GET /reporting/insight/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the reporting insight. |
-
-#### `vapi insight controller-preview`
+#### `vapi insight preview`
 
 Runs an insight definition without first saving it, returning a preview of the resulting chart or text value.
 
@@ -782,17 +792,7 @@ Runs an insight definition without first saving it, returning a preview of the r
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi insight controller-remove`
-
-Deletes the reporting insight identified by its ID.
-
-`DELETE /reporting/insight/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the reporting insight. |
-
-#### `vapi insight controller-run`
+#### `vapi insight run`
 
 Runs a saved reporting insight, optionally overriding its time range and response format.
 
@@ -803,7 +803,7 @@ Runs a saved reporting insight, optionally overriding its time range and respons
 | `--id` | `string (uuid)` | Yes | The unique identifier of the reporting insight. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi insight controller-update`
+#### `vapi insight update`
 
 Updates the reporting insight identified by its ID.
 
@@ -818,17 +818,7 @@ Updates the reporting insight identified by its ID.
 
 ### `vapi knowledge-bases-v2`
 
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-create`
-
-Create a Knowledge Base V2
-
-`POST /v2/knowledge-base`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
-
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-file-attach`
+#### `vapi knowledge-bases-v2 attach-file`
 
 Attach and ingest a file
 
@@ -839,7 +829,27 @@ Attach and ingest a file
 | `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-file-detach`
+#### `vapi knowledge-bases-v2 create`
+
+Create a Knowledge Base V2
+
+`POST /v2/knowledge-base`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `vapi knowledge-bases-v2 delete`
+
+Delete a Knowledge Base V2
+
+`DELETE /v2/knowledge-base/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi knowledge-bases-v2 detach-file`
 
 Detach a file
 
@@ -850,7 +860,37 @@ Detach a file
 | `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
 | `--file-id` | `string (uuid)` | Yes |  |
 
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-file-retry`
+#### `vapi knowledge-bases-v2 get`
+
+Get a Knowledge Base V2
+
+`GET /v2/knowledge-base/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi knowledge-bases-v2 list`
+
+List Knowledge Bases V2
+
+`GET /v2/knowledge-base`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--limit` | `number` | No |  |
+
+#### `vapi knowledge-bases-v2 list-files`
+
+List files in a Knowledge Base V2
+
+`GET /v2/knowledge-base/{id}/file`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi knowledge-bases-v2 retry-file`
 
 Retry indexing a failed file
 
@@ -861,47 +901,7 @@ Retry indexing a failed file
 | `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
 | `--file-id` | `string (uuid)` | Yes |  |
 
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-files-get`
-
-List files in a Knowledge Base V2
-
-`GET /v2/knowledge-base/{id}/file`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-find-all`
-
-List Knowledge Bases V2
-
-`GET /v2/knowledge-base`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--limit` | `number` | No |  |
-
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-find-one`
-
-Get a Knowledge Base V2
-
-`GET /v2/knowledge-base/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-remove`
-
-Delete a Knowledge Base V2
-
-`DELETE /v2/knowledge-base/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi knowledge-bases-v2 knowledge-base-v2-controller-update`
+#### `vapi knowledge-bases-v2 update`
 
 Update a Knowledge Base V2
 
@@ -916,7 +916,7 @@ Update a Knowledge Base V2
 
 ### `vapi observability-scorecard`
 
-#### `vapi observability-scorecard scorecard-controller-create`
+#### `vapi observability-scorecard create`
 
 Creates a scorecard containing metrics, scoring conditions, and optional links to assistants whose calls should be evaluated.
 
@@ -926,7 +926,17 @@ Creates a scorecard containing metrics, scoring conditions, and optional links t
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi observability-scorecard scorecard-controller-get`
+#### `vapi observability-scorecard delete`
+
+Deletes the scorecard identified by its ID.
+
+`DELETE /observability/scorecard/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The unique identifier of the scorecard. |
+
+#### `vapi observability-scorecard get`
 
 Returns the scorecard identified by its ID.
 
@@ -936,7 +946,7 @@ Returns the scorecard identified by its ID.
 |------|------|----------|-------------|
 | `--id` | `string` | Yes | The unique identifier of the scorecard. |
 
-#### `vapi observability-scorecard scorecard-controller-get-paginated`
+#### `vapi observability-scorecard list`
 
 Returns scorecards for the authenticated organization. Filter results by ID or creation and update timestamps.
 
@@ -958,17 +968,7 @@ Returns scorecards for the authenticated organization. Filter results by ID or c
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi observability-scorecard scorecard-controller-remove`
-
-Deletes the scorecard identified by its ID.
-
-`DELETE /observability/scorecard/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string` | Yes | The unique identifier of the scorecard. |
-
-#### `vapi observability-scorecard scorecard-controller-update`
+#### `vapi observability-scorecard update`
 
 Updates the scorecard identified by its ID.
 
@@ -1031,7 +1031,7 @@ Returns phone numbers for the authenticated organization. Filter results by crea
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi phone-numbers phone-number-controller-find-all-paginated`
+#### `vapi phone-numbers list-paginated`
 
 Returns a paginated list of phone numbers for the authenticated organization. Search by name, number, or SIP URI using a partial, case-insensitive match, and filter by creation or update timestamps.
 
@@ -1068,7 +1068,7 @@ Updates the specified fields of the phone number resource identified by its ID.
 
 ### `vapi provider-resources`
 
-#### `vapi provider-resources provider-resource-controller-create-provider-resource`
+#### `vapi provider-resources create`
 
 Creates a pronunciation-dictionary resource for a supported provider, currently Cartesia or ElevenLabs.
 
@@ -1080,7 +1080,7 @@ Creates a pronunciation-dictionary resource for a supported provider, currently 
 | `--provider` | `cartesia | 11labs` | Yes | The provider (e.g., 11labs) |
 | `--resource-name` | `pronunciation-dictionary` | Yes | The resource name (e.g., pronunciation-dictionary) |
 
-#### `vapi provider-resources provider-resource-controller-delete-provider-resource`
+#### `vapi provider-resources delete`
 
 Deletes the provider resource identified by its Vapi resource ID.
 
@@ -1092,7 +1092,7 @@ Deletes the provider resource identified by its Vapi resource ID.
 | `--resource-name` | `pronunciation-dictionary` | Yes | The resource name (e.g., pronunciation-dictionary) |
 | `--id` | `string (uuid)` | Yes | The unique identifier of the provider resource. |
 
-#### `vapi provider-resources provider-resource-controller-get-provider-resource`
+#### `vapi provider-resources get`
 
 Returns the provider resource identified by its Vapi resource ID.
 
@@ -1104,7 +1104,7 @@ Returns the provider resource identified by its Vapi resource ID.
 | `--resource-name` | `pronunciation-dictionary` | Yes | The resource name (e.g., pronunciation-dictionary) |
 | `--id` | `string (uuid)` | Yes | The unique identifier of the provider resource. |
 
-#### `vapi provider-resources provider-resource-controller-get-provider-resources-paginated`
+#### `vapi provider-resources list`
 
 Returns a paginated list of provider resources for the authenticated organization. Filter pronunciation dictionaries by provider, resource ID, or creation and update timestamps.
 
@@ -1129,7 +1129,7 @@ Returns a paginated list of provider resources for the authenticated organizatio
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi provider-resources provider-resource-controller-update-provider-resource`
+#### `vapi provider-resources update`
 
 Updates the provider resource identified by its Vapi resource ID.
 
@@ -1242,7 +1242,7 @@ Update Session
 
 ### `vapi simulation-personalities`
 
-#### `vapi simulation-personalities personality-controller-create`
+#### `vapi simulation-personalities create`
 
 Creates a personality, the AI tester's configuration used in simulations.
 
@@ -1252,7 +1252,27 @@ Creates a personality, the AI tester's configuration used in simulations.
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulation-personalities personality-controller-find-all`
+#### `vapi simulation-personalities delete`
+
+Deletes the specified personality.
+
+`DELETE /eval/simulation/personality/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the personality. |
+
+#### `vapi simulation-personalities get`
+
+Returns the specified personality.
+
+`GET /eval/simulation/personality/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the personality. |
+
+#### `vapi simulation-personalities list`
 
 Returns the personalities for the authenticated organization.
 
@@ -1273,27 +1293,7 @@ Returns the personalities for the authenticated organization.
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi simulation-personalities personality-controller-find-one`
-
-Returns the specified personality.
-
-`GET /eval/simulation/personality/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the personality. |
-
-#### `vapi simulation-personalities personality-controller-remove`
-
-Deletes the specified personality.
-
-`DELETE /eval/simulation/personality/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the personality. |
-
-#### `vapi simulation-personalities personality-controller-update`
+#### `vapi simulation-personalities update`
 
 Updates the specified personality. Changes apply to future runs.
 
@@ -1308,7 +1308,7 @@ Updates the specified personality. Changes apply to future runs.
 
 ### `vapi simulation-runs`
 
-#### `vapi simulation-runs simulation-run-controller-cancel-group`
+#### `vapi simulation-runs cancel`
 
 Cancels the specified simulation run.
 
@@ -1318,7 +1318,7 @@ Cancels the specified simulation run.
 |------|------|----------|-------------|
 | `--id` | `string (uuid)` | Yes | The unique identifier of the simulation run. |
 
-#### `vapi simulation-runs simulation-run-controller-cancel-item`
+#### `vapi simulation-runs cancel-item`
 
 Cancels the specified run item.
 
@@ -1329,7 +1329,7 @@ Cancels the specified run item.
 | `--id` | `string` | Yes | The unique identifier of the simulation run. |
 | `--item-id` | `string` | Yes | The unique identifier of the run item. |
 
-#### `vapi simulation-runs simulation-run-controller-create`
+#### `vapi simulation-runs create`
 
 Starts a simulation run against a target assistant or squad.
 
@@ -1341,7 +1341,41 @@ Starts a simulation run against a target assistant or squad.
 | `--user-agent` | `string` | No | Identifies the client starting the simulation run |
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulation-runs simulation-run-controller-find-all`
+#### `vapi simulation-runs generate-suggestions`
+
+Generates AI suggestions for improving the assistant or squad's system prompt, tools, and scenarios, based on the specified run item.
+
+`POST /eval/simulation/run/{id}/item/{itemId}/generate`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The unique identifier of the simulation run. |
+| `--item-id` | `string` | Yes | The unique identifier of the run item. |
+| `--force` | `string` | Yes | Set to the string `true` to regenerate improvement suggestions even if they already exist. |
+| `--persist` | `string` | No |  |
+
+#### `vapi simulation-runs get`
+
+Returns the specified simulation run, including its status and item counts.
+
+`GET /eval/simulation/run/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation run. |
+
+#### `vapi simulation-runs get-item`
+
+Returns the specified run item, including its evaluation results and the ID of the call that ran it.
+
+`GET /eval/simulation/run/{id}/item/{itemId}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string` | Yes | The unique identifier of the simulation run. |
+| `--item-id` | `string` | Yes | The unique identifier of the run item. |
+
+#### `vapi simulation-runs list`
 
 Returns the simulation runs for the authenticated organization.
 
@@ -1367,18 +1401,7 @@ Returns the simulation runs for the authenticated organization.
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi simulation-runs simulation-run-controller-find-item`
-
-Returns the specified run item, including its evaluation results and the ID of the call that ran it.
-
-`GET /eval/simulation/run/{id}/item/{itemId}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string` | Yes | The unique identifier of the simulation run. |
-| `--item-id` | `string` | Yes | The unique identifier of the run item. |
-
-#### `vapi simulation-runs simulation-run-controller-find-items`
+#### `vapi simulation-runs list-items`
 
 Returns the run items for the specified simulation run.
 
@@ -1403,34 +1426,11 @@ Returns the run items for the specified simulation run.
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi simulation-runs simulation-run-controller-find-one`
-
-Returns the specified simulation run, including its status and item counts.
-
-`GET /eval/simulation/run/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation run. |
-
-#### `vapi simulation-runs simulation-run-controller-generate-suggestions`
-
-Generates AI suggestions for improving the assistant or squad's system prompt, tools, and scenarios, based on the specified run item.
-
-`POST /eval/simulation/run/{id}/item/{itemId}/generate`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string` | Yes | The unique identifier of the simulation run. |
-| `--item-id` | `string` | Yes | The unique identifier of the run item. |
-| `--force` | `string` | Yes | Set to the string `true` to regenerate improvement suggestions even if they already exist. |
-| `--persist` | `string` | No |  |
-
 ---
 
 ### `vapi simulation-scenarios`
 
-#### `vapi simulation-scenarios scenario-controller-create`
+#### `vapi simulation-scenarios create`
 
 Creates a scenario, the AI tester's intent plus the success criteria that score a run.
 
@@ -1440,7 +1440,27 @@ Creates a scenario, the AI tester's intent plus the success criteria that score 
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulation-scenarios scenario-controller-find-all`
+#### `vapi simulation-scenarios delete`
+
+Deletes the specified scenario.
+
+`DELETE /eval/simulation/scenario/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the scenario. |
+
+#### `vapi simulation-scenarios get`
+
+Returns the specified scenario.
+
+`GET /eval/simulation/scenario/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the scenario. |
+
+#### `vapi simulation-scenarios list`
 
 Returns the scenarios for the authenticated organization.
 
@@ -1463,27 +1483,7 @@ Returns the scenarios for the authenticated organization.
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi simulation-scenarios scenario-controller-find-one`
-
-Returns the specified scenario.
-
-`GET /eval/simulation/scenario/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the scenario. |
-
-#### `vapi simulation-scenarios scenario-controller-remove`
-
-Deletes the specified scenario.
-
-`DELETE /eval/simulation/scenario/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the scenario. |
-
-#### `vapi simulation-scenarios scenario-controller-update`
+#### `vapi simulation-scenarios update`
 
 Updates the specified scenario.
 
@@ -1498,7 +1498,27 @@ Updates the specified scenario.
 
 ### `vapi simulation-suites`
 
-#### `vapi simulation-suites simulation-onboarding-controller-requirements-draft`
+#### `vapi simulation-suites create`
+
+Creates a simulation suite, a group of simulations that run together.
+
+`POST /eval/simulation/suite`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+
+#### `vapi simulation-suites delete`
+
+Deletes the specified simulation suite.
+
+`DELETE /eval/simulation/suite/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation suite. |
+
+#### `vapi simulation-suites draft-requirements`
 
 Generate draft test requirements from an assistant's prompt, tools, and handoff configuration. The response includes numbered requirements describing expected behavior and open questions about behavior that needs clarification. Use this endpoint before generating a simulation suite.
 
@@ -1512,7 +1532,17 @@ Requests can take up to 2 minutes. Each organization can draft requirements 60 t
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulation-suites simulation-onboarding-controller-suite-create`
+#### `vapi simulation-suites duplicate`
+
+Duplicate simulation suite
+
+`POST /eval/simulation/suite/{id}/duplicate`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
+
+#### `vapi simulation-suites generate`
 
 Generate and save a simulation suite from reviewed test requirements, and assign it to an assistant. First draft requirements with `POST /eval/simulation/onboarding/requirements`. The response includes the saved suite, its simulations, and requirement coverage, including any gaps.
 
@@ -1533,44 +1563,17 @@ Each organization can generate 20 suites per UTC day, shared with the dashboard,
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulation-suites simulation-onboarding-controller-suite-update`
+#### `vapi simulation-suites get`
 
-Revise a suite created by `POST /eval/simulation/onboarding/suite`. Remove simulations, rewrite scenarios using natural-language instructions, or set `retryFailed` to regenerate scenarios that failed or exceeded generation limits. The response includes the updated suite and requirement coverage.
+Returns the specified simulation suite.
 
-Requests can take up to 2 minutes.
-
-Send a new `patchKey` for each edit. Replaying an applied key changes nothing and returns the current suite, with `failedEditSimulationIds` listing the simulations that edit could not rewrite, so retry a timeout or a 5xx with the same key. A suite remembers its last 50 keys, so never reuse one.
-
-Each organization can make 60 edits per UTC day, shared with the dashboard. Requests that only remove simulations and replays of applied edits do not count toward this limit. On a 429 `SIMULATION_ONBOARDING_QUOTA_EXCEEDED`, wait until the daily limit resets at 00:00 UTC before retrying.
-
-`PATCH /eval/simulation/onboarding/suite/{suiteId}`
+`GET /eval/simulation/suite/{id}`
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--suite-id` | `string` | Yes |  |
-| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation suite. |
 
-#### `vapi simulation-suites simulation-suite-controller-create`
-
-Creates a simulation suite, a group of simulations that run together.
-
-`POST /eval/simulation/suite`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
-
-#### `vapi simulation-suites simulation-suite-controller-duplicate`
-
-Duplicate simulation suite
-
-`POST /eval/simulation/suite/{id}/duplicate`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier for the resource. |
-
-#### `vapi simulation-suites simulation-suite-controller-find-all`
+#### `vapi simulation-suites list`
 
 Returns the simulation suites for the authenticated organization.
 
@@ -1594,27 +1597,24 @@ Returns the simulation suites for the authenticated organization.
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi simulation-suites simulation-suite-controller-find-one`
+#### `vapi simulation-suites revise`
 
-Returns the specified simulation suite.
+Revise a suite created by `POST /eval/simulation/onboarding/suite`. Remove simulations, rewrite scenarios using natural-language instructions, or set `retryFailed` to regenerate scenarios that failed or exceeded generation limits. The response includes the updated suite and requirement coverage.
 
-`GET /eval/simulation/suite/{id}`
+Requests can take up to 2 minutes.
 
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation suite. |
+Send a new `patchKey` for each edit. Replaying an applied key changes nothing and returns the current suite, with `failedEditSimulationIds` listing the simulations that edit could not rewrite, so retry a timeout or a 5xx with the same key. A suite remembers its last 50 keys, so never reuse one.
 
-#### `vapi simulation-suites simulation-suite-controller-remove`
+Each organization can make 60 edits per UTC day, shared with the dashboard. Requests that only remove simulations and replays of applied edits do not count toward this limit. On a 429 `SIMULATION_ONBOARDING_QUOTA_EXCEEDED`, wait until the daily limit resets at 00:00 UTC before retrying.
 
-Deletes the specified simulation suite.
-
-`DELETE /eval/simulation/suite/{id}`
+`PATCH /eval/simulation/onboarding/suite/{suiteId}`
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation suite. |
+| `--suite-id` | `string` | Yes |  |
+| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulation-suites simulation-suite-controller-update`
+#### `vapi simulation-suites update`
 
 Updates the specified simulation suite.
 
@@ -1629,7 +1629,7 @@ Updates the specified simulation suite.
 
 ### `vapi simulations`
 
-#### `vapi simulations simulation-controller-create`
+#### `vapi simulations create`
 
 Creates a simulation by pairing a scenario with a personality.
 
@@ -1639,7 +1639,33 @@ Creates a simulation by pairing a scenario with a personality.
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi simulations simulation-controller-find-all`
+#### `vapi simulations delete`
+
+Deletes the specified simulation.
+
+`DELETE /eval/simulation/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation. |
+
+#### `vapi simulations get`
+
+Returns the specified simulation.
+
+`GET /eval/simulation/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation. |
+
+#### `vapi simulations get-concurrency`
+
+Returns the organization's simulation concurrency limit, the number of active simulations, and how many more can start.
+
+`GET /eval/simulation/concurrency`
+
+#### `vapi simulations list`
 
 Returns the simulations for the authenticated organization.
 
@@ -1662,33 +1688,7 @@ Returns the simulations for the authenticated organization.
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi simulations simulation-controller-find-one`
-
-Returns the specified simulation.
-
-`GET /eval/simulation/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation. |
-
-#### `vapi simulations simulation-controller-get-concurrency`
-
-Returns the organization's simulation concurrency limit, the number of active simulations, and how many more can start.
-
-`GET /eval/simulation/concurrency`
-
-#### `vapi simulations simulation-controller-remove`
-
-Deletes the specified simulation.
-
-`DELETE /eval/simulation/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the simulation. |
-
-#### `vapi simulations simulation-controller-update`
+#### `vapi simulations update`
 
 Updates the specified simulation.
 
@@ -1767,7 +1767,7 @@ Updates the specified fields of the squad identified by its ID.
 
 ### `vapi structured-outputs`
 
-#### `vapi structured-outputs structured-output-controller-create`
+#### `vapi structured-outputs create`
 
 Creates a reusable definition for extracting validated data from conversations using an AI model or regular expression.
 
@@ -1777,7 +1777,27 @@ Creates a reusable definition for extracting validated data from conversations u
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi structured-outputs structured-output-controller-find-all`
+#### `vapi structured-outputs delete`
+
+Deletes the structured-output definition identified by its ID.
+
+`DELETE /structured-output/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the structured output. |
+
+#### `vapi structured-outputs get`
+
+Returns the structured-output definition identified by its ID.
+
+`GET /structured-output/{id}`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--id` | `string (uuid)` | Yes | The unique identifier of the structured output. |
+
+#### `vapi structured-outputs list`
 
 Returns structured-output definitions for the authenticated organization. Filter results by ID, name, or creation and update timestamps.
 
@@ -1800,27 +1820,7 @@ Returns structured-output definitions for the authenticated organization. Filter
 | `--updated-at-ge` | `string (date-time)` | No | This will return items where the updatedAt is greater than or equal to the specified value. |
 | `--updated-at-le` | `string (date-time)` | No | This will return items where the updatedAt is less than or equal to the specified value. |
 
-#### `vapi structured-outputs structured-output-controller-find-one`
-
-Returns the structured-output definition identified by its ID.
-
-`GET /structured-output/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the structured output. |
-
-#### `vapi structured-outputs structured-output-controller-remove`
-
-Deletes the structured-output definition identified by its ID.
-
-`DELETE /structured-output/{id}`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--id` | `string (uuid)` | Yes | The unique identifier of the structured output. |
-
-#### `vapi structured-outputs structured-output-controller-run`
+#### `vapi structured-outputs run`
 
 Runs a saved or transient structured-output definition against one or more calls, optionally returning a preview without updating call artifacts.
 
@@ -1830,7 +1830,7 @@ Runs a saved or transient structured-output definition against one or more calls
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi structured-outputs structured-output-controller-update`
+#### `vapi structured-outputs update`
 
 Updates the structured-output definition identified by its ID.
 
@@ -1909,7 +1909,7 @@ Updates the specified fields of the tool identified by its ID.
 
 ### `vapi traffic-allocations`
 
-#### `vapi traffic-allocations traffic-allocation-controller-create`
+#### `vapi traffic-allocations create`
 
 Creates a new traffic allocation for an assistant, replacing the one currently in effect. To start or adjust a split, send targets naming published versions (such as "v7") with percentages totaling 100; allocationIntent is inferred as 'explicit'. To stop splitting and send every call to the newest published version, send allocationIntent 'follow-latest' with no targets field; stopping always names its intent, so a dropped targets field can never end a split by accident.
 
@@ -1919,20 +1919,7 @@ Creates a new traffic allocation for an assistant, replacing the one currently i
 |------|------|----------|-------------|
 | `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
 
-#### `vapi traffic-allocations traffic-allocation-controller-find-all-paginated`
-
-The append-only history of an assistant's allocations, newest first.
-
-`GET /traffic-allocations`
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `--assistant-id` | `string` | No | Filter to allocations for this assistant. |
-| `--page` | `integer` | No | The page number to return. Defaults to 1. |
-| `--limit` | `integer` | No | The maximum number of items to return. Defaults to 100. |
-| `--sort-order` | `ASC | DESC` | No | The sort order for pagination. Defaults to 'DESC'. |
-
-#### `vapi traffic-allocations traffic-allocation-controller-find-one`
+#### `vapi traffic-allocations get`
 
 Returns a single allocation by id, including its targets and actor attribution.
 
@@ -1942,7 +1929,7 @@ Returns a single allocation by id, including its targets and actor attribution.
 |------|------|----------|-------------|
 | `--id` | `string` | Yes |  |
 
-#### `vapi traffic-allocations traffic-allocation-controller-latest-get`
+#### `vapi traffic-allocations get-latest`
 
 The allocation currently in effect for the assistant, with its targets. The response carries no allocation field when traffic splitting has never been configured.
 
@@ -1952,7 +1939,7 @@ The allocation currently in effect for the assistant, with its targets. The resp
 |------|------|----------|-------------|
 | `--assistant-id` | `string` | Yes | The assistant whose latest allocation to return. |
 
-#### `vapi traffic-allocations traffic-allocation-controller-metrics-get`
+#### `vapi traffic-allocations get-metrics`
 
 Per-assistant-version call metrics over a time window: call counts, configured vs actual traffic share, duration, cost per minute, latency, ended reasons, a bucketed timeseries, and optional structured output aggregations. Calls with no assistant version are reported as an 'unversioned' row.
 
@@ -1965,6 +1952,19 @@ Per-assistant-version call metrics over a time window: call counts, configured v
 | `--to` | `string (date-time)` | Yes | End of the metrics window (exclusive), ISO 8601 datetime. Must be later than from, and the window may hold at most 2000 buckets of the requested width. |
 | `--bucket` | `hour | day` | No | Bucket size for the timeseries. Defaults to 'day'. |
 | `--structured-output-ids` | `string[]` | No | Structured output ids to aggregate per version, as an array or a comma-separated string. At most 5. |
+
+#### `vapi traffic-allocations list`
+
+The append-only history of an assistant's allocations, newest first.
+
+`GET /traffic-allocations`
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `--assistant-id` | `string` | No | Filter to allocations for this assistant. |
+| `--page` | `integer` | No | The page number to return. Defaults to 1. |
+| `--limit` | `integer` | No | The maximum number of items to return. Defaults to 100. |
+| `--sort-order` | `ASC | DESC` | No | The sort order for pagination. Defaults to 'DESC'. |
 
 ---
 

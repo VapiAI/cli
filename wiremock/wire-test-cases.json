@@ -328,7 +328,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_monorecordingdownload",
+      "id": "download_mono_recording",
       "method": "GET",
       "path": "/call/{id}/mono-recording",
       "params": {
@@ -349,7 +349,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_stereorecordingdownload",
+      "id": "download_stereo_recording",
       "method": "GET",
       "path": "/call/{id}/stereo-recording",
       "params": {
@@ -370,7 +370,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_videorecordingdownload",
+      "id": "download_video_recording",
       "method": "GET",
       "path": "/call/{id}/video-recording",
       "params": {
@@ -391,7 +391,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_customerrecordingdownload",
+      "id": "download_customer_recording",
       "method": "GET",
       "path": "/call/{id}/customer-recording",
       "params": {
@@ -412,7 +412,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_assistantrecordingdownload",
+      "id": "download_assistant_recording",
       "method": "GET",
       "path": "/call/{id}/assistant-recording",
       "params": {
@@ -433,7 +433,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_pcapdownload",
+      "id": "download_pcap",
       "method": "GET",
       "path": "/call/{id}/pcap",
       "params": {
@@ -454,7 +454,7 @@
       }
     },
     {
-      "id": "callartifactcontroller_calllogsdownload",
+      "id": "download_call_logs",
       "method": "GET",
       "path": "/call/{id}/call-logs",
       "params": {
@@ -585,7 +585,7 @@
       }
     },
     {
-      "id": "campaigncontroller_findall",
+      "id": "list_4",
       "method": "GET",
       "path": "/campaign",
       "params": {},
@@ -604,7 +604,7 @@
       }
     },
     {
-      "id": "campaigncontroller_create",
+      "id": "create_4",
       "method": "POST",
       "path": "/campaign",
       "params": {},
@@ -625,7 +625,7 @@
       }
     },
     {
-      "id": "campaigncontroller_findallv2",
+      "id": "list_v2",
       "method": "GET",
       "path": "/v2/campaign",
       "params": {},
@@ -644,7 +644,7 @@
       }
     },
     {
-      "id": "campaigncontroller_createv2",
+      "id": "create_v2",
       "method": "POST",
       "path": "/v2/campaign",
       "params": {},
@@ -665,7 +665,7 @@
       }
     },
     {
-      "id": "campaigncontroller_findonev2",
+      "id": "get_v2",
       "method": "GET",
       "path": "/v2/campaign/{id}",
       "params": {
@@ -686,7 +686,7 @@
       }
     },
     {
-      "id": "campaigncontroller_removev2",
+      "id": "delete_v2",
       "method": "DELETE",
       "path": "/v2/campaign/{id}",
       "params": {
@@ -707,7 +707,7 @@
       }
     },
     {
-      "id": "campaigncontroller_updatev2",
+      "id": "update_v2",
       "method": "PATCH",
       "path": "/v2/campaign/{id}",
       "params": {
@@ -728,7 +728,7 @@
       }
     },
     {
-      "id": "campaigncontroller_findone",
+      "id": "get_4",
       "method": "GET",
       "path": "/campaign/{id}",
       "params": {
@@ -749,7 +749,7 @@
       }
     },
     {
-      "id": "campaigncontroller_remove",
+      "id": "delete_4",
       "method": "DELETE",
       "path": "/campaign/{id}",
       "params": {
@@ -770,7 +770,7 @@
       }
     },
     {
-      "id": "campaigncontroller_update",
+      "id": "update_3",
       "method": "PATCH",
       "path": "/campaign/{id}",
       "params": {
@@ -791,7 +791,7 @@
       }
     },
     {
-      "id": "campaigncontroller_getcampaignv2contacts",
+      "id": "list_contacts_v2",
       "method": "GET",
       "path": "/v2/campaign/{id}/contacts",
       "params": {
@@ -812,7 +812,7 @@
       }
     },
     {
-      "id": "list_4",
+      "id": "list_5",
       "method": "GET",
       "path": "/session",
       "params": {
@@ -843,7 +843,7 @@
       }
     },
     {
-      "id": "create_4",
+      "id": "create_5",
       "method": "POST",
       "path": "/session",
       "params": {},
@@ -862,7 +862,7 @@
       }
     },
     {
-      "id": "get_4",
+      "id": "get_5",
       "method": "GET",
       "path": "/session/{id}",
       "params": {
@@ -883,7 +883,7 @@
       }
     },
     {
-      "id": "delete_4",
+      "id": "delete_5",
       "method": "DELETE",
       "path": "/session/{id}",
       "params": {
@@ -904,7 +904,7 @@
       }
     },
     {
-      "id": "update_3",
+      "id": "update_4",
       "method": "PATCH",
       "path": "/session/{id}",
       "params": {
@@ -925,7 +925,7 @@
       }
     },
     {
-      "id": "trafficallocationcontroller_findallpaginated",
+      "id": "list_6",
       "method": "GET",
       "path": "/traffic-allocations",
       "params": {},
@@ -944,7 +944,7 @@
       }
     },
     {
-      "id": "trafficallocationcontroller_create",
+      "id": "create_6",
       "method": "POST",
       "path": "/traffic-allocations",
       "params": {},
@@ -965,7 +965,7 @@
       }
     },
     {
-      "id": "trafficallocationcontroller_latestget",
+      "id": "get_latest",
       "method": "GET",
       "path": "/traffic-allocations/latest",
       "params": {
@@ -991,7 +991,7 @@
       }
     },
     {
-      "id": "trafficallocationcontroller_metricsget",
+      "id": "get_metrics",
       "method": "GET",
       "path": "/traffic-allocations/metrics",
       "params": {
@@ -1027,7 +1027,7 @@
       }
     },
     {
-      "id": "trafficallocationcontroller_findone",
+      "id": "get_6",
       "method": "GET",
       "path": "/traffic-allocations/{id}",
       "params": {
@@ -1048,7 +1048,7 @@
       }
     },
     {
-      "id": "list_5",
+      "id": "list_7",
       "method": "GET",
       "path": "/phone-number",
       "params": {},
@@ -1067,7 +1067,7 @@
       }
     },
     {
-      "id": "create_5",
+      "id": "create_7",
       "method": "POST",
       "path": "/phone-number",
       "params": {},
@@ -1089,7 +1089,7 @@
       }
     },
     {
-      "id": "phonenumbercontroller_findallpaginated",
+      "id": "list_paginated",
       "method": "GET",
       "path": "/v2/phone-number",
       "params": {},
@@ -1108,7 +1108,7 @@
       }
     },
     {
-      "id": "get_5",
+      "id": "get_7",
       "method": "GET",
       "path": "/phone-number/{id}",
       "params": {
@@ -1129,7 +1129,7 @@
       }
     },
     {
-      "id": "delete_5",
+      "id": "delete_6",
       "method": "DELETE",
       "path": "/phone-number/{id}",
       "params": {
@@ -1150,7 +1150,7 @@
       }
     },
     {
-      "id": "update_4",
+      "id": "update_5",
       "method": "PATCH",
       "path": "/phone-number/{id}",
       "params": {
@@ -1173,7 +1173,7 @@
       }
     },
     {
-      "id": "list_6",
+      "id": "list_8",
       "method": "GET",
       "path": "/tool",
       "params": {},
@@ -1192,7 +1192,7 @@
       }
     },
     {
-      "id": "create_6",
+      "id": "create_8",
       "method": "POST",
       "path": "/tool",
       "params": {},
@@ -1215,7 +1215,7 @@
       }
     },
     {
-      "id": "get_6",
+      "id": "get_8",
       "method": "GET",
       "path": "/tool/{id}",
       "params": {
@@ -1236,7 +1236,7 @@
       }
     },
     {
-      "id": "delete_6",
+      "id": "delete_7",
       "method": "DELETE",
       "path": "/tool/{id}",
       "params": {
@@ -1257,7 +1257,7 @@
       }
     },
     {
-      "id": "update_5",
+      "id": "update_6",
       "method": "PATCH",
       "path": "/tool/{id}",
       "params": {
@@ -1280,7 +1280,7 @@
       }
     },
     {
-      "id": "list_7",
+      "id": "list_9",
       "method": "GET",
       "path": "/file",
       "params": {},
@@ -1299,7 +1299,7 @@
       }
     },
     {
-      "id": "create_7",
+      "id": "create_9",
       "method": "POST",
       "path": "/file",
       "params": {},
@@ -1335,7 +1335,7 @@
       }
     },
     {
-      "id": "get_7",
+      "id": "get_9",
       "method": "GET",
       "path": "/file/{id}",
       "params": {
@@ -1356,7 +1356,7 @@
       }
     },
     {
-      "id": "delete_7",
+      "id": "delete_8",
       "method": "DELETE",
       "path": "/file/{id}",
       "params": {
@@ -1377,7 +1377,7 @@
       }
     },
     {
-      "id": "update_6",
+      "id": "update_7",
       "method": "PATCH",
       "path": "/file/{id}",
       "params": {
@@ -1398,7 +1398,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_findall",
+      "id": "list_10",
       "method": "GET",
       "path": "/v2/knowledge-base",
       "params": {},
@@ -1417,7 +1417,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_create",
+      "id": "create_10",
       "method": "POST",
       "path": "/v2/knowledge-base",
       "params": {},
@@ -1438,7 +1438,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_filesget",
+      "id": "list_files",
       "method": "GET",
       "path": "/v2/knowledge-base/{id}/file",
       "params": {
@@ -1459,7 +1459,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_fileattach",
+      "id": "attach_file",
       "method": "POST",
       "path": "/v2/knowledge-base/{id}/file",
       "params": {
@@ -1482,7 +1482,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_filedetach",
+      "id": "detach_file",
       "method": "DELETE",
       "path": "/v2/knowledge-base/{id}/file/{fileId}",
       "params": {
@@ -1504,7 +1504,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_fileretry",
+      "id": "retry_file",
       "method": "POST",
       "path": "/v2/knowledge-base/{id}/file/{fileId}/retry",
       "params": {
@@ -1526,7 +1526,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_findone",
+      "id": "get_10",
       "method": "GET",
       "path": "/v2/knowledge-base/{id}",
       "params": {
@@ -1547,7 +1547,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_remove",
+      "id": "delete_9",
       "method": "DELETE",
       "path": "/v2/knowledge-base/{id}",
       "params": {
@@ -1568,7 +1568,7 @@
       }
     },
     {
-      "id": "knowledgebasev2controller_update",
+      "id": "update_8",
       "method": "PATCH",
       "path": "/v2/knowledge-base/{id}",
       "params": {
@@ -1589,7 +1589,7 @@
       }
     },
     {
-      "id": "structuredoutputcontroller_findall",
+      "id": "list_11",
       "method": "GET",
       "path": "/structured-output",
       "params": {},
@@ -1608,7 +1608,7 @@
       }
     },
     {
-      "id": "structuredoutputcontroller_create",
+      "id": "create_11",
       "method": "POST",
       "path": "/structured-output",
       "params": {},
@@ -1632,7 +1632,7 @@
       }
     },
     {
-      "id": "structuredoutputcontroller_findone",
+      "id": "get_11",
       "method": "GET",
       "path": "/structured-output/{id}",
       "params": {
@@ -1653,7 +1653,7 @@
       }
     },
     {
-      "id": "structuredoutputcontroller_remove",
+      "id": "delete_10",
       "method": "DELETE",
       "path": "/structured-output/{id}",
       "params": {
@@ -1674,7 +1674,7 @@
       }
     },
     {
-      "id": "structuredoutputcontroller_update",
+      "id": "update_9",
       "method": "PATCH",
       "path": "/structured-output/{id}",
       "params": {
@@ -1701,7 +1701,7 @@
       }
     },
     {
-      "id": "structuredoutputcontroller_run",
+      "id": "run",
       "method": "POST",
       "path": "/structured-output/run",
       "params": {},
@@ -1724,7 +1724,7 @@
       }
     },
     {
-      "id": "personalitycontroller_findall",
+      "id": "list_12",
       "method": "GET",
       "path": "/eval/simulation/personality",
       "params": {},
@@ -1743,7 +1743,7 @@
       }
     },
     {
-      "id": "personalitycontroller_create",
+      "id": "create_12",
       "method": "POST",
       "path": "/eval/simulation/personality",
       "params": {},
@@ -1765,7 +1765,7 @@
       }
     },
     {
-      "id": "personalitycontroller_findone",
+      "id": "get_12",
       "method": "GET",
       "path": "/eval/simulation/personality/{id}",
       "params": {
@@ -1786,7 +1786,7 @@
       }
     },
     {
-      "id": "personalitycontroller_remove",
+      "id": "delete_11",
       "method": "DELETE",
       "path": "/eval/simulation/personality/{id}",
       "params": {
@@ -1807,7 +1807,7 @@
       }
     },
     {
-      "id": "personalitycontroller_update",
+      "id": "update_10",
       "method": "PATCH",
       "path": "/eval/simulation/personality/{id}",
       "params": {
@@ -1828,7 +1828,7 @@
       }
     },
     {
-      "id": "scenariocontroller_findall",
+      "id": "list_13",
       "method": "GET",
       "path": "/eval/simulation/scenario",
       "params": {},
@@ -1847,7 +1847,7 @@
       }
     },
     {
-      "id": "scenariocontroller_create",
+      "id": "create_13",
       "method": "POST",
       "path": "/eval/simulation/scenario",
       "params": {},
@@ -1875,7 +1875,7 @@
       }
     },
     {
-      "id": "scenariocontroller_findone",
+      "id": "get_13",
       "method": "GET",
       "path": "/eval/simulation/scenario/{id}",
       "params": {
@@ -1896,7 +1896,7 @@
       }
     },
     {
-      "id": "scenariocontroller_remove",
+      "id": "delete_12",
       "method": "DELETE",
       "path": "/eval/simulation/scenario/{id}",
       "params": {
@@ -1917,7 +1917,7 @@
       }
     },
     {
-      "id": "scenariocontroller_update",
+      "id": "update_11",
       "method": "PATCH",
       "path": "/eval/simulation/scenario/{id}",
       "params": {
@@ -1938,7 +1938,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_findall",
+      "id": "list_14",
       "method": "GET",
       "path": "/eval/simulation/run",
       "params": {},
@@ -1957,7 +1957,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_create",
+      "id": "create_14",
       "method": "POST",
       "path": "/eval/simulation/run",
       "params": {},
@@ -1985,7 +1985,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_findone",
+      "id": "get_14",
       "method": "GET",
       "path": "/eval/simulation/run/{id}",
       "params": {
@@ -2006,7 +2006,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_cancelgroup",
+      "id": "cancel",
       "method": "PATCH",
       "path": "/eval/simulation/run/{id}",
       "params": {
@@ -2027,7 +2027,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_finditems",
+      "id": "list_items",
       "method": "GET",
       "path": "/eval/simulation/run/{id}/item",
       "params": {
@@ -2048,7 +2048,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_finditem",
+      "id": "get_item",
       "method": "GET",
       "path": "/eval/simulation/run/{id}/item/{itemId}",
       "params": {
@@ -2070,7 +2070,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_cancelitem",
+      "id": "cancel_item",
       "method": "PATCH",
       "path": "/eval/simulation/run/{id}/item/{itemId}",
       "params": {
@@ -2092,7 +2092,7 @@
       }
     },
     {
-      "id": "simulationruncontroller_generatesuggestions",
+      "id": "generate_suggestions",
       "method": "POST",
       "path": "/eval/simulation/run/{id}/item/{itemId}/generate",
       "params": {
@@ -2120,7 +2120,7 @@
       }
     },
     {
-      "id": "simulationsuitecontroller_findall",
+      "id": "list_15",
       "method": "GET",
       "path": "/eval/simulation/suite",
       "params": {},
@@ -2139,7 +2139,7 @@
       }
     },
     {
-      "id": "simulationsuitecontroller_create",
+      "id": "create_15",
       "method": "POST",
       "path": "/eval/simulation/suite",
       "params": {},
@@ -2163,7 +2163,7 @@
       }
     },
     {
-      "id": "simulationsuitecontroller_duplicate",
+      "id": "duplicate",
       "method": "POST",
       "path": "/eval/simulation/suite/{id}/duplicate",
       "params": {
@@ -2184,7 +2184,7 @@
       }
     },
     {
-      "id": "simulationsuitecontroller_findone",
+      "id": "get_15",
       "method": "GET",
       "path": "/eval/simulation/suite/{id}",
       "params": {
@@ -2205,7 +2205,7 @@
       }
     },
     {
-      "id": "simulationsuitecontroller_remove",
+      "id": "delete_13",
       "method": "DELETE",
       "path": "/eval/simulation/suite/{id}",
       "params": {
@@ -2226,7 +2226,7 @@
       }
     },
     {
-      "id": "simulationsuitecontroller_update",
+      "id": "update_12",
       "method": "PATCH",
       "path": "/eval/simulation/suite/{id}",
       "params": {
@@ -2247,7 +2247,7 @@
       }
     },
     {
-      "id": "simulationonboardingcontroller_requirementsdraft",
+      "id": "draft_requirements",
       "method": "POST",
       "path": "/eval/simulation/onboarding/requirements",
       "params": {},
@@ -2268,7 +2268,7 @@
       }
     },
     {
-      "id": "simulationonboardingcontroller_suitecreate",
+      "id": "generate",
       "method": "POST",
       "path": "/eval/simulation/onboarding/suite",
       "params": {},
@@ -2296,7 +2296,7 @@
       }
     },
     {
-      "id": "simulationonboardingcontroller_suiteupdate",
+      "id": "revise",
       "method": "PATCH",
       "path": "/eval/simulation/onboarding/suite/{suiteId}",
       "params": {
@@ -2319,7 +2319,7 @@
       }
     },
     {
-      "id": "simulationcontroller_findall",
+      "id": "list_16",
       "method": "GET",
       "path": "/eval/simulation",
       "params": {},
@@ -2338,7 +2338,7 @@
       }
     },
     {
-      "id": "simulationcontroller_create",
+      "id": "create_16",
       "method": "POST",
       "path": "/eval/simulation",
       "params": {},
@@ -2360,7 +2360,7 @@
       }
     },
     {
-      "id": "simulationcontroller_getconcurrency",
+      "id": "get_concurrency",
       "method": "GET",
       "path": "/eval/simulation/concurrency",
       "params": {},
@@ -2379,7 +2379,7 @@
       }
     },
     {
-      "id": "simulationcontroller_findone",
+      "id": "get_16",
       "method": "GET",
       "path": "/eval/simulation/{id}",
       "params": {
@@ -2400,7 +2400,7 @@
       }
     },
     {
-      "id": "simulationcontroller_remove",
+      "id": "delete_14",
       "method": "DELETE",
       "path": "/eval/simulation/{id}",
       "params": {
@@ -2421,7 +2421,7 @@
       }
     },
     {
-      "id": "simulationcontroller_update",
+      "id": "update_13",
       "method": "PATCH",
       "path": "/eval/simulation/{id}",
       "params": {
@@ -2442,7 +2442,7 @@
       }
     },
     {
-      "id": "insightcontroller_findall",
+      "id": "list_17",
       "method": "GET",
       "path": "/reporting/insight",
       "params": {},
@@ -2461,7 +2461,7 @@
       }
     },
     {
-      "id": "insightcontroller_create",
+      "id": "create_17",
       "method": "POST",
       "path": "/reporting/insight",
       "params": {},
@@ -2490,7 +2490,7 @@
       }
     },
     {
-      "id": "insightcontroller_findone",
+      "id": "get_17",
       "method": "GET",
       "path": "/reporting/insight/{id}",
       "params": {
@@ -2511,7 +2511,7 @@
       }
     },
     {
-      "id": "insightcontroller_remove",
+      "id": "delete_15",
       "method": "DELETE",
       "path": "/reporting/insight/{id}",
       "params": {
@@ -2532,7 +2532,7 @@
       }
     },
     {
-      "id": "insightcontroller_update",
+      "id": "update_14",
       "method": "PATCH",
       "path": "/reporting/insight/{id}",
       "params": {
@@ -2555,7 +2555,7 @@
       }
     },
     {
-      "id": "insightcontroller_run",
+      "id": "run_1",
       "method": "POST",
       "path": "/reporting/insight/{id}/run",
       "params": {
@@ -2576,7 +2576,7 @@
       }
     },
     {
-      "id": "insightcontroller_preview",
+      "id": "preview",
       "method": "POST",
       "path": "/reporting/insight/preview",
       "params": {},
@@ -2605,7 +2605,7 @@
       }
     },
     {
-      "id": "boardcontroller_findall",
+      "id": "list_18",
       "method": "GET",
       "path": "/reporting/board",
       "params": {},
@@ -2624,7 +2624,7 @@
       }
     },
     {
-      "id": "boardcontroller_create",
+      "id": "create_18",
       "method": "POST",
       "path": "/reporting/board",
       "params": {},
@@ -2648,7 +2648,7 @@
       }
     },
     {
-      "id": "boardcontroller_metricsoverviewensure",
+      "id": "ensure_metrics_overview",
       "method": "GET",
       "path": "/reporting/board/default/metrics-overview",
       "params": {},
@@ -2667,7 +2667,7 @@
       }
     },
     {
-      "id": "boardcontroller_findone",
+      "id": "get_18",
       "method": "GET",
       "path": "/reporting/board/{id}",
       "params": {
@@ -2688,7 +2688,7 @@
       }
     },
     {
-      "id": "boardcontroller_remove",
+      "id": "delete_16",
       "method": "DELETE",
       "path": "/reporting/board/{id}",
       "params": {
@@ -2709,7 +2709,7 @@
       }
     },
     {
-      "id": "boardcontroller_update",
+      "id": "update_15",
       "method": "PATCH",
       "path": "/reporting/board/{id}",
       "params": {
@@ -2730,7 +2730,7 @@
       }
     },
     {
-      "id": "evalcontroller_getpaginated",
+      "id": "list_19",
       "method": "GET",
       "path": "/eval",
       "params": {},
@@ -2749,7 +2749,7 @@
       }
     },
     {
-      "id": "evalcontroller_create",
+      "id": "create_19",
       "method": "POST",
       "path": "/eval",
       "params": {},
@@ -2775,7 +2775,7 @@
       }
     },
     {
-      "id": "evalcontroller_get",
+      "id": "get_19",
       "method": "GET",
       "path": "/eval/{id}",
       "params": {
@@ -2796,7 +2796,7 @@
       }
     },
     {
-      "id": "evalcontroller_remove",
+      "id": "delete_17",
       "method": "DELETE",
       "path": "/eval/{id}",
       "params": {
@@ -2817,7 +2817,7 @@
       }
     },
     {
-      "id": "evalcontroller_update",
+      "id": "update_16",
       "method": "PATCH",
       "path": "/eval/{id}",
       "params": {
@@ -2838,7 +2838,7 @@
       }
     },
     {
-      "id": "evalcontroller_getrun",
+      "id": "get_run",
       "method": "GET",
       "path": "/eval/run/{id}",
       "params": {
@@ -2859,7 +2859,7 @@
       }
     },
     {
-      "id": "evalcontroller_removerun",
+      "id": "delete_run",
       "method": "DELETE",
       "path": "/eval/run/{id}",
       "params": {
@@ -2880,7 +2880,7 @@
       }
     },
     {
-      "id": "evalcontroller_getrunspaginated",
+      "id": "list_runs",
       "method": "GET",
       "path": "/eval/run",
       "params": {},
@@ -2899,7 +2899,7 @@
       }
     },
     {
-      "id": "evalcontroller_run",
+      "id": "run_2",
       "method": "POST",
       "path": "/eval/run",
       "params": {},
@@ -2923,7 +2923,7 @@
       }
     },
     {
-      "id": "scorecardcontroller_get",
+      "id": "get_20",
       "method": "GET",
       "path": "/observability/scorecard/{id}",
       "params": {
@@ -2944,7 +2944,7 @@
       }
     },
     {
-      "id": "scorecardcontroller_remove",
+      "id": "delete_18",
       "method": "DELETE",
       "path": "/observability/scorecard/{id}",
       "params": {
@@ -2965,7 +2965,7 @@
       }
     },
     {
-      "id": "scorecardcontroller_update",
+      "id": "update_17",
       "method": "PATCH",
       "path": "/observability/scorecard/{id}",
       "params": {
@@ -2986,7 +2986,7 @@
       }
     },
     {
-      "id": "scorecardcontroller_getpaginated",
+      "id": "list_20",
       "method": "GET",
       "path": "/observability/scorecard",
       "params": {},
@@ -3005,7 +3005,7 @@
       }
     },
     {
-      "id": "scorecardcontroller_create",
+      "id": "create_20",
       "method": "POST",
       "path": "/observability/scorecard",
       "params": {},
@@ -3038,7 +3038,7 @@
       }
     },
     {
-      "id": "providerresourcecontroller_getproviderresourcespaginated",
+      "id": "list_21",
       "method": "GET",
       "path": "/provider/{provider}/{resourceName}",
       "params": {
@@ -3060,7 +3060,7 @@
       }
     },
     {
-      "id": "providerresourcecontroller_createproviderresource",
+      "id": "create_21",
       "method": "POST",
       "path": "/provider/{provider}/{resourceName}",
       "params": {
@@ -3082,7 +3082,7 @@
       }
     },
     {
-      "id": "providerresourcecontroller_getproviderresource",
+      "id": "get_21",
       "method": "GET",
       "path": "/provider/{provider}/{resourceName}/{id}",
       "params": {
@@ -3105,7 +3105,7 @@
       }
     },
     {
-      "id": "providerresourcecontroller_deleteproviderresource",
+      "id": "delete_19",
       "method": "DELETE",
       "path": "/provider/{provider}/{resourceName}/{id}",
       "params": {
@@ -3128,7 +3128,7 @@
       }
     },
     {
-      "id": "providerresourcecontroller_updateproviderresource",
+      "id": "update_18",
       "method": "PATCH",
       "path": "/provider/{provider}/{resourceName}/{id}",
       "params": {
@@ -3151,7 +3151,7 @@
       }
     },
     {
-      "id": "get_8",
+      "id": "get_22",
       "method": "POST",
       "path": "/analytics",
       "params": {},
@@ -3509,7 +3509,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_monorecordingdownload_error",
+      "id": "download_mono_recording_error",
       "method": "GET",
       "path": "/call/{id}/mono-recording",
       "params": {
@@ -3531,7 +3531,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_stereorecordingdownload_error",
+      "id": "download_stereo_recording_error",
       "method": "GET",
       "path": "/call/{id}/stereo-recording",
       "params": {
@@ -3553,7 +3553,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_videorecordingdownload_error",
+      "id": "download_video_recording_error",
       "method": "GET",
       "path": "/call/{id}/video-recording",
       "params": {
@@ -3575,7 +3575,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_customerrecordingdownload_error",
+      "id": "download_customer_recording_error",
       "method": "GET",
       "path": "/call/{id}/customer-recording",
       "params": {
@@ -3597,7 +3597,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_assistantrecordingdownload_error",
+      "id": "download_assistant_recording_error",
       "method": "GET",
       "path": "/call/{id}/assistant-recording",
       "params": {
@@ -3619,7 +3619,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_pcapdownload_error",
+      "id": "download_pcap_error",
       "method": "GET",
       "path": "/call/{id}/pcap",
       "params": {
@@ -3641,7 +3641,7 @@
       "expectError": true
     },
     {
-      "id": "callartifactcontroller_calllogsdownload_error",
+      "id": "download_call_logs_error",
       "method": "GET",
       "path": "/call/{id}/call-logs",
       "params": {
@@ -3778,7 +3778,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_findall_error",
+      "id": "list_4_error",
       "method": "GET",
       "path": "/campaign",
       "params": {},
@@ -3798,7 +3798,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_create_error",
+      "id": "create_4_error",
       "method": "POST",
       "path": "/campaign",
       "params": {},
@@ -3820,7 +3820,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_findallv2_error",
+      "id": "list_v2_error",
       "method": "GET",
       "path": "/v2/campaign",
       "params": {},
@@ -3840,7 +3840,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_createv2_error",
+      "id": "create_v2_error",
       "method": "POST",
       "path": "/v2/campaign",
       "params": {},
@@ -3862,7 +3862,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_findonev2_error",
+      "id": "get_v2_error",
       "method": "GET",
       "path": "/v2/campaign/{id}",
       "params": {
@@ -3884,7 +3884,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_removev2_error",
+      "id": "delete_v2_error",
       "method": "DELETE",
       "path": "/v2/campaign/{id}",
       "params": {
@@ -3906,7 +3906,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_updatev2_error",
+      "id": "update_v2_error",
       "method": "PATCH",
       "path": "/v2/campaign/{id}",
       "params": {
@@ -3928,7 +3928,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_findone_error",
+      "id": "get_4_error",
       "method": "GET",
       "path": "/campaign/{id}",
       "params": {
@@ -3950,7 +3950,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_remove_error",
+      "id": "delete_4_error",
       "method": "DELETE",
       "path": "/campaign/{id}",
       "params": {
@@ -3972,7 +3972,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_update_error",
+      "id": "update_3_error",
       "method": "PATCH",
       "path": "/campaign/{id}",
       "params": {
@@ -3994,7 +3994,7 @@
       "expectError": true
     },
     {
-      "id": "campaigncontroller_getcampaignv2contacts_error",
+      "id": "list_contacts_v2_error",
       "method": "GET",
       "path": "/v2/campaign/{id}/contacts",
       "params": {
@@ -4016,7 +4016,7 @@
       "expectError": true
     },
     {
-      "id": "list_4_error",
+      "id": "list_5_error",
       "method": "GET",
       "path": "/session",
       "params": {
@@ -4048,7 +4048,7 @@
       "expectError": true
     },
     {
-      "id": "create_4_error",
+      "id": "create_5_error",
       "method": "POST",
       "path": "/session",
       "params": {},
@@ -4068,7 +4068,7 @@
       "expectError": true
     },
     {
-      "id": "get_4_error",
+      "id": "get_5_error",
       "method": "GET",
       "path": "/session/{id}",
       "params": {
@@ -4090,7 +4090,7 @@
       "expectError": true
     },
     {
-      "id": "delete_4_error",
+      "id": "delete_5_error",
       "method": "DELETE",
       "path": "/session/{id}",
       "params": {
@@ -4112,7 +4112,7 @@
       "expectError": true
     },
     {
-      "id": "update_3_error",
+      "id": "update_4_error",
       "method": "PATCH",
       "path": "/session/{id}",
       "params": {
@@ -4134,7 +4134,7 @@
       "expectError": true
     },
     {
-      "id": "trafficallocationcontroller_findallpaginated_error",
+      "id": "list_6_error",
       "method": "GET",
       "path": "/traffic-allocations",
       "params": {},
@@ -4154,7 +4154,7 @@
       "expectError": true
     },
     {
-      "id": "trafficallocationcontroller_create_error",
+      "id": "create_6_error",
       "method": "POST",
       "path": "/traffic-allocations",
       "params": {},
@@ -4176,7 +4176,7 @@
       "expectError": true
     },
     {
-      "id": "trafficallocationcontroller_latestget_error",
+      "id": "get_latest_error",
       "method": "GET",
       "path": "/traffic-allocations/latest",
       "params": {
@@ -4203,7 +4203,7 @@
       "expectError": true
     },
     {
-      "id": "trafficallocationcontroller_metricsget_error",
+      "id": "get_metrics_error",
       "method": "GET",
       "path": "/traffic-allocations/metrics",
       "params": {
@@ -4240,7 +4240,7 @@
       "expectError": true
     },
     {
-      "id": "trafficallocationcontroller_findone_error",
+      "id": "get_6_error",
       "method": "GET",
       "path": "/traffic-allocations/{id}",
       "params": {
@@ -4262,7 +4262,7 @@
       "expectError": true
     },
     {
-      "id": "list_5_error",
+      "id": "list_7_error",
       "method": "GET",
       "path": "/phone-number",
       "params": {},
@@ -4282,7 +4282,7 @@
       "expectError": true
     },
     {
-      "id": "create_5_error",
+      "id": "create_7_error",
       "method": "POST",
       "path": "/phone-number",
       "params": {},
@@ -4305,7 +4305,7 @@
       "expectError": true
     },
     {
-      "id": "phonenumbercontroller_findallpaginated_error",
+      "id": "list_paginated_error",
       "method": "GET",
       "path": "/v2/phone-number",
       "params": {},
@@ -4325,7 +4325,7 @@
       "expectError": true
     },
     {
-      "id": "get_5_error",
+      "id": "get_7_error",
       "method": "GET",
       "path": "/phone-number/{id}",
       "params": {
@@ -4347,7 +4347,7 @@
       "expectError": true
     },
     {
-      "id": "delete_5_error",
+      "id": "delete_6_error",
       "method": "DELETE",
       "path": "/phone-number/{id}",
       "params": {
@@ -4369,7 +4369,7 @@
       "expectError": true
     },
     {
-      "id": "update_4_error",
+      "id": "update_5_error",
       "method": "PATCH",
       "path": "/phone-number/{id}",
       "params": {
@@ -4393,7 +4393,7 @@
       "expectError": true
     },
     {
-      "id": "list_6_error",
+      "id": "list_8_error",
       "method": "GET",
       "path": "/tool",
       "params": {},
@@ -4413,7 +4413,7 @@
       "expectError": true
     },
     {
-      "id": "create_6_error",
+      "id": "create_8_error",
       "method": "POST",
       "path": "/tool",
       "params": {},
@@ -4437,7 +4437,7 @@
       "expectError": true
     },
     {
-      "id": "get_6_error",
+      "id": "get_8_error",
       "method": "GET",
       "path": "/tool/{id}",
       "params": {
@@ -4459,7 +4459,7 @@
       "expectError": true
     },
     {
-      "id": "delete_6_error",
+      "id": "delete_7_error",
       "method": "DELETE",
       "path": "/tool/{id}",
       "params": {
@@ -4481,7 +4481,7 @@
       "expectError": true
     },
     {
-      "id": "update_5_error",
+      "id": "update_6_error",
       "method": "PATCH",
       "path": "/tool/{id}",
       "params": {
@@ -4505,7 +4505,7 @@
       "expectError": true
     },
     {
-      "id": "list_7_error",
+      "id": "list_9_error",
       "method": "GET",
       "path": "/file",
       "params": {},
@@ -4525,7 +4525,7 @@
       "expectError": true
     },
     {
-      "id": "create_7_error",
+      "id": "create_9_error",
       "method": "POST",
       "path": "/file",
       "params": {},
@@ -4562,7 +4562,7 @@
       "expectError": true
     },
     {
-      "id": "get_7_error",
+      "id": "get_9_error",
       "method": "GET",
       "path": "/file/{id}",
       "params": {
@@ -4584,7 +4584,7 @@
       "expectError": true
     },
     {
-      "id": "delete_7_error",
+      "id": "delete_8_error",
       "method": "DELETE",
       "path": "/file/{id}",
       "params": {
@@ -4606,7 +4606,7 @@
       "expectError": true
     },
     {
-      "id": "update_6_error",
+      "id": "update_7_error",
       "method": "PATCH",
       "path": "/file/{id}",
       "params": {
@@ -4628,7 +4628,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_findall_error",
+      "id": "list_10_error",
       "method": "GET",
       "path": "/v2/knowledge-base",
       "params": {},
@@ -4648,7 +4648,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_create_error",
+      "id": "create_10_error",
       "method": "POST",
       "path": "/v2/knowledge-base",
       "params": {},
@@ -4670,7 +4670,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_filesget_error",
+      "id": "list_files_error",
       "method": "GET",
       "path": "/v2/knowledge-base/{id}/file",
       "params": {
@@ -4692,7 +4692,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_fileattach_error",
+      "id": "attach_file_error",
       "method": "POST",
       "path": "/v2/knowledge-base/{id}/file",
       "params": {
@@ -4716,7 +4716,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_filedetach_error",
+      "id": "detach_file_error",
       "method": "DELETE",
       "path": "/v2/knowledge-base/{id}/file/{fileId}",
       "params": {
@@ -4739,7 +4739,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_fileretry_error",
+      "id": "retry_file_error",
       "method": "POST",
       "path": "/v2/knowledge-base/{id}/file/{fileId}/retry",
       "params": {
@@ -4762,7 +4762,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_findone_error",
+      "id": "get_10_error",
       "method": "GET",
       "path": "/v2/knowledge-base/{id}",
       "params": {
@@ -4784,7 +4784,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_remove_error",
+      "id": "delete_9_error",
       "method": "DELETE",
       "path": "/v2/knowledge-base/{id}",
       "params": {
@@ -4806,7 +4806,7 @@
       "expectError": true
     },
     {
-      "id": "knowledgebasev2controller_update_error",
+      "id": "update_8_error",
       "method": "PATCH",
       "path": "/v2/knowledge-base/{id}",
       "params": {
@@ -4828,7 +4828,7 @@
       "expectError": true
     },
     {
-      "id": "structuredoutputcontroller_findall_error",
+      "id": "list_11_error",
       "method": "GET",
       "path": "/structured-output",
       "params": {},
@@ -4848,7 +4848,7 @@
       "expectError": true
     },
     {
-      "id": "structuredoutputcontroller_create_error",
+      "id": "create_11_error",
       "method": "POST",
       "path": "/structured-output",
       "params": {},
@@ -4873,7 +4873,7 @@
       "expectError": true
     },
     {
-      "id": "structuredoutputcontroller_findone_error",
+      "id": "get_11_error",
       "method": "GET",
       "path": "/structured-output/{id}",
       "params": {
@@ -4895,7 +4895,7 @@
       "expectError": true
     },
     {
-      "id": "structuredoutputcontroller_remove_error",
+      "id": "delete_10_error",
       "method": "DELETE",
       "path": "/structured-output/{id}",
       "params": {
@@ -4917,7 +4917,7 @@
       "expectError": true
     },
     {
-      "id": "structuredoutputcontroller_update_error",
+      "id": "update_9_error",
       "method": "PATCH",
       "path": "/structured-output/{id}",
       "params": {
@@ -4945,7 +4945,7 @@
       "expectError": true
     },
     {
-      "id": "structuredoutputcontroller_run_error",
+      "id": "run_error",
       "method": "POST",
       "path": "/structured-output/run",
       "params": {},
@@ -4969,7 +4969,7 @@
       "expectError": true
     },
     {
-      "id": "personalitycontroller_findall_error",
+      "id": "list_12_error",
       "method": "GET",
       "path": "/eval/simulation/personality",
       "params": {},
@@ -4989,7 +4989,7 @@
       "expectError": true
     },
     {
-      "id": "personalitycontroller_create_error",
+      "id": "create_12_error",
       "method": "POST",
       "path": "/eval/simulation/personality",
       "params": {},
@@ -5012,7 +5012,7 @@
       "expectError": true
     },
     {
-      "id": "personalitycontroller_findone_error",
+      "id": "get_12_error",
       "method": "GET",
       "path": "/eval/simulation/personality/{id}",
       "params": {
@@ -5034,7 +5034,7 @@
       "expectError": true
     },
     {
-      "id": "personalitycontroller_remove_error",
+      "id": "delete_11_error",
       "method": "DELETE",
       "path": "/eval/simulation/personality/{id}",
       "params": {
@@ -5056,7 +5056,7 @@
       "expectError": true
     },
     {
-      "id": "personalitycontroller_update_error",
+      "id": "update_10_error",
       "method": "PATCH",
       "path": "/eval/simulation/personality/{id}",
       "params": {
@@ -5078,7 +5078,7 @@
       "expectError": true
     },
     {
-      "id": "scenariocontroller_findall_error",
+      "id": "list_13_error",
       "method": "GET",
       "path": "/eval/simulation/scenario",
       "params": {},
@@ -5098,7 +5098,7 @@
       "expectError": true
     },
     {
-      "id": "scenariocontroller_create_error",
+      "id": "create_13_error",
       "method": "POST",
       "path": "/eval/simulation/scenario",
       "params": {},
@@ -5127,7 +5127,7 @@
       "expectError": true
     },
     {
-      "id": "scenariocontroller_findone_error",
+      "id": "get_13_error",
       "method": "GET",
       "path": "/eval/simulation/scenario/{id}",
       "params": {
@@ -5149,7 +5149,7 @@
       "expectError": true
     },
     {
-      "id": "scenariocontroller_remove_error",
+      "id": "delete_12_error",
       "method": "DELETE",
       "path": "/eval/simulation/scenario/{id}",
       "params": {
@@ -5171,7 +5171,7 @@
       "expectError": true
     },
     {
-      "id": "scenariocontroller_update_error",
+      "id": "update_11_error",
       "method": "PATCH",
       "path": "/eval/simulation/scenario/{id}",
       "params": {
@@ -5193,7 +5193,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_findall_error",
+      "id": "list_14_error",
       "method": "GET",
       "path": "/eval/simulation/run",
       "params": {},
@@ -5213,7 +5213,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_create_error",
+      "id": "create_14_error",
       "method": "POST",
       "path": "/eval/simulation/run",
       "params": {},
@@ -5242,7 +5242,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_findone_error",
+      "id": "get_14_error",
       "method": "GET",
       "path": "/eval/simulation/run/{id}",
       "params": {
@@ -5264,7 +5264,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_cancelgroup_error",
+      "id": "cancel_error",
       "method": "PATCH",
       "path": "/eval/simulation/run/{id}",
       "params": {
@@ -5286,7 +5286,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_finditems_error",
+      "id": "list_items_error",
       "method": "GET",
       "path": "/eval/simulation/run/{id}/item",
       "params": {
@@ -5308,7 +5308,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_finditem_error",
+      "id": "get_item_error",
       "method": "GET",
       "path": "/eval/simulation/run/{id}/item/{itemId}",
       "params": {
@@ -5331,7 +5331,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_cancelitem_error",
+      "id": "cancel_item_error",
       "method": "PATCH",
       "path": "/eval/simulation/run/{id}/item/{itemId}",
       "params": {
@@ -5354,7 +5354,7 @@
       "expectError": true
     },
     {
-      "id": "simulationruncontroller_generatesuggestions_error",
+      "id": "generate_suggestions_error",
       "method": "POST",
       "path": "/eval/simulation/run/{id}/item/{itemId}/generate",
       "params": {
@@ -5383,7 +5383,7 @@
       "expectError": true
     },
     {
-      "id": "simulationsuitecontroller_findall_error",
+      "id": "list_15_error",
       "method": "GET",
       "path": "/eval/simulation/suite",
       "params": {},
@@ -5403,7 +5403,7 @@
       "expectError": true
     },
     {
-      "id": "simulationsuitecontroller_create_error",
+      "id": "create_15_error",
       "method": "POST",
       "path": "/eval/simulation/suite",
       "params": {},
@@ -5428,7 +5428,7 @@
       "expectError": true
     },
     {
-      "id": "simulationsuitecontroller_duplicate_error",
+      "id": "duplicate_error",
       "method": "POST",
       "path": "/eval/simulation/suite/{id}/duplicate",
       "params": {
@@ -5450,7 +5450,7 @@
       "expectError": true
     },
     {
-      "id": "simulationsuitecontroller_findone_error",
+      "id": "get_15_error",
       "method": "GET",
       "path": "/eval/simulation/suite/{id}",
       "params": {
@@ -5472,7 +5472,7 @@
       "expectError": true
     },
     {
-      "id": "simulationsuitecontroller_remove_error",
+      "id": "delete_13_error",
       "method": "DELETE",
       "path": "/eval/simulation/suite/{id}",
       "params": {
@@ -5494,7 +5494,7 @@
       "expectError": true
     },
     {
-      "id": "simulationsuitecontroller_update_error",
+      "id": "update_12_error",
       "method": "PATCH",
       "path": "/eval/simulation/suite/{id}",
       "params": {
@@ -5516,7 +5516,7 @@
       "expectError": true
     },
     {
-      "id": "simulationonboardingcontroller_requirementsdraft_error",
+      "id": "draft_requirements_error",
       "method": "POST",
       "path": "/eval/simulation/onboarding/requirements",
       "params": {},
@@ -5538,7 +5538,7 @@
       "expectError": true
     },
     {
-      "id": "simulationonboardingcontroller_suitecreate_error",
+      "id": "generate_error",
       "method": "POST",
       "path": "/eval/simulation/onboarding/suite",
       "params": {},
@@ -5567,7 +5567,7 @@
       "expectError": true
     },
     {
-      "id": "simulationonboardingcontroller_suiteupdate_error",
+      "id": "revise_error",
       "method": "PATCH",
       "path": "/eval/simulation/onboarding/suite/{suiteId}",
       "params": {
@@ -5591,7 +5591,7 @@
       "expectError": true
     },
     {
-      "id": "simulationcontroller_findall_error",
+      "id": "list_16_error",
       "method": "GET",
       "path": "/eval/simulation",
       "params": {},
@@ -5611,7 +5611,7 @@
       "expectError": true
     },
     {
-      "id": "simulationcontroller_create_error",
+      "id": "create_16_error",
       "method": "POST",
       "path": "/eval/simulation",
       "params": {},
@@ -5634,7 +5634,7 @@
       "expectError": true
     },
     {
-      "id": "simulationcontroller_getconcurrency_error",
+      "id": "get_concurrency_error",
       "method": "GET",
       "path": "/eval/simulation/concurrency",
       "params": {},
@@ -5654,7 +5654,7 @@
       "expectError": true
     },
     {
-      "id": "simulationcontroller_findone_error",
+      "id": "get_16_error",
       "method": "GET",
       "path": "/eval/simulation/{id}",
       "params": {
@@ -5676,7 +5676,7 @@
       "expectError": true
     },
     {
-      "id": "simulationcontroller_remove_error",
+      "id": "delete_14_error",
       "method": "DELETE",
       "path": "/eval/simulation/{id}",
       "params": {
@@ -5698,7 +5698,7 @@
       "expectError": true
     },
     {
-      "id": "simulationcontroller_update_error",
+      "id": "update_13_error",
       "method": "PATCH",
       "path": "/eval/simulation/{id}",
       "params": {
@@ -5720,7 +5720,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_findall_error",
+      "id": "list_17_error",
       "method": "GET",
       "path": "/reporting/insight",
       "params": {},
@@ -5740,7 +5740,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_create_error",
+      "id": "create_17_error",
       "method": "POST",
       "path": "/reporting/insight",
       "params": {},
@@ -5770,7 +5770,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_findone_error",
+      "id": "get_17_error",
       "method": "GET",
       "path": "/reporting/insight/{id}",
       "params": {
@@ -5792,7 +5792,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_remove_error",
+      "id": "delete_15_error",
       "method": "DELETE",
       "path": "/reporting/insight/{id}",
       "params": {
@@ -5814,7 +5814,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_update_error",
+      "id": "update_14_error",
       "method": "PATCH",
       "path": "/reporting/insight/{id}",
       "params": {
@@ -5838,7 +5838,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_run_error",
+      "id": "run_1_error",
       "method": "POST",
       "path": "/reporting/insight/{id}/run",
       "params": {
@@ -5860,7 +5860,7 @@
       "expectError": true
     },
     {
-      "id": "insightcontroller_preview_error",
+      "id": "preview_error",
       "method": "POST",
       "path": "/reporting/insight/preview",
       "params": {},
@@ -5890,7 +5890,7 @@
       "expectError": true
     },
     {
-      "id": "boardcontroller_findall_error",
+      "id": "list_18_error",
       "method": "GET",
       "path": "/reporting/board",
       "params": {},
@@ -5910,7 +5910,7 @@
       "expectError": true
     },
     {
-      "id": "boardcontroller_create_error",
+      "id": "create_18_error",
       "method": "POST",
       "path": "/reporting/board",
       "params": {},
@@ -5935,7 +5935,7 @@
       "expectError": true
     },
     {
-      "id": "boardcontroller_metricsoverviewensure_error",
+      "id": "ensure_metrics_overview_error",
       "method": "GET",
       "path": "/reporting/board/default/metrics-overview",
       "params": {},
@@ -5955,7 +5955,7 @@
       "expectError": true
     },
     {
-      "id": "boardcontroller_findone_error",
+      "id": "get_18_error",
       "method": "GET",
       "path": "/reporting/board/{id}",
       "params": {
@@ -5977,7 +5977,7 @@
       "expectError": true
     },
     {
-      "id": "boardcontroller_remove_error",
+      "id": "delete_16_error",
       "method": "DELETE",
       "path": "/reporting/board/{id}",
       "params": {
@@ -5999,7 +5999,7 @@
       "expectError": true
     },
     {
-      "id": "boardcontroller_update_error",
+      "id": "update_15_error",
       "method": "PATCH",
       "path": "/reporting/board/{id}",
       "params": {
@@ -6021,7 +6021,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_getpaginated_error",
+      "id": "list_19_error",
       "method": "GET",
       "path": "/eval",
       "params": {},
@@ -6041,7 +6041,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_create_error",
+      "id": "create_19_error",
       "method": "POST",
       "path": "/eval",
       "params": {},
@@ -6068,7 +6068,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_get_error",
+      "id": "get_19_error",
       "method": "GET",
       "path": "/eval/{id}",
       "params": {
@@ -6090,7 +6090,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_remove_error",
+      "id": "delete_17_error",
       "method": "DELETE",
       "path": "/eval/{id}",
       "params": {
@@ -6112,7 +6112,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_update_error",
+      "id": "update_16_error",
       "method": "PATCH",
       "path": "/eval/{id}",
       "params": {
@@ -6134,7 +6134,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_getrun_error",
+      "id": "get_run_error",
       "method": "GET",
       "path": "/eval/run/{id}",
       "params": {
@@ -6156,7 +6156,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_removerun_error",
+      "id": "delete_run_error",
       "method": "DELETE",
       "path": "/eval/run/{id}",
       "params": {
@@ -6178,7 +6178,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_getrunspaginated_error",
+      "id": "list_runs_error",
       "method": "GET",
       "path": "/eval/run",
       "params": {},
@@ -6198,7 +6198,7 @@
       "expectError": true
     },
     {
-      "id": "evalcontroller_run_error",
+      "id": "run_2_error",
       "method": "POST",
       "path": "/eval/run",
       "params": {},
@@ -6223,7 +6223,7 @@
       "expectError": true
     },
     {
-      "id": "scorecardcontroller_get_error",
+      "id": "get_20_error",
       "method": "GET",
       "path": "/observability/scorecard/{id}",
       "params": {
@@ -6245,7 +6245,7 @@
       "expectError": true
     },
     {
-      "id": "scorecardcontroller_remove_error",
+      "id": "delete_18_error",
       "method": "DELETE",
       "path": "/observability/scorecard/{id}",
       "params": {
@@ -6267,7 +6267,7 @@
       "expectError": true
     },
     {
-      "id": "scorecardcontroller_update_error",
+      "id": "update_17_error",
       "method": "PATCH",
       "path": "/observability/scorecard/{id}",
       "params": {
@@ -6289,7 +6289,7 @@
       "expectError": true
     },
     {
-      "id": "scorecardcontroller_getpaginated_error",
+      "id": "list_20_error",
       "method": "GET",
       "path": "/observability/scorecard",
       "params": {},
@@ -6309,7 +6309,7 @@
       "expectError": true
     },
     {
-      "id": "scorecardcontroller_create_error",
+      "id": "create_20_error",
       "method": "POST",
       "path": "/observability/scorecard",
       "params": {},
@@ -6343,7 +6343,7 @@
       "expectError": true
     },
     {
-      "id": "providerresourcecontroller_getproviderresourcespaginated_error",
+      "id": "list_21_error",
       "method": "GET",
       "path": "/provider/{provider}/{resourceName}",
       "params": {
@@ -6366,7 +6366,7 @@
       "expectError": true
     },
     {
-      "id": "providerresourcecontroller_createproviderresource_error",
+      "id": "create_21_error",
       "method": "POST",
       "path": "/provider/{provider}/{resourceName}",
       "params": {
@@ -6389,7 +6389,7 @@
       "expectError": true
     },
     {
-      "id": "providerresourcecontroller_getproviderresource_error",
+      "id": "get_21_error",
       "method": "GET",
       "path": "/provider/{provider}/{resourceName}/{id}",
       "params": {
@@ -6413,7 +6413,7 @@
       "expectError": true
     },
     {
-      "id": "providerresourcecontroller_deleteproviderresource_error",
+      "id": "delete_19_error",
       "method": "DELETE",
       "path": "/provider/{provider}/{resourceName}/{id}",
       "params": {
@@ -6437,7 +6437,7 @@
       "expectError": true
     },
     {
-      "id": "providerresourcecontroller_updateproviderresource_error",
+      "id": "update_18_error",
       "method": "PATCH",
       "path": "/provider/{provider}/{resourceName}/{id}",
       "params": {
@@ -6461,7 +6461,7 @@
       "expectError": true
     },
     {
-      "id": "get_8_error",
+      "id": "get_22_error",
       "method": "POST",
       "path": "/analytics",
       "params": {},
