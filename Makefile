@@ -1,4 +1,4 @@
-.PHONY: build test generate generate-publish preview-publish
+.PHONY: build test
 build:
 	cargo build --locked
 
@@ -7,13 +7,3 @@ test:
 	cargo build --release --locked
 	python3 scripts/check-performance.py
 	python3 scripts/smoke-test.py
-
-generate:
-	python3 scripts/generate.py
-
-generate-publish:
-	python3 scripts/generate.py --publishing
-
-# Preview generates publishing files locally; it never releases a package.
-preview-publish:
-	fern generate --group publish --version $$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])') --preview --output generated-publish

@@ -140,9 +140,11 @@ for coding agents. See [the command reference](reference.md),
 
 The CLI is generated from Vapi's shared API definitions with
 [Fern](https://buildwithfern.com/learn/cli-generator/get-started/quickstart).
-Edit the inputs in `fern/` and regenerate to change the API commands.
+The `cli-sdk` group in [VapiAI/docs](https://github.com/VapiAI/docs/blob/main/fern/apis/api/generators.yml)
+uses the same API definition and naming overrides as the server SDKs, then opens
+generated pull requests here. CLI-specific settings retain OAuth with PKCE.
 
-Clone the repository and install the pinned Rust toolchain, Node.js, and
+Clone the repository and install the pinned Rust toolchain and
 Python 3.11 or later; see [development requirements](DEVELOPMENT.md).
 
 ```bash
@@ -152,9 +154,9 @@ cargo build --locked
 make test
 ```
 
-`make generate` regenerates the CLI. `make generate-publish` also refreshes
-Fern's publishing workflows. [DEVELOPMENT.md](DEVELOPMENT.md) covers API input
-updates, regeneration, and reproducibility checks.
+Generate updates from the shared configuration in `VapiAI/docs`; this repo
+maintains the CLI runtime, tests and release gates.
+[DEVELOPMENT.md](DEVELOPMENT.md) covers regeneration and customization.
 
 ## CI and releases
 

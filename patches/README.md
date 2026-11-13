@@ -1,11 +1,14 @@
 # Fern output patches
 
-`scripts/generate.py` applies these patches to the pinned generator's isolated
-output before checking or copying it, for both `cli` and `publish`. It checks
-each patch before application and fails if the context has changed. Review
-these patches when upgrading Fern; remove a patch once the upstream generator
-supplies the corresponding behavior. CI checks behavior rather than requiring
-a particular implementation.
+These files retain reviewable copies of the CLI runtime fixes. Fern Replay's
+native `.fern/replay.lock` tracks the equivalent customization commit above a
+pure `[fern-generated]` baseline and carries it into centrally generated PRs.
+Generation is configured in `VapiAI/docs`, alongside the server SDKs; no local
+patch-application or API-vendoring script is required.
+
+Review conflicts when upgrading Fern. Remove a customization from Replay once
+the upstream generator supplies equivalent behavior. CI checks correctness and
+performance rather than requiring a particular implementation.
 
 ## Schema reference expansion (CLI generator 0.59.1)
 
@@ -59,8 +62,7 @@ The token is omitted if it does not meet the API's lowercase ASCII token and
 `on`, case insensitive) adds the bare `ci` flag.
 
 Fern still composes the User-Agent and optional downstream suffix. No
-`X-Vapi-Source` header is added. This customization uses the output patch
-mechanism to derive the header's version and invocation metadata at runtime.
+`X-Vapi-Source` header is added. This customization derives the header's version and invocation metadata at runtime.
 Replace it with generator configuration when that supports these values.
 
 `scripts/smoke-test.py` checks the actual GET, POST, and DELETE request headers,

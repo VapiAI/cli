@@ -13,12 +13,12 @@ webhook forwarding. `init` and `listen` remain removed; command naming should be
 - Go CLI at `4149790e4621407c903f73554130fb31a97d9334`, the latest main used for
   this migration, including the removal of MCP/skills setup.
 - Fern CLI generator 0.59.1, Fern CLI 5.202.0, package version 1.0.0-beta.1.
-- Vapi SDK API inputs pinned in `fern/source.json`.
+- Shared SDK API inputs and the `cli-sdk` generator group in `VapiAI/docs`.
 - The compiled candidate's `--help`, `--schema`, dry runs, generated tests, and
   local mock API requests. No production calls, purchases, or deletions were run.
 
 The candidate reports **145 API operations in 23 groups**, plus auth, profiles,
-completion, man pages, and skill export. Those counts describe this pinned API
+completion, man pages, and skill export. Those counts describe this generated API
 snapshot, not a guarantee of all current Vapi API functionality.
 
 ## Capability comparison
@@ -41,7 +41,7 @@ snapshot, not a guarantee of all current Vapi API functionality.
 | Webhook forwarding | `listen` hosted a local forwarding HTTP server; it did not establish the advertised public tunnel | Removed | Accepted: rebuild later only if missed |
 | Webhook management and logs | Commands mostly printed guidance instead of invoking APIs | No standalone webhook/log command groups in this snapshot | Removes misleading promises, not working CRUD/log retrieval |
 | IDE integration | MCP/skills setup already removed from main | No IDE installer; Fern adds `generate-skills` to export API command skills | Preserve the setup removal; decide whether the new export belongs in the public help |
-| Updates | Custom self-update and SDK-update automation | Regenerate from pinned shared API inputs; upgrade binaries via npm/releases | Smaller maintenance surface; self-update command removed |
+| Updates | Custom self-update and SDK-update automation | Central Fern generation opens CLI PRs from shared API inputs; upgrade binaries via npm/releases | Smaller maintenance surface; self-update command removed |
 | Telemetry | Handwritten PostHog analytics and opt-out configuration | No Vapi PostHog analytics package or analytics config commands | Old telemetry configuration is removed |
 | Distribution | GoReleaser, custom npm wrapper, stale Homebrew, installers, Docker | Fern-managed npm, native downloads and Homebrew configured | Generated npm and release/Homebrew workflows adopted; publishing setup and credential isolation remain |
 | MCP docs server | Separate TypeScript package in the repository | Removed from the new CLI tree | Existing published versions are unaffected; future server maintenance needs its own home |
@@ -116,7 +116,8 @@ The user's decision on retaining it is still pending.
    and API server together. See [the OAuth setup](../RELEASING.md).
 2. Put shorter names in `vapi` source annotations. Nest `@ApiExtension` can
    emit `x-fern-sdk-group-name` and `x-fern-sdk-method-name`. Review SDK naming
-   changes and V1/V2 collisions, then update the shared API snapshot here.
+   changes and V1/V2 collisions, refresh the shared API definition in `docs`,
+   then generate the `cli-sdk` group.
 3. Review Fern's generated credential boundary against PR #18 before enabling
    npm trusted publishing. Bootstrap the five missing platform packages,
    configure OIDC/Homebrew credentials, and validate release builds. The
@@ -127,5 +128,5 @@ The user's decision on retaining it is still pending.
 
 The generated provider-resource wire tests initially failed because the spec
 marked reserved `Content-Type` as a required standalone header while Fern's IR
-removed it. `fern/cli-overrides.yml` makes it optional without editing the shared
-SDK files or generated Rust. Keep that exception visible when updating inputs.
+removed it. `VapiAI/docs/fern/apis/api/cli-openapi-overrides.yml` makes it optional for
+the CLI without editing other SDK inputs or generated Rust.

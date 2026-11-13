@@ -7,7 +7,7 @@ There is no repository-owned npm/release workflow fallback.
 
 ## OAuth beta setup and release gate
 
-The inspection build now uses Fern 5.202.0 / CLI generator 0.59.1 to generate
+The shared `cli-sdk` group uses CLI generator 0.59.1 to generate
 public-client authorization-code login with PKCE and automatic refresh.
 `auth-schemes`, `api.auth`, and the matching OAuth OpenAPI security scheme are
 configured together; no handwritten Rust auth or embedded client secret is used.
@@ -65,19 +65,22 @@ The npm launcher and platform package manifests are generated inside `ci.yml`
 at release time. They are not separate checked-in npm package files. npm Linux
 packages use musl; GitHub Release artifacts include both GNU and musl builds.
 
-`fern/generators.yml` has two groups: `cli` for local runtime output and
-`publish` for npm/GitHub delivery in pull-request mode. All preview commands
-below avoid remote PR creation, package publication and release tags:
+Generation is configured in the `cli-sdk` group of
+[`VapiAI/docs`](https://github.com/VapiAI/docs/blob/main/fern/apis/api/generators.yml),
+alongside the server SDKs. Run its **Release CLI** workflow with a version to
+open a generated pull request here. It refreshes runtime and publishing files;
+Fern Replay preserves the runtime customizations and `.fernignore` preserves
+the repository-owned docs and checks. No CLI-specific API snapshots are needed.
+
+For a local publishing preview, run from the docs checkout:
 
 ```bash
-make preview-publish  # inspect full output under generated-publish/
-make generate-publish # adopt runtime and publishing files from an isolated preview
-python3 scripts/generate.py --publishing --check
+fern generate --api api --group cli-sdk --version 1.0.0-beta.1 --preview
 ```
 
-Keep `verify.yml` for repository checks. Keep Fern's generated workflows in
-sync through `make generate-publish`; do not replace them with another custom
-publisher. Runtime files from the publishing preview match local generation.
+Keep `verify.yml` for repository checks and keep Fern's generated publishing
+workflows. Review generation PRs before merging; release only with a matching
+version tag after the gates below are satisfied.
 
 ### Release gates
 

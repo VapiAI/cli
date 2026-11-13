@@ -3,7 +3,6 @@
 ## Requirements
 
 - Rust 1.99.1, pinned in `rust-toolchain.toml`; rustup installs it on first use.
-- Node.js 22+ for the Fern CLI.
 - Python 3.11+ for repository scripts.
 - `/usr/bin/time` for performance checks (GNU `time` on Linux; included on macOS).
 - On Linux, `pkg-config`, OpenSSL development headers, and D-Bus development
@@ -38,78 +37,58 @@ Use `VAPI_TEST_BINARY=/absolute/path/to/vapi` to compare another build.
 
 ## Source of truth
 
-`fern/source.json` pins the `VapiAI/docs` commit, source directory, and SHA-256
-hashes for the three vendored SDK inputs. They are copied unchanged from that
-commit: the OpenAPI spec, SDK overrides, and parameter-description overlay.
-`fern/generators.yml` retains the SDK spec import settings. The CLI does not
-maintain its own API client or manually track SDK package releases.
+API generation is configured alongside the server SDKs in
+[`VapiAI/docs/fern/apis/api/generators.yml`](https://github.com/VapiAI/docs/blob/main/fern/apis/api/generators.yml),
+under `cli-sdk`. It consumes the shared OpenAPI definition, naming overrides,
+parameter-description overlay and import settings directly. This repository
+does not vendor a second API definition or generator configuration.
 
-`fern/cli-overrides.yml` adapts authentication and the default server for the
-staging OAuth evaluation, and removes the unused SDK API-key scheme. It also
-contains a CLI-specific API correction: the
-provider-resource POST's reserved `Content-Type` header is optional, allowing
-Fern's generated test inputs to invoke it. Explicit `--content-type` remains
+The CLI generator's own API settings select public-client OAuth with PKCE,
+refresh, and the staging default server. They do not change the other SDKs'
+authentication. Its `cli-openapi-overrides.yml` also makes the provider-resource
+POST's reserved `Content-Type` header optional; explicit `--content-type` remains
 available and JSON requests set their content type through the HTTP stack.
-
-Update all three upstream inputs together from a reviewed docs commit:
-
-```bash
-python3 scripts/update-api.py <40-character-docs-commit-sha>
-```
 
 ## Generate
 
-Install Fern 5.202.0 (also pinned in `fern/fern.config.json`) and authenticate to
-Vapi's Fern organization. Local-file output still uses Fern's cloud generation.
+Run the **Release CLI** workflow in `VapiAI/docs`, supplying the desired version.
+Like the SDK workflows, this runs `fern generate` in pull-request mode against
+`VapiAI/cli`. Review the generated update and run this repository's checks before
+merging it. Generation and merging do not publish a release.
+
+For a local preview, clone `VapiAI/docs`, install its pinned Fern CLI with
+Node.js 22+, authenticate to the Vapi Fern organization, and run there:
 
 ```bash
-npm install -g fern-api@5.202.0
-fern login
-make generate
-make test
+fern generate --api api --group cli-sdk --version 1.0.0-beta.1 --preview
 ```
 
-The generator is pinned to `fern-cli-generator` 0.59.1. It emits a spec-only CLI
-with named profiles and wire tests enabled. Custom Rust commands are disabled
-so the beta evaluates the generated product directly. `auth-schemes` and
-`api.auth` select the generated public PKCE login flow. The matching OpenAPI
-OAuth scheme is required too; check that regenerated `cli/vapi/main.rs` contains
-`PkceLoginFlow` before treating login as implemented.
+The generator remains pinned to `fern-cli-generator` 0.59.1, with profiles and
+wire tests enabled and custom Rust commands disabled. Check generated
+`cli/vapi/main.rs` for `PkceLoginFlow` when changing authentication. The staging
+public client, issuer, resource parameters and default API server must be
+promoted together after live acceptance; see [RELEASING.md](RELEASING.md).
 
-**Use `make generate`, not direct generation into the checkout.** The script
-copies Fern inputs into a temporary workspace, generates there, validates the
-expected output, and replaces only these paths:
+## Preserve CLI customizations
 
-- `Cargo.toml`, `Cargo.lock`, `reference.md`
-- `src/`, `cli/`, `tests/`, `wiremock/`
+`.fernignore` protects this repository's docs, verification workflow, smoke and
+performance checks, toolchain and patch references from generation. Generated
+runtime, wire tests and publishing workflows remain managed by Fern.
 
-This isolates Fern's local-output Git handling from the checkout and preserves
-repository-owned verification, docs, licenses, and smoke checks. Do not
-hand-edit generated Rust or wire tests. Runtime fixes and CLI attribution live in
-[`patches/`](patches/README.md) and are applied to both output groups before
-comparison or adoption. Regeneration fails if a patch no longer applies; review
-and remove it once Fern supplies the behavior. To check reproducibility without
-writing files, run `python3 scripts/generate.py --check`.
+Fern Replay's native `.fern/replay.lock` records the schema-renderer and request
+attribution changes on top of a pure `[fern-generated]` baseline. Central
+pull-request generation reapplies these runtime changes rather than requiring
+a separate CLI regeneration script. Commit future runtime customizations here;
+review Replay's report and resolve conflicts in the generated PR. Do not disable
+Replay for this generator while those fixes are needed.
 
-The upstream spec currently validates with 12 warnings and no errors. Keep
-warnings visible; they are not evidence that every API contract has been tested
-against the live Vapi service.
+[`patches/`](patches/README.md) retains reviewable copies and explains the fixes.
+Once Fern supplies equivalent behavior, remove the corresponding customization
+with `fern replay forget` from a configured Fern checkout and review the next
+generated diff. CI checks observable correctness and performance, not the
+presence of a particular patch.
 
-The generated runtime uses the registered staging OAuth client. Local mock
-tests do not establish successful OAuth login or live API acceptance. See RELEASING.md for the required integration.
-
-The `publish` group delegates npm, native releases and Homebrew to Fern. Use
-`make preview-publish` to inspect its output in `generated-publish/`. It does
-not publish in preview mode. `make generate-publish` adopts the runtime plus
-`dist-workspace.toml`, `.github/workflows/ci.yml` and
-`.github/workflows/release.yml` from that isolated preview. Run
-`python3 scripts/generate.py --publishing --check` to check all generated files.
-The generated npm packaging scripts live inside `ci.yml`.
-
-Command names belong in source OpenAPI annotations in the `vapi` repository.
-For example, Nest's `@ApiExtension('x-fern-sdk-group-name', ['campaigns'])`
-and `@ApiExtension('x-fern-sdk-method-name', 'list')` on a controller operation
-produce `vapi campaigns list` when propagated through the shared API inputs.
-Versioned endpoints must receive distinct group/method paths to avoid collisions.
-Those annotations also affect generated SDK names, so review the SDK surface
-when making the upstream change. Do not add command-naming patches here.
+Command names belong in source OpenAPI annotations in `vapi` or the shared
+overrides in `docs`. They affect generated server SDK methods too; review their
+compatibility before adopting renamed operations. Do not add CLI-only naming
+patches here.
