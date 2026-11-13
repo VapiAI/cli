@@ -2,13 +2,15 @@
 import http.server
 import json
 import os
+import queue
+import re
 from pathlib import Path
 import subprocess
 import tempfile
 import threading
 import tomllib
 import unittest
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 BINARY = Path(os.environ.get('VAPI_TEST_BINARY', ROOT / 'target/debug' / ('vapi.exe' if os.name == 'nt' else 'vapi')))
@@ -75,6 +77,58 @@ class CLITest(unittest.TestCase):
         user_agent = f'vapi-cli/{VERSION}' + (f' {suffix}' if suffix else '')
         self.assertEqual(headers.get('user-agent'), user_agent)
         return value
+
+    def test_oauth_login_uses_pkce_without_a_client_secret(self):
+        spec = json.loads(self.cli('--spec-raw').stdout)
+        flow = spec['components']['securitySchemes']['bearer']['flows']['authorizationCode']
+        process = subprocess.Popen([str(BINARY), 'auth', 'login', '--no-browser'],
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True,
+                                   env=self.environment, cwd=self.directory.name)
+        lines = queue.Queue()
+
+        def read_output():
+            for line in process.stdout:
+                lines.put(line)
+            lines.put(None)
+
+        reader = threading.Thread(target=read_output, daemon=True)
+        reader.start()
+        authorization = None
+        output = []
+        try:
+            while authorization is None:
+                line = lines.get(timeout=5)
+                if line is None:
+                    break
+                output.append(line)
+                for value in re.findall(r'https?://[^\s]+', line):
+                    parsed = urlsplit(value)
+                    if 'code_challenge' in parse_qs(parsed.query):
+                        authorization = parsed
+                        break
+        finally:
+            if process.poll() is None:
+                process.terminate()
+            process.wait(timeout=5)
+            reader.join(timeout=5)
+            process.stdout.close()
+        self.assertIsNotNone(authorization, ''.join(output))
+        expected = urlsplit(flow['authorizationUrl'])
+        self.assertEqual((authorization.scheme, authorization.netloc, authorization.path),
+                         (expected.scheme, expected.netloc, expected.path))
+        parameters = parse_qs(authorization.query)
+        self.assertEqual(parameters['response_type'], ['code'])
+        self.assertEqual(parameters['code_challenge_method'], ['S256'])
+        self.assertTrue(parameters['code_challenge'][0])
+        self.assertTrue(parameters['state'][0])
+        self.assertTrue(parameters['client_id'][0])
+        self.assertNotIn('client_secret', parameters)
+        self.assertEqual(set(parameters['scope'][0].split()), set(flow['scopes']))
+        callback = urlsplit(parameters['redirect_uri'][0])
+        self.assertEqual((callback.scheme, callback.hostname), ('http', '127.0.0.1'))
+        self.assertIn(callback.port, [8484, 8485, 8486])
+        self.assertEqual(self.server.requests, [])
 
     def test_client_identity_preserved_with_user_agent_suffix(self):
         self.environment['VAPI_USER_AGENT_SUFFIX'] = 'downstream/1.0'
