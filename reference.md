@@ -1076,7 +1076,7 @@ Creates a pronunciation-dictionary resource for a supported provider, currently 
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--content-type` | `string` | No |  |
+| `--content-type` | `string` | Yes |  |
 | `--provider` | `cartesia | 11labs` | Yes | The provider (e.g., 11labs) |
 | `--resource-name` | `pronunciation-dictionary` | Yes | The resource name (e.g., pronunciation-dictionary) |
 
