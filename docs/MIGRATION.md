@@ -114,10 +114,10 @@ The user's decision on retaining it is still pending.
    staging public client. Validate login, refresh, org selection/isolation,
    logout and permission denial, then promote the production OAuth registration
    and API server together. See [the OAuth setup](../RELEASING.md).
-2. Put shorter names in `vapi` source annotations. Nest `@ApiExtension` can
-   emit `x-fern-sdk-group-name` and `x-fern-sdk-method-name`. Review SDK naming
-   changes and V1/V2 collisions, refresh the shared API definition in `docs`,
-   then generate the `cli-sdk` group.
+2. Readable operation names now live in the shared SDK overrides in `docs`.
+   Review the breaking SDK method/request-type renames and coordinate package
+   versions when regenerating the server SDKs. The CLI consumes the same names
+   through the central `cli-sdk` group.
 3. Review Fern's generated credential boundary against PR #18 before enabling
    npm trusted publishing. Bootstrap the five missing platform packages,
    configure OIDC/Homebrew credentials, and validate release builds. The

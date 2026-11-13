@@ -95,7 +95,8 @@ with `fern replay forget` from a configured Fern checkout and review the next
 generated diff. CI checks observable correctness and performance, not the
 presence of a particular patch.
 
-Command names belong in source OpenAPI annotations in `vapi` or the shared
-overrides in `docs`. They affect generated server SDK methods too; review their
-compatibility before adopting renamed operations. Do not add CLI-only naming
-patches here.
+Endpoint names are maintained in
+[`VapiAI/docs/fern/apis/api/openapi-overrides.yml`](https://github.com/VapiAI/docs/blob/main/fern/apis/api/openapi-overrides.yml)
+for all generated server SDKs and this CLI. Review SDK version compatibility
+when changing these names, then regenerate the affected SDKs and the central
+`cli-sdk` group. Do not add CLI-only naming patches here.

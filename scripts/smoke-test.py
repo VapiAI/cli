@@ -78,6 +78,15 @@ class CLITest(unittest.TestCase):
         self.assertEqual(headers.get('user-agent'), user_agent)
         return value
 
+    def test_campaign_names_follow_shared_sdk_conventions(self):
+        self.server.response = {'results': []}
+        for command, route in [('list', '/campaign'), ('list-v2', '/v2/campaign')]:
+            with self.subTest(command=command):
+                self.cli('campaigns', command)
+                request = self.server.requests[-1]
+                self.assertEqual(request[:2], ('GET', route))
+                self.assert_client_headers(request[2], 'campaigns_' + command)
+
     def test_oauth_login_uses_pkce_without_a_client_secret(self):
         spec = json.loads(self.cli('--spec-raw').stdout)
         flow = spec['components']['securitySchemes']['bearer']['flows']['authorizationCode']
