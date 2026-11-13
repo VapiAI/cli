@@ -1,294 +1,123 @@
-# Release Process
+# Releasing
 
-This document describes the release process for the Vapi CLI.
+The replacement targets `1.0.0-beta.1`, a breaking major over the Go CLI's 0.2.x
+releases. Opening or merging this draft must not be treated as release readiness.
+The agreed direction is **OAuth authentication and Fern-managed publishing**.
+There is no repository-owned npm/release workflow fallback.
 
-## Overview
+## OAuth beta setup and release gate
 
-The Vapi CLI uses:
+The shared `cli-sdk` group uses CLI generator 0.59.1 to generate
+public-client authorization-code login with PKCE and automatic refresh.
+`auth-schemes`, `api.auth`, and the matching OAuth OpenAPI security scheme are
+configured together; no handwritten Rust auth or embedded client secret is used.
 
-- **Semantic Versioning** (v1.2.3)
-- **GitHub Releases** for binary distribution
-- **GoReleaser** for automated cross-platform builds
-- **GitHub Actions** for CI/CD
+The staging WorkOS application was created through the Applications API:
 
-## Quick Release
+| Setting | Value |
+| --- | --- |
+| Application | Vapi CLI beta (`connect_app_01M721J47TMJ2T5S0YFMGXS3SS`) |
+| Public client ID | `client_01M721J47S27BS1GSXK1780TSR` |
+| Issuer | `https://nourishing-mulberry-12-staging.authkit.app` |
+| Authorize / token | Issuer plus `/oauth2/authorize` / `/oauth2/token` |
+| Requested scopes | `openid offline_access` (standard OIDC scopes, not application permission slugs) |
+| API resource | `https://api-mcp-poc.vapi.local` (the existing staging API audience) |
+| Callbacks | `http://127.0.0.1:8484/callback`, `:8485/callback`, `:8486/callback` |
+| Default API | `https://staging-api.vapi.ai` |
 
-To create a new release:
+WorkOS reports first-party and PKCE enabled. An authorization probe redirects to
+Vapi's staging `/oauth/continue`; invalid-code token probes without a client
+secret return `invalid_grant`. These checks do not establish a completed user
+login or successful API access.
 
-```bash
-# Make sure you're on main and up to date
-git checkout main
-git pull origin main
+The [companion API/gateway draft](https://app.graphite.com/github/pr/VapiAI/vapi/26299)
+adds explicit acceptance of direct tokens for this
+client through `WORKOS_CONNECT_CLI_CLIENT_ID`; the existing MCP exchange actor
+check remains for delegated tokens. That companion change must deploy before
+live acceptance. Leaving the CLI client setting empty disables direct tokens.
+Do not copy the MCP exchange client's secret into the CLI.
 
-# Create and push a new tag
-git tag -a v1.2.3 -m "Release v1.2.3"
-git push origin v1.2.3
-```
+Vapito validation was attempted, but its controller could not check out the
+private `VapiAI/vapi` repository ("Repository not found"). Restore that source
+access before treating live API acceptance as verified.
 
-This will trigger the automated release process.
+Before release, validate a real user's login, org selection, authorized read,
+automatic refresh, logout, wrong audience/client, permission denial and org
+isolation. Then provision and verify the production public client and audience,
+and promote the issuer, client ID, resource parameters and default API server
+together. Staging credentials must not become the production CLI configuration.
+API-key login is not a release substitute. Track evidence on
+[PAL-1311](https://linear.app/vapi/issue/PAL-1311/replace-the-vapi-cli-with-a-fern-generated-oauth-beta).
 
-## Release Checklist
+## Fern-managed distribution
 
-Before releasing:
+The publishing preview succeeded after Fern organization access and the Fern
+GitHub App installation for `VapiAI/cli` were approved. The checked-in output is
+unchanged from the shared publishing preview (Fern CLI 5.169.0 / generator 0.59.1):
 
-- [ ] All tests pass (`make test`)
-- [ ] No linting issues (`make lint`)
-- [ ] README.md is up to date
-- [ ] CHANGELOG.md is updated (if maintaining one)
-- [ ] Version number follows semver
+| File | Behavior |
+| --- | --- |
+| `.github/workflows/ci.yml` | Checks builds on pushes; version tags build and publish five npm platform packages, then the launcher |
+| `.github/workflows/release.yml` | Plans releases on PRs; version tags build archives/installers, create or update the GitHub Release, and update Homebrew for stable releases |
+| `dist-workspace.toml` | cargo-dist targets, installers, Homebrew tap and formula |
 
-## Versioning Strategy
+The npm launcher and platform package manifests are generated inside `ci.yml`
+at release time. They are not separate checked-in npm package files. npm Linux
+packages use musl; GitHub Release artifacts include both GNU and musl builds.
 
-We follow [Semantic Versioning](https://semver.org/):
+Generation is configured in the `cli-sdk` group of
+[`VapiAI/docs`](https://github.com/VapiAI/docs/blob/main/fern/apis/cli/generators.yml),
+alongside the server SDKs. Run its **Release CLI** workflow with a version to
+open a generated pull request here. It refreshes runtime and publishing files;
+Fern Replay preserves the schema and command-binding customizations.
+`.fernignore` retains request attribution and the repository-owned docs and checks. No CLI-specific API snapshots are needed.
 
-- **MAJOR** (v2.0.0): Breaking changes
-- **MINOR** (v1.3.0): New features, backwards compatible
-- **PATCH** (v1.2.4): Bug fixes, backwards compatible
-
-### Pre-releases
-
-For testing releases:
-
-```bash
-git tag -a v1.2.3-beta.1 -m "Beta release v1.2.3-beta.1"
-```
-
-## Distribution Channels
-
-### 1. Direct Download (Available Now)
-
-Users can download pre-built binaries from GitHub Releases:
-
-- macOS (Intel & Apple Silicon)
-- Linux (x86_64, ARM)
-- Windows (x86_64)
-
-### 2. Homebrew (macOS/Linux)
-
-**Setup Required:**
-
-1. Create `VapiAI/homebrew-tap` repository
-2. Update `.goreleaser.yaml` to set `skip_upload: false`
-3. Users install with:
-   ```bash
-   brew tap VapiAI/homebrew-tap
-   brew install vapi-cli
-   ```
-
-### 3. Scoop (Windows)
-
-**Setup Required:**
-
-1. Create `VapiAI/scoop-bucket` repository
-2. Update `.goreleaser.yaml` to set `skip_upload: false`
-3. Users install with:
-   ```powershell
-   scoop bucket add vapi https://github.com/VapiAI/scoop-bucket
-   scoop install vapi-cli
-   ```
-
-### 4. Package Managers (Future)
-
-Consider adding support for:
-
-- **apt/deb** (Debian/Ubuntu)
-- **yum/rpm** (RHEL/CentOS)
-- **AUR** (Arch Linux)
-- **Chocolatey** (Windows)
-- **npm/yarn** (Cross-platform via Node.js wrapper)
-
-### 5. Install Script
-
-Create a universal install script:
+For a local publishing preview, run from the docs checkout:
 
 ```bash
-curl -sSL https://vapi.ai/install.sh | bash
+fern generate --api cli --group cli-sdk --version 1.0.0-beta.1 --preview
 ```
 
-## What Happens During Release
+Keep `verify.yml` for repository checks and keep Fern's generated publishing
+workflows. Review generation PRs before merging; release only with a matching
+version tag after the gates below are satisfied.
 
-When you push a tag:
+### Release gates
 
-1. **GitHub Actions** triggers the release workflow
-2. **Tests** run on all platforms
-3. **GoReleaser** builds binaries for all platforms
-4. **Archives** are created with proper naming
-5. **Checksums** are generated for security
-6. **GitHub Release** is created with:
-   - Pre-built binaries
-   - Installation instructions
-   - Changelog from commits
-7. **Optional:** Updates Homebrew/Scoop formulas
+1. Complete live OAuth acceptance and production promotion above.
+2. Resolve the generated publishing credential boundary before enabling npm
+   trusted publishing. In `ci.yml`, the platform publish jobs grant
+   `id-token: write` during Rust compilation; they also execute third-party
+   setup actions and, for stable releases, `npx semver`. This does not preserve
+   PR #18's separation of build/packing from a minimal privileged publisher.
+   The generated release workflow also grants write permissions to planning
+   and build jobs. These files are checked in for review, not release approval.
+3. Bootstrap the five npm platform packages if still absent, then configure
+   trusted publishing for all six packages. The public registry currently has
+   `@vapi-ai/cli` at `latest: 0.2.1`; the five platform names returned 404.
+   Their names are `@vapi-ai/cli-{linux-x64,linux-arm64,darwin-x64,darwin-arm64,win32-x64}`.
+   Use owner `VapiAI`, repository `cli`, workflow `ci.yml`, and no environment
+   for the workflow as currently generated. Recheck these values after the
+   credential-boundary fix. Creating packages is a publishing action; this
+   preview did not do it.
+4. Configure `HOMEBREW_TAP_TOKEN` with tap write access, or configure Fern's
+   GitHub App distribution option and regenerate. Reconcile the tap's old
+   formula/cask entries with `Formula/vapi-cli.rb` before the stable rollout.
+5. Validate release builds on the target runners. npm and cargo-dist build
+   independently; cargo-dist enables `rustls` explicitly while the npm build
+   uses target defaults, so matching profile names alone do not establish
+   byte-identical artifacts. macOS signing in `release.yml` requires all three
+   `CODESIGN_*` secrets; without them those artifacts stay unsigned.
 
-## Manual Release (Emergency)
+Once these gates are satisfied, publish by pushing a version tag matching
+`Cargo.toml`, such as `v1.0.0-beta.1`. Merging alone does not publish. The actual
+generated workflows listen for tag pushes; creating a GitHub release can also
+create that tag, but no `release: published` event is configured.
 
-If automation fails:
+The beta's npm dist-tag is `beta`, so it does not replace `latest`. Stable
+backports use `backport`; other prereleases use their first identifier.
+Homebrew skips prereleases. No package, tag or GitHub release was published
+while preparing this draft.
 
-```bash
-# Install GoReleaser locally
-brew install goreleaser
-
-# Create release manually
-goreleaser release --clean
-
-# Or create a snapshot (no tag required)
-goreleaser release --snapshot --clean
-```
-
-## Best Practices for CLI Distribution
-
-### 1. **Binary Naming**
-
-- Simple, memorable name (`vapi` not `vapi-cli`)
-- Consistent across platforms
-
-### 2. **Version Information**
-
-```bash
-vapi --version
-# Output: vapi version 1.2.3 (commit: abc123, built: 2024-01-01)
-```
-
-### 3. **Auto-Updates**
-
-Consider adding self-update capability:
-
-```bash
-vapi update
-```
-
-### 4. **Installation Methods**
-
-Provide multiple options:
-
-- Direct download
-- Package managers
-- Install script
-- Docker image
-- Build from source
-
-### 5. **Platform Support**
-
-Essential platforms:
-
-- macOS (Intel + Apple Silicon)
-- Linux (x86_64 + ARM)
-- Windows (x86_64)
-
-### 6. **Security**
-
-- Sign binaries (code signing certificates)
-- Provide checksums
-- Use HTTPS for all downloads
-- Consider notarization for macOS
-
-### 7. **Documentation**
-
-- Clear installation instructions per platform
-- Troubleshooting guide
-- Uninstall instructions
-
-### 8. **Backwards Compatibility**
-
-- Maintain config file compatibility
-- Provide migration tools
-- Clear deprecation warnings
-
-## Setting Up Distribution Channels
-
-### Homebrew Tap
-
-1. Create `VapiAI/homebrew-tap` repository
-2. GoReleaser will auto-update the formula
-3. Test installation:
-   ```bash
-   brew tap VapiAI/homebrew-tap
-   brew install vapi-cli
-   brew test vapi-cli
-   ```
-
-### NPM Package (Optional)
-
-For Node.js users, create a wrapper:
-
-```json
-{
-  "name": "@vapi/cli",
-  "version": "1.2.3",
-  "bin": {
-    "vapi": "./bin/vapi"
-  },
-  "scripts": {
-    "postinstall": "node install.js"
-  }
-}
-```
-
-### Docker Image
-
-Already configured in `.goreleaser.yaml`. Enable when ready:
-
-```bash
-docker run -it ghcr.io/vapiai/cli:latest
-```
-
-## Release Notes Template
-
-```markdown
-## What's Changed
-
-### ✨ Features
-
-- Feature 1 (#123)
-- Feature 2 (#124)
-
-### 🐛 Bug Fixes
-
-- Fix 1 (#125)
-- Fix 2 (#126)
-
-### 📚 Documentation
-
-- Updated README (#127)
-
-### 🔧 Maintenance
-
-- Dependency updates (#128)
-
-**Full Changelog**: https://github.com/VapiAI/cli/compare/v1.2.2...v1.2.3
-```
-
-## Monitoring Releases
-
-Track adoption through:
-
-- GitHub Release download counts
-- Homebrew analytics (`brew info vapi-cli`)
-- Error reporting/telemetry (with user consent)
-
-## Troubleshooting
-
-Common issues:
-
-### Tag already exists
-
-```bash
-git tag -d v1.2.3
-git push origin :v1.2.3
-```
-
-### GoReleaser fails
-
-Check:
-
-- Git is clean (`git status`)
-- Tag is pushed to origin
-- GitHub token has correct permissions
-
-### Platform-specific issues
-
-Test locally:
-
-```bash
-goreleaser build --single-target --snapshot
-```
+See [Fern publishing](https://buildwithfern.com/learn/cli-generator/get-started/publishing)
+and [Fern OAuth support](https://buildwithfern.com/learn/cli-generator/get-started/authentication).

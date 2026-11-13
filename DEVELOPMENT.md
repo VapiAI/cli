@@ -1,224 +1,102 @@
-# Development Guide
+# Development
 
-This guide is for developers working on the Vapi CLI or integrating with different Vapi environments.
+## Requirements
 
-## Environment Configuration
-
-The Vapi CLI supports multiple environments for development and testing purposes. This functionality is designed to be **hidden from end users** but accessible to developers.
-
-### Available Environments
-
-| Environment   | API URL                       | Dashboard URL                       | Use Case               |
-| ------------- | ----------------------------- | ----------------------------------- | ---------------------- |
-| `production`  | `https://api.vapi.ai`         | `https://dashboard.vapi.ai`         | Default, end users     |
-| `staging`     | `https://api.staging.vapi.ai` | `https://dashboard.staging.vapi.ai` | Pre-production testing |
-| `development` | `http://localhost:3000`       | `http://localhost:3001`             | Local development      |
-
-### Configuration Methods
-
-#### 1. Environment Variables (Recommended for Development)
+- Rust 1.99.1, pinned in `rust-toolchain.toml`; rustup installs it on first use.
+- Python 3.11+ for repository scripts.
+- `/usr/bin/time` for performance checks (GNU `time` on Linux; included on macOS).
+- On Linux, `pkg-config`, OpenSSL development headers, and D-Bus development
+  headers for the local native credential-store build. Fern owns release-target
+  selection; inspect its publishing output before promising a Linux ABI.
 
 ```bash
-# Set environment
-export VAPI_ENV=staging
-
-# Or set URLs directly (overrides environment)
-export VAPI_API_BASE_URL=http://localhost:3000
-export VAPI_DASHBOARD_URL=http://localhost:3001
+cargo build --locked
+make test
 ```
 
-#### 2. CLI Configuration
+CI runs the generated Rust tests, generated mock-server wire tests, Vapi smoke
+checks on Linux, macOS, and Windows. The verification workflow is configured;
+GitHub has not provided PR workflow results for this candidate. No Vapi account or
+live API writes are required. The smoke script can use another compiled binary
+via `VAPI_TEST_BINARY=/absolute/path/to/vapi`.
+
+Linux CI builds the release CLI and runs `python3 scripts/check-performance.py`
+against root and assistant list/create schema discovery. Each command runs five
+times and must finish within 500 ms, use at most 128 MiB of peak resident memory,
+and produce at most 2 MiB of valid JSON. `/usr/bin/time` reports peak memory
+after exit; there is no active memory sampling. A timeout stops hangs.
+
+The checks also run with `make test` on Linux and macOS. For repeated local
+measurements, build with `cargo build --release --locked`, then run
+`python3 scripts/check-performance.py --runs 20`. The summary reports p50, p95,
+and maximum wall time, plus maximum peak RSS and output size. One untimed
+`--version` invocation warms the OS loader and file cache before the measurements
+(with a two-second timeout). Every measured run must meet the limits. Each is a
+fresh process, so normal per-invocation startup remains part of the measurement.
+Use `VAPI_TEST_BINARY=/absolute/path/to/vapi` to compare another build.
+
+## Source of truth
+
+API generation is configured alongside the server SDKs in
+[`VapiAI/docs/fern/apis/cli/generators.yml`](https://github.com/VapiAI/docs/blob/main/fern/apis/cli/generators.yml),
+under `cli-sdk`. It consumes the shared OpenAPI definition, naming overrides,
+parameter-description overlay and import settings directly. This repository
+does not vendor a second API definition or generator configuration.
+
+The CLI's separate Fern API workspace selects public-client OAuth with PKCE,
+refresh, and the staging default server. It does not change the other SDKs'
+authentication. Its `openapi-overrides.yml` also makes the provider-resource
+POST's reserved `Content-Type` header optional; explicit `--content-type` remains
+available and JSON requests set their content type through the HTTP stack.
+
+## Generate
+
+Run the **Release CLI** workflow in `VapiAI/docs`, supplying the desired version.
+Like the SDK workflows, this runs `fern generate` in pull-request mode against
+`VapiAI/cli`. Review the generated update and run this repository's checks before
+merging it. Generation and merging do not publish a release.
+
+For a local preview, clone `VapiAI/docs`, install its pinned Fern CLI with
+Node.js 22+, authenticate to the Vapi Fern organization, and run there:
 
 ```bash
-# Hidden command for developers
-vapi config env staging
-
-# Or set directly
-vapi config set environment staging
+fern generate --api cli --group cli-sdk --version 1.0.0-beta.1 --preview
 ```
 
-#### 3. Development Script (Easiest)
+The generator remains pinned to `fern-cli-generator` 0.59.1, with profiles and
+wire tests enabled and custom Rust commands disabled. Check generated
+`cli/vapi/main.rs` for `PkceLoginFlow` when changing authentication. The staging
+public client, issuer, resource parameters and default API server must be
+promoted together after live acceptance; see [RELEASING.md](RELEASING.md).
 
-```bash
-# Quick setup for local development
-./scripts/dev-env.sh local
+## Preserve CLI customizations
 
-# Set up staging environment
-./scripts/dev-env.sh setup staging
+`.fernignore` protects this repository's docs, verification workflow, smoke and
+performance checks, toolchain and patch references from generation. Generated
+runtime, wire tests and publishing workflows remain managed by Fern.
 
-# Check current status
-./scripts/dev-env.sh status
+Fern Replay's native `.fern/replay.lock` records the schema-renderer and command-binding changes
+on top of a pure `[fern-generated]` baseline. Central pull-request generation
+reapplies the schema and command-attribution binding changes without a separate
+CLI regeneration script. Commit future runtime customizations here;
+review Replay's report and resolve conflicts in the generated PR. Do not disable
+Replay for this generator while the schema fix is needed.
 
-# Reset to production
-./scripts/dev-env.sh reset
-```
+`src/http.rs` is also protected by `.fernignore` to retain Vapi request attribution.
+Replay rejects that file when its snapshot contains Fern's embedded public test
+certificate. Keep generator 0.59.1 pinned; when upgrading, compare this HTTP file
+with fresh output and carry forward the attribution changes. The request-header
+smoke tests verify the behavior. Other runtime files, including PKCE auth, remain
+generated.
 
-### Priority Order
+[`patches/`](patches/README.md) retains reviewable copies and explains the fixes.
+Once Fern supplies equivalent behavior, remove the corresponding customization
+with `fern replay forget` from a configured Fern checkout and review the next
+generated diff. CI checks observable correctness and performance, not the
+presence of a particular patch.
 
-The CLI determines which environment to use in this order:
-
-1. **Direct URL overrides** (`VAPI_API_BASE_URL`, `VAPI_DASHBOARD_URL`)
-2. **Environment variable** (`VAPI_ENV`)
-3. **Config file** (`environment` field)
-4. **Default** (production)
-
-### Development Workflow
-
-#### Setting Up Local Development
-
-1. **Start your local services:**
-
-   ```bash
-   # Start API server on localhost:3000
-   # Start dashboard on localhost:3001
-   ```
-
-2. **Configure CLI:**
-
-   ```bash
-   ./scripts/dev-env.sh local
-   ```
-
-3. **Verify setup:**
-
-   ```bash
-   vapi version  # Should show environment info
-   vapi config get
-   ```
-
-4. **Test authentication:**
-   ```bash
-   vapi login  # Opens localhost:3001/auth/cli
-   ```
-
-#### Testing Against Staging
-
-```bash
-# Switch to staging
-export VAPI_ENV=staging
-vapi config set environment staging
-
-# Or use the script
-./scripts/dev-env.sh setup staging
-
-# Test commands
-vapi assistant list
-```
-
-#### Switching Back to Production
-
-```bash
-./scripts/dev-env.sh reset
-# or
-unset VAPI_ENV
-vapi config set environment production
-```
-
-### Environment Detection
-
-The CLI shows environment information when not in production:
-
-```bash
-$ vapi version
-vapi version 0.0.3
-  commit: abc123
-  built at: 2025-01-27
-  built by: dev
-  go version: go1.24.4
-  platform: darwin/arm64
-  environment: staging          # Only shown for non-production
-  api url: https://api.staging.vapi.ai
-```
-
-### For End Users
-
-End users will **never** see environment-related functionality:
-
-- No environment flags in help output
-- Commands are hidden (`vapi config env` is hidden)
-- Default behavior is always production
-- No environment information shown in version (unless non-production)
-
-### Configuration File
-
-The CLI saves configuration to `~/.vapi-cli.yaml`:
-
-```yaml
-api_key: "your-api-key"
-environment: "staging"
-base_url: "https://api.staging.vapi.ai"
-dashboard_url: "https://dashboard.staging.vapi.ai"
-timeout: 30
-```
-
-### Environment Variables Reference
-
-| Variable             | Description            | Example                  |
-| -------------------- | ---------------------- | ------------------------ |
-| `VAPI_ENV`           | Environment name       | `staging`, `development` |
-| `VAPI_API_KEY`       | API key                | `vapi_abc123...`         |
-| `VAPI_API_BASE_URL`  | Override API URL       | `http://localhost:3000`  |
-| `VAPI_DASHBOARD_URL` | Override dashboard URL | `http://localhost:3001`  |
-
-### Testing Authentication Flow
-
-When testing authentication against different environments:
-
-```bash
-# Local development
-export VAPI_DASHBOARD_URL=http://localhost:3001
-vapi login  # Opens localhost:3001/auth/cli
-
-# Staging
-export VAPI_ENV=staging
-vapi login  # Opens dashboard.staging.vapi.ai/auth/cli
-```
-
-### Troubleshooting
-
-#### Check Current Configuration
-
-```bash
-vapi config get  # Shows all settings
-./scripts/dev-env.sh status  # Comprehensive status
-```
-
-#### Reset Everything
-
-```bash
-./scripts/dev-env.sh reset
-rm ~/.vapi-cli.yaml  # Nuclear option
-```
-
-#### Debug Environment Detection
-
-```bash
-# See what environment variables are set
-env | grep VAPI
-
-# Check config file
-cat ~/.vapi-cli.yaml
-```
-
-### Adding New Environments
-
-To add a new environment (e.g., `testing`):
-
-1. Update `pkg/config/config.go`:
-
-   ```go
-   "testing": {
-       Name:         "testing",
-       APIBaseURL:   "https://api.testing.vapi.ai",
-       DashboardURL: "https://dashboard.testing.vapi.ai",
-   },
-   ```
-
-2. Update scripts and documentation as needed.
-
-### Security Considerations
-
-- Environment switching is intentionally hidden from end users
-- API keys are masked in all output
-- Local development uses localhost URLs only
-- Production is always the default and safest option
+Endpoint names are maintained in
+[`VapiAI/docs/fern/apis/api/openapi-overrides.yml`](https://github.com/VapiAI/docs/blob/main/fern/apis/api/openapi-overrides.yml)
+for all generated server SDKs and this CLI. Review SDK version compatibility
+when changing these names, then regenerate the affected SDKs and the central
+`cli-sdk` group. Do not add CLI-only naming patches here.

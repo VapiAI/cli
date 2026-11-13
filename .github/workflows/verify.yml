@@ -1,0 +1,38 @@
+name: Verify generated CLI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config time
+      - name: Install pinned Rust
+        run: rustup show
+      - name: Build and test generated CLI
+        run: cargo test --locked
+      - name: Build release CLI for performance checks
+        if: runner.os == 'Linux'
+        run: cargo build --release --locked
+      - name: Check schema discovery performance
+        if: runner.os == 'Linux'
+        run: python scripts/check-performance.py
+      - name: Test CLI behavior against a local API
+        run: python scripts/smoke-test.py
