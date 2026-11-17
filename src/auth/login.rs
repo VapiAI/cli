@@ -1035,7 +1035,9 @@ pub fn shadowing_env_vars(
                 _ => None,
             })
             .collect();
-        return declared;
+        if !declared.is_empty() {
+            return declared;
+        }
     }
     let upper_cli = cli_name.to_uppercase().replace('-', "_");
     let upper_scheme = scheme_name.to_uppercase().replace('-', "_");

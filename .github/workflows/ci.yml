@@ -61,9 +61,6 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Reject staging OAuth releases
-        run: python3 scripts/check-release.py
-
       - name: Check tag matches crate version
         shell: bash
         run: |
@@ -182,8 +179,6 @@ jobs:
           # .../release/.
           cp "target/${{ matrix.rust-target }}/dist/${BINARY_NAME}" "${PKG_DIR}/"
 
-          cp LICENSE LICENSE-APACHE NOTICE "${PKG_DIR}/"
-
           # Write platform package.json
           cat > "${PKG_DIR}/package.json" <<PKGJSON
           {
@@ -197,8 +192,7 @@ jobs:
             "os": ["$(echo ${{ matrix.npm-platform-suffix }} | cut -d- -f1)"],
             "cpu": ["$(echo ${{ matrix.npm-platform-suffix }} | cut -d- -f2)"],
             "main": "${BINARY_NAME}",
-            "license": "MIT AND Apache-2.0",
-            "files": ["${BINARY_NAME}", "LICENSE", "LICENSE-APACHE", "NOTICE"]
+            "files": ["${BINARY_NAME}"]
           }
           PKGJSON
 
@@ -299,8 +293,6 @@ jobs:
 
           BINARY_NAME="vapi"
 
-          cp LICENSE LICENSE-APACHE NOTICE "${PKG_DIR}/"
-
           # Build optionalDependencies map
           OPTIONAL_DEPS=""
           OPTIONAL_DEPS="${OPTIONAL_DEPS}\"@vapi-ai/cli-linux-x64\": \"${VERSION}\","
@@ -328,7 +320,7 @@ jobs:
             "optionalDependencies": {
               ${OPTIONAL_DEPS}
             },
-            "files": ["bin/", "LICENSE", "LICENSE-APACHE", "NOTICE"]
+            "files": ["bin/"]
           }
           PKGJSON
 

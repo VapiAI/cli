@@ -235,7 +235,7 @@ pub(crate) fn build_cli_with_placeholders(doc: &RestDescription, placeholders: &
         .arg(
             clap::Arg::new("format")
                 .long("format")
-                .help("Output format: json, table, yaml, csv, raw, jsonl, http. Default: table when stdout is a TTY, json when piped. Override default with <NAME>_OUTPUT env var. raw emits unmodified server response bytes. jsonl emits one compact JSON value per line (NDJSON). http emits the full HTTP response (status line + headers + body).".replace("<NAME>", &crate::text::env_var_prefix(&doc.name)))
+                .help("Output format: json, table, yaml, csv, raw, jsonl, http. Default: table when stdout is a TTY, json when piped. Override default with <NAME>_OUTPUT env var. raw emits unmodified server response bytes. jsonl emits one compact JSON value per line (NDJSON). http emits the full HTTP response (status line + headers + body).")
                 .value_name("FORMAT")
                 .global(true),
         )
@@ -250,8 +250,8 @@ pub(crate) fn build_cli_with_placeholders(doc: &RestDescription, placeholders: &
             clap::Arg::new("user-agent-suffix")
                 .long(crate::user_agent::suffix_flag())
                 .help(format!(
-                    "Product token appended to the User-Agent (e.g. my-app/1.0), so a tool built on top of this CLI can tag its traffic. Takes precedence over {}{}.",
-                    crate::text::env_var_prefix(&doc.name), crate::user_agent::suffix_env_segment()
+                    "Product token appended to the User-Agent (e.g. my-app/1.0), so a tool built on top of this CLI can tag its traffic. Takes precedence over <NAME>{}.",
+                    crate::user_agent::suffix_env_segment()
                 ))
                 .value_name("TOKEN")
                 .global(true),
@@ -307,7 +307,6 @@ pub(crate) fn build_cli_with_placeholders(doc: &RestDescription, placeholders: &
             &doc.tag_description_order,
             doc.pagination_token_query_param.is_some()
                 || doc.pagination_token_response_path.is_some(),
-            &crate::text::env_var_prefix(&doc.name),
         )
         {
             root = root.subcommand(cmd);
@@ -625,7 +624,6 @@ fn build_resource_command(
     // than read from the doc because this builder is recursive and never
     // holds it.
     doc_has_pagination_defaults: bool,
-    env_prefix: &str,
 ) -> Option<Command> {
     let mut cmd = Command::new(name.to_string())
         .about(group_about_text_for_group(
@@ -815,7 +813,7 @@ fn build_resource_command(
                 Arg::new("no-extract")
                     .long("no-extract")
                     .help(
-                        "Print the full response body without extracting the configured return value",
+                        "Disable x-fern-sdk-return-value extraction and print the full response body",
                     )
                     .action(clap::ArgAction::SetTrue)
                     .help_heading(HELP_HEADING_REQUEST),
@@ -825,18 +823,18 @@ fn build_resource_command(
                     .long("retries")
                     .value_name("N")
                     .value_parser(clap::value_parser!(u32))
-                    .help(format!(
+                    .help(
                         "Retry a failed request up to N additional times, overriding \
-                         this operation's default. 0 is the same as --no-retry. \
-                         Falls back to {env_prefix}_RETRIES, then the active profile."
-                    ))
+                         x-fern-retries on this operation. 0 is the same as --no-retry. \
+                         Falls back to <NAME>_RETRIES, then the active profile.",
+                    )
                     .help_heading(HELP_HEADING_REQUEST),
             )
             .arg(
                 Arg::new("no-retry")
                     .long("no-retry")
                     .help(
-                        "Disable retries for this operation, \
+                        "Disable retries declared by x-fern-retries on this operation, \
                          including network errors. Useful for debugging.",
                     )
                     .action(clap::ArgAction::SetTrue)
@@ -899,7 +897,6 @@ fn build_resource_command(
             &HashMap::new(),
             &[],
             doc_has_pagination_defaults,
-            env_prefix,
         )
         {
             has_children = true;

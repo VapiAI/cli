@@ -199,7 +199,8 @@ Deletes the call identified by its ID.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
-| `--json` | `JSON` | Yes | Request body as JSON (or use individual body-field flags) |
+| `--id` | `string (uuid)` | Yes | The unique identifier of the call. |
+| `--json` | `JSON` | No | Request body as JSON (or use individual body-field flags) |
 
 #### `vapi calls download-assistant-recording`
 
