@@ -1,0 +1,9 @@
+# Keep generated output collapsed in review; edit the shared Fern inputs in VapiAI/docs to change it.
+src/** linguist-generated=true
+cli/** linguist-generated=true
+tests/wire_test.rs linguist-generated=true
+wiremock/** linguist-generated=true
+reference.md linguist-generated=true
+# Replay embeds unified diff context whose whitespace must be preserved.
+.fern/replay.lock -whitespace
+.fern/replay.lock linguist-generated=true
