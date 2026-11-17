@@ -1339,7 +1339,7 @@ impl CliApp {
             .arg(
                 clap::Arg::new("format")
                     .long("format")
-                    .help("Output format: json, table, yaml, csv, raw, jsonl, http. Default: table when stdout is a TTY, json when piped. Override default with <NAME>_OUTPUT env var. raw emits unmodified server response bytes. jsonl emits one compact JSON value per line (NDJSON); arrays are flattened. http emits the full HTTP response (status line + headers + body) like curl -i (OpenAPI only).")
+                    .help("Output format: json, table, yaml, csv, raw, jsonl, http. Default: table when stdout is a TTY, json when piped. Override default with <NAME>_OUTPUT env var. raw emits unmodified server response bytes. jsonl emits one compact JSON value per line (NDJSON); arrays are flattened. http emits the full HTTP response (status line + headers + body) like curl -i (OpenAPI only).".replace("<NAME>", &crate::text::env_var_prefix(&self.name)))
                     .value_name("FORMAT")
                     .global(true),
             )
@@ -1367,8 +1367,8 @@ impl CliApp {
                 clap::Arg::new("user-agent-suffix")
                     .long(crate::user_agent::suffix_flag())
                     .help(format!(
-                        "Product token appended to the User-Agent (e.g. my-app/1.0), so a tool built on top of this CLI can tag its traffic. Takes precedence over <NAME>{}.",
-                        crate::user_agent::suffix_env_segment()
+                        "Product token appended to the User-Agent (e.g. my-app/1.0), so a tool built on top of this CLI can tag its traffic. Takes precedence over {}{}.",
+                        crate::text::env_var_prefix(&self.name), crate::user_agent::suffix_env_segment()
                     ))
                     .value_name("TOKEN")
                     .global(true),
@@ -2324,8 +2324,8 @@ fn global_flags(
             "flag": format!("--{}", crate::user_agent::suffix_flag()),
             "valueName": "TOKEN",
             "description": format!(
-                "Product token appended to the User-Agent (e.g. my-app/1.0). Takes precedence over <NAME>{}.",
-                crate::user_agent::suffix_env_segment()
+                "Product token appended to the User-Agent (e.g. my-app/1.0). Takes precedence over {}{}.",
+                crate::text::env_var_prefix(cli_name), crate::user_agent::suffix_env_segment()
             ),
         }),
         serde_json::json!({
@@ -2359,11 +2359,11 @@ fn global_flags(
         }),
         serde_json::json!({
             "flag": "--no-retry",
-            "description": "Disable retries declared by x-fern-retries on this operation, including network errors",
+            "description": "Disable retries for this operation, including network errors",
         }),
         serde_json::json!({
             "flag": "--no-extract",
-            "description": "Disable x-fern-sdk-return-value extraction and print the full response body",
+            "description": "Print the full response body without extracting the configured return value",
         }),
         serde_json::json!({
             "flag": "--help",

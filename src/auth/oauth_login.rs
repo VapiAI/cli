@@ -1174,7 +1174,6 @@ enum CallbackOutcome<'a> {
 /// The Fern leaf, as inline SVG. Everything in these pages is inlined on purpose: the loopback
 /// listener has no CDN behind it, and a hosted asset is one corp proxy away from a broken image on
 /// the last screen of `auth login`.
-const FERN_LEAF_SVG: &str = "<svg viewBox=\"0 0 167 164\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M149.383 80.2222C138.594 71.101 122.341 67.4445 107.936 78.0925C107.273 78.5747 106.449 77.751 106.952 77.1081C110.367 72.7082 114.325 67.9668 117.519 63.2053C120.774 58.3233 125.636 54.8275 131.241 53.1198C161.076 44.079 152.116 0 152.116 0C152.116 0 106.027 2.97342 111.713 42.7329C112.657 49.3829 110.889 56.1535 106.731 61.4374C101.628 67.8865 95.7008 74.0543 91.4014 78.5144C90.4973 79.4386 88.9705 78.5546 89.3321 77.309C93.4909 63.3058 96.5246 41.648 82.1195 27.685L61.848 10.849L57.9504 15.9922C46.3581 31.2812 49.7534 52.8385 65.0625 64.4108C73.8422 71.0407 77.8201 78.2533 77.1973 86.169C76.8156 90.9104 74.6659 95.3505 71.4514 98.8663C65.4041 105.496 59.7586 112.608 55.3989 120.846C54.7962 121.991 53.0483 121.549 53.1086 120.243C53.7314 106.641 52.4255 75.983 29.5221 65.0336L3.88635 55.1289L1.89737 61.0556C-4.55174 80.182 5.99588 100.614 25.1021 107.104C41.7171 112.749 47.6439 123.457 43.6458 139.51C43.465 140.092 40.572 156.627 40.9738 163.96H59.3969C60.0198 152.589 71.9536 145.115 82.3003 149.756C85.2135 151.062 88.207 152.93 91.2809 155.341C107.755 168.32 132.025 165.246 144.983 148.752L148.68 144.05L125.375 127.315C109.383 114.738 88.0463 120.424 72.255 131.192C70.929 132.096 69.2414 130.65 69.9847 129.203C89.0709 91.7542 113.883 91.8346 123.607 100.152C135.4 110.238 153.261 108.429 163.266 96.5961L166.139 93.2007L149.363 80.2222H149.383Z\"/></svg>";
 
 /// The pages the loopback listener serves when no hosted page is configured. Self-contained: no
 /// external stylesheet, font, or image request, so it renders identically offline and behind a
@@ -1236,8 +1235,6 @@ font-size:12px;text-decoration:none}}.footer a:hover{{color:var(--fern)}}\
 .footer svg{{width:12px;height:12px}}</style></head>\
 <body><main class=\"card\"><div class=\"glyph {status_class}\">{glyph}</div>\
 <h1>{heading}</h1><p>{detail}</p>\
-<div class=\"footer\"><a href=\"https://buildwithfern.com?utm_source=cli&amp;utm_medium=cli\" \
-target=\"_blank\" rel=\"noreferrer\">Built with {FERN_LEAF_SVG} Fern</a></div>\
 </main></body></html>"
     )
 }
@@ -1337,18 +1334,69 @@ impl OAuth2KeyringProvider {
         }
     }
 
+    fn token_env_name(&self) -> String {
+        format!("{}_TOKEN", self.cli_name.to_uppercase().replace('-', "_"))
+    }
+
+    fn environment_token(&self) -> Option<String> {
+        std::env::var(self.token_env_name()).ok()
+            .map(|value| value.trim().to_owned()).filter(|value| !value.is_empty())
+    }
+
+    async fn refresh_lock(&self, account: &str) -> Result<std::fs::File, CliError> {
+        use sha2::Digest;
+        let root = std::env::var_os("XDG_CONFIG_HOME")
+            .filter(|value| !value.is_empty()).map(std::path::PathBuf::from)
+            .or_else(crate::auth::oauth_common::config_dir)
+            .ok_or_else(|| CliError::Auth("No config directory for OAuth refresh coordination".into()))?;
+        let key = sha2::Sha256::digest(format!("{}\0{}", self.cli_name, account).as_bytes());
+        let name: String = key.iter().map(|byte| format!("{byte:02x}")).collect();
+        let directory = root.join(&self.cli_name).join("oauth-refresh-locks");
+        tokio::task::spawn_blocking(move || {
+            std::fs::create_dir_all(&directory)?;
+            let mut options = std::fs::OpenOptions::new();
+            options.read(true).write(true).create(true).truncate(false);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            let file = options.open(directory.join(name))?;
+            file.lock()?;
+            Ok::<_, std::io::Error>(file)
+        }).await.map_err(|error| CliError::Auth(format!("OAuth refresh coordination failed: {error}")))?
+            .map_err(|error| CliError::Auth(format!("Cannot lock OAuth refresh: {error}")))
+    }
+
     async fn resolve_async(&self) -> Result<String, CliError> {
+        let environment = self.environment_token();
+        if !crate::profiles::outranks_env() {
+            if let Some(token) = environment.as_ref() {
+                return Ok(token.clone());
+            }
+        }
         let store = active_store();
         let account = crate::profiles::keyring_account(&self.scheme_name);
-        let raw = crate::auth::credential::read_keyring(&self.cli_name, &account)?.ok_or_else(|| {
-            CliError::Auth(format!(
-                "Not logged in. Run `{} auth login` to authenticate.",
-                self.cli_name
-            ))
-        })?;
+        let raw = crate::auth::credential::read_keyring(&self.cli_name, &account)?;
+        let Some(raw) = raw else {
+            return environment.ok_or_else(|| CliError::Auth(format!(
+                "Not logged in. Run `{} auth login` or set {} to an OAuth access token.",
+                self.cli_name, self.token_env_name()
+            )));
+        };
 
         let bundle = TokenBundle::parse_or_raw(&raw);
 
+        if !bundle.is_expired() {
+            return Ok(bundle.access_token);
+        }
+
+        // Hold an OS file lock across the fresh read, rotation, and durable write.
+        // Other processes may have rotated the bundle after the cached read above.
+        let _lock = self.refresh_lock(&account).await?;
+        let raw = store.get_fresh(&self.cli_name, &account)?.ok_or_else(||
+            CliError::Auth(format!("Session removed. Run `{} auth login` again.", self.cli_name)))?;
+        let bundle = TokenBundle::parse_or_raw(&raw);
         if !bundle.is_expired() {
             return Ok(bundle.access_token);
         }
@@ -1380,15 +1428,25 @@ impl OAuth2KeyringProvider {
             .await
             .map_err(|e| CliError::Auth(format!("refresh token response body: {e}")))?;
         if !status.is_success() {
-            // ADR-0008 § refresh-fails: wipe the keyring entry and tell
-            // the user to log in again.
-            let _ = store.delete(&self.cli_name, &account);
-            let detail = parse_oauth_error_body(&body)
-                .and_then(|e| e.error_description.or(e.error))
-                .unwrap_or_else(|| truncate_body(&body));
+            let oauth_error = parse_oauth_error_body(&body);
+            let invalid_grant = status == reqwest::StatusCode::BAD_REQUEST
+                && oauth_error.as_ref().and_then(|error| error.error.as_deref()) == Some("invalid_grant");
+            if invalid_grant {
+                let latest = store.get_fresh(&self.cli_name, &account)?;
+                if latest.as_deref() == Some(raw.as_str()) {
+                    let _ = store.delete(&self.cli_name, &account);
+                } else if let Some(latest) = latest {
+                    let current = TokenBundle::parse_or_raw(&latest);
+                    if !current.is_expired() {
+                        return Ok(current.access_token);
+                    }
+                }
+                return Err(CliError::Auth(format!(
+                    "Your session has expired (invalid_grant). Run `{} auth login` again.", self.cli_name
+                )));
+            }
             return Err(CliError::Auth(format!(
-                "Your session has expired ({detail}). Run `{} auth login` again.",
-                self.cli_name
+                "OAuth refresh failed (HTTP {status}); stored credentials were retained. Retry the command."
             )));
         }
         let ok: TokenSuccessBody = serde_json::from_str(&body).map_err(|e| {
@@ -1399,7 +1457,11 @@ impl OAuth2KeyringProvider {
             ok.refresh_token.as_deref().or(Some(refresh)),
             ok.expires_in,
         );
-        store.set(&self.cli_name, &account, &new_bundle.to_keyring_value()?)?;
+        store.set(&self.cli_name, &account, &new_bundle.to_keyring_value()?).map_err(|_| {
+            CliError::Auth(format!(
+                "OAuth refresh succeeded, but the rotated credentials could not be saved. Unlock the credential store and run `{} auth login` again.", self.cli_name
+            ))
+        })?;
         Ok(new_bundle.access_token)
     }
 }
@@ -1410,6 +1472,14 @@ impl AuthProvider for OAuth2KeyringProvider {
     }
 
     fn has_credentials(&self) -> bool {
+        self.environment_token().is_some() || self.has_stored_credentials()
+    }
+
+    fn credential_slots(&self) -> crate::auth::CredentialSlots {
+        crate::auth::CredentialSlots::required([vec![crate::auth::AuthCredentialSource::from_env(self.token_env_name())]])
+    }
+
+    fn has_stored_credentials(&self) -> bool {
         crate::auth::credential::read_keyring(
             &self.cli_name,
             &crate::profiles::keyring_account(&self.scheme_name),
@@ -1420,20 +1490,8 @@ impl AuthProvider for OAuth2KeyringProvider {
             .unwrap_or(false)
     }
 
-    /// Every credential this provider can offer is one `auth login` stored in
-    /// the profile-namespaced keyring account — there is no env/flag rung — so
-    /// "has credentials" and "has *stored* credentials" are the same question.
-    /// Without this override the trait default (`false`) hid OAuth login
-    /// tokens from the `--profile` preference pass in
-    /// [`AnyAuthProvider`](crate::auth::AnyAuthProvider) /
-    /// [`RoutingAuthProvider`](crate::auth::RoutingAuthProvider), which then
-    /// picked an earlier env-backed scheme.
-    fn has_stored_credentials(&self) -> bool {
-        self.has_credentials()
-    }
-
     fn credential_hints(&self) -> Vec<String> {
-        vec![format!(
+        vec![format!("env var {} (OAuth access token)", self.token_env_name()), format!(
             "keyring entry {}:{} (populated by `{} auth login`)",
             self.cli_name,
             crate::profiles::keyring_account(&self.scheme_name),
@@ -1472,6 +1530,15 @@ mod tests {
 
     // `TokenBundle` roundtrip / raw-fallback / expiry tests live in
     // `oauth_common::tests` — the canonical home for that type.
+
+    #[test]
+    fn built_in_callback_pages_have_no_marketing_link() {
+        for outcome in [CallbackOutcome::Success, CallbackOutcome::Failure { error: "denied".into(), description: None }] {
+            let html = render_callback_page(outcome);
+            assert!(!html.contains("Built with") && !html.contains("utm_"));
+            assert!(html.contains("</html>"));
+        }
+    }
 
     #[test]
     fn device_code_validates_required_fields() {
@@ -1700,6 +1767,104 @@ mod tests {
         assert_eq!(stored.access_token, "new-acc");
         assert_eq!(stored.refresh_token.as_deref(), Some("ref-2"));
     }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial]
+    async fn provider_preserves_session_on_transient_refresh_errors() {
+        for status in [429, 500, 503] {
+            let server = MockServer::start().await;
+            let mock = Arc::new(MockKeyringStore::new());
+            let mut expired = TokenBundle::from_token_response("old", Some("refresh"), Some(3600));
+            expired.expires_at = Some(0);
+            let raw = expired.to_keyring_value().unwrap();
+            mock.set("refresh-review", "OAuth2", &raw).unwrap();
+            set_active_store(mock.clone());
+            Mock::given(method("POST")).and(path("/token"))
+                .respond_with(ResponseTemplate::new(status).set_body_json(serde_json::json!({"error":"temporarily_unavailable"})))
+                .mount(&server).await;
+            let provider = OAuth2KeyringProvider::new("OAuth2", "refresh-review", &format!("{}/token", server.uri()), "client");
+            assert!(provider.resolve_async().await.is_err());
+            assert_eq!(mock.get("refresh-review", "OAuth2").unwrap(), Some(raw), "HTTP {status} discarded the session");
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial]
+    async fn provider_serializes_rotating_refresh_tokens() {
+        let server = MockServer::start().await;
+        let mock = Arc::new(MockKeyringStore::new());
+        let mut expired = TokenBundle::from_token_response("old", Some("refresh"), Some(3600));
+        expired.expires_at = Some(0);
+        mock.set("refresh-review", "OAuth2", &expired.to_keyring_value().unwrap()).unwrap();
+        set_active_store(mock.clone());
+        Mock::given(method("POST")).and(path("/token"))
+            .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_millis(100))
+                .set_body_json(serde_json::json!({"access_token":"fresh","refresh_token":"rotated","expires_in":3600})))
+            .mount(&server).await;
+        let url = format!("{}/token", server.uri());
+        let one = OAuth2KeyringProvider::new("OAuth2", "refresh-review", &url, "client");
+        let two = OAuth2KeyringProvider::new("OAuth2", "refresh-review", &url, "client");
+        let (a, b) = tokio::join!(one.resolve_async(), two.resolve_async());
+        assert_eq!(a.unwrap(), "fresh");
+        assert_eq!(b.unwrap(), "fresh");
+        assert_eq!(server.received_requests().await.unwrap().len(), 1);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial]
+    async fn provider_rechecks_the_store_beneath_the_keyring_cache() {
+        let mock = MockKeyringStore::new();
+        let mut expired = TokenBundle::from_token_response("old", Some("refresh"), Some(3600));
+        expired.expires_at = Some(0);
+        mock.set("refresh-review", "OAuth2", &expired.to_keyring_value().unwrap()).unwrap();
+        let cached = Arc::new(crate::auth::keyring_store::CachingKeyringStore::new(mock.clone()));
+        set_active_store(cached);
+        let provider = OAuth2KeyringProvider::new("OAuth2", "refresh-review", "http://127.0.0.1:1/token", "client");
+        assert!(provider.has_credentials());
+        let fresh = TokenBundle::from_token_response("other-process-token", Some("rotated"), Some(3600));
+        mock.set("refresh-review", "OAuth2", &fresh.to_keyring_value().unwrap()).unwrap();
+        assert_eq!(provider.resolve_async().await.unwrap(), "other-process-token");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial]
+    async fn provider_uses_ephemeral_oauth_token_without_storing_it() {
+        use crate::auth::test_helpers::GlobalAuthStateGuard;
+        let mut state = GlobalAuthStateGuard::new();
+        state.install_empty_keyring().set_env("REVIEW_CLI_TOKEN", "short-lived-oauth-token");
+        let provider = OAuth2KeyringProvider::new("OAuth2", "review-cli", "https://unused", "client");
+        assert!(provider.has_credentials());
+        assert!(!provider.has_stored_credentials());
+        assert_eq!(provider.resolve_async().await.unwrap(), "short-lived-oauth-token");
+        assert!(active_store().get("review-cli", "OAuth2").unwrap().is_none());
+        let binding = crate::auth::SchemeBinding::Custom(Arc::new(provider));
+        assert_eq!(crate::auth::login::shadowing_env_vars("review-cli", "OAuth2", &[("OAuth2".into(), binding)]), vec!["REVIEW_CLI_TOKEN"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    #[serial]
+    async fn provider_reports_failed_rotated_token_save_without_leaking_tokens() {
+        #[derive(Debug)]
+        struct RefusingStore(String);
+        impl KeyringStore for RefusingStore {
+            fn get(&self, _: &str, _: &str) -> Result<Option<String>, CliError> { Ok(Some(self.0.clone())) }
+            fn set(&self, _: &str, _: &str, _: &str) -> Result<(), CliError> { Err(CliError::Auth("Keychain write denied".into())) }
+            fn delete(&self, _: &str, _: &str) -> Result<(), CliError> { panic!("must not delete on a failed write") }
+            fn backend_label(&self) -> String { "refusing-test-store".into() }
+        }
+        let server = MockServer::start().await;
+        let mut expired = TokenBundle::from_token_response("old", Some("refresh-secret"), Some(3600));
+        expired.expires_at = Some(0);
+        set_active_store(Arc::new(RefusingStore(expired.to_keyring_value().unwrap())));
+        Mock::given(method("POST")).and(path("/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"access_token":"new-secret","refresh_token":"rotated-secret","expires_in":3600})))
+            .mount(&server).await;
+        let provider = OAuth2KeyringProvider::new("OAuth2", "refresh-review", &format!("{}/token", server.uri()), "client");
+        let message = provider.resolve_async().await.unwrap_err().to_string();
+        assert!(message.contains("rotated") && message.contains("auth login"), "{message}");
+        assert!(!message.contains("new-secret") && !message.contains("rotated-secret"));
+    }
+
 
     #[tokio::test(flavor = "multi_thread")]
     #[serial]
@@ -2434,7 +2599,7 @@ mod tests {
         assert_eq!(resp.status().as_u16(), 400);
         let body = resp.text().await.unwrap();
         assert!(body.contains("Authorization didn't complete"), "{body}");
-        assert!(body.contains("Built with"), "{body}");
+        assert!(!body.contains("Built with"), "{body}");
         assert!(!body.contains("<script>"), "{body}");
         assert!(body.contains("&lt;script&gt;"), "{body}");
         assert!(acceptor.await.unwrap().is_err());

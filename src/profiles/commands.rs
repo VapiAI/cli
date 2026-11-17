@@ -309,8 +309,8 @@ pub fn build_profiles_command(config: &ProfilesConfig, vocabulary: &Vocabulary) 
                 .value_parser(clap::value_parser!(u32))
                 .help(
                     "Additional retry attempts for requests made under this profile \
-                     (0 disables retries here). Overrides x-fern-retries; an explicit \
-                     --retries or <NAME>_RETRIES on the command still wins.",
+                     (0 disables retries here). Overrides the API default; an explicit \
+                     --retries flag or retry environment variable still wins.",
                 ),
         )
         .arg(
@@ -411,7 +411,7 @@ pub fn build_profiles_command(config: &ProfilesConfig, vocabulary: &Vocabulary) 
         .long_about(
             "A profile is a named bundle of request context resolved once per \
              invocation. Select one for a single command with `--profile <name>` \
-             (`-p`), for a shell with the <NAME>_PROFILE environment variable, or \
+             (`-p`), for a shell with the profile environment variable, or \
              persistently with `profiles use <name>`.\n\n\
              Precedence per value is: explicit flag, then the selected profile, \
              then environment variable, then the spec's own default. Environment \
@@ -442,7 +442,7 @@ pub fn build_profiles_command(config: &ProfilesConfig, vocabulary: &Vocabulary) 
                         .value_name("NAME")
                         .help(
                             "Profile to inspect. Defaults to the one this invocation \
-                             would use (--profile, <NAME>_PROFILE, or the active one).",
+                             would use (--profile, the profile environment variable, or the active one).",
                         ),
                 ),
         )
@@ -470,7 +470,7 @@ pub fn build_profiles_command(config: &ProfilesConfig, vocabulary: &Vocabulary) 
                         .help(
                             "One or more assignments. KEY may be an environment variable \
                              this CLI reads (a credential, or a setting such as \
-                             <NAME>_RETRIES) or an API parameter name. Credentials go to \
+                             the retry setting) or an API parameter name. Credentials go to \
                              the keyring; everything else to profiles.toml.",
                         ),
                 ),
