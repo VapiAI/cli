@@ -1,132 +1,113 @@
-# Evaluate the Fern CLI beta
+# Migrating from the Go CLI
 
-Decision: adopt Fern conventions and the generated API foundation. The beta
-now has generated OAuth login configured for staging. Live OAuth acceptance,
-production promotion and Fern-managed publishing are required before release.
-It replaces much of the handwritten API plumbing and several dashboard-only
-placeholders with scriptable API operations. It is not yet a drop-in replacement
-for users relying on browser login, project scaffolding, workflows, or local
-webhook forwarding. `init` and `listen` remain removed; command naming should be fixed upstream.
+The 1.0 beta replaces the Go CLI with generated API commands and OAuth login.
+Command names and flags change. Review scripts before upgrading; existing
+configuration files and API keys are not imported.
 
-## What was compared
+## Install the intended version
 
-- Go CLI at `4149790e4621407c903f73554130fb31a97d9334`, the latest main used for
-  this migration, including the removal of MCP/skills setup.
-- Fern CLI generator 0.59.1, shared Fern CLI pin 5.169.0, package version 1.0.0-beta.1.
-- Shared SDK API inputs and the `cli-sdk` generator group in `VapiAI/docs`.
-- The compiled candidate's `--help`, `--schema`, dry runs, generated tests, and
-  local mock API requests. No production calls, purchases, or deletions were run.
-
-The candidate reports **145 API operations in 23 groups**, plus auth, profiles,
-completion, man pages, and skill export. Those counts describe this generated API
-snapshot, not a guarantee of all current Vapi API functionality.
-
-## Capability comparison
-
-| Area | Go CLI behavior | Generated candidate | Assessment |
-| --- | --- | --- | --- |
-| API breadth | Handwritten commands for a small subset of the old Go SDK | 145 operations, including squads, files, sessions, simulations, structured outputs, scorecards and traffic allocation | Clear gain; future coverage follows the shared spec |
-| Assistant CRUD | Working API operations with interactive creation and deletion confirmation | `assistants list/create/get/update/delete`, JSON/stdin bodies and flags | Keep generated API commands; guided creation is removed |
-| Calls | List/get worked; create/update/end printed SDK or dashboard guidance | Real list/create/update/delete plus spec-defined call operations | Gain; do not equate deleting a call record with ending a live call |
-| Chat | List/get/delete worked; creation and continuation printed guidance | Real create/list/get/delete and OpenAI-compatible response operation | Gain; inspect streaming behavior against a real test assistant before promising parity |
-| Tools and phones | List/get/delete worked; several create/update/test paths printed guidance | Spec-driven create/update and other operations | More useful automation; no replacement for custom tool-testing helpers |
-| Campaigns | Working list/get/create/update/delete with guided selections | V1/V2 API operations and contact retrieval | Coverage gain, but long controller-derived command names need a product decision |
-| Workflows | Working list/get/create/delete in the old SDK | No workflow endpoints in this API snapshot | Real removal; use an existing client/dashboard, or add supported endpoints upstream before claiming parity |
-| Browser login | Vapi dashboard callback and local account records | Generated PKCE OAuth login and refresh with a registered staging public client | Staging registration exists; companion API acceptance and live-user validation are release gates |
-| Multiple accounts | `auth switch` and YAML config | Fern profiles; no legacy credential migration | Accept Fern conventions; finalize profile behavior with OAuth |
-| Output | Custom tables/prose and JSON depending on command | JSON when piped, tables in a terminal; explicit formats and JMESPath | Better for automation; existing output parsers must change |
-| Request control | Uneven or limited flags | JSON/stdin input, dry run, base URL override, request flags, retries, schema and spec export | Strong gain; retry and pagination semantics still depend on spec metadata |
-| Deletion | Interactive confirmation | Immediate API request; `--dry-run` available | Intentional breaking behavior; scripts and operators must account for it |
-| Project setup | `init` detected frameworks, installed SDKs and wrote examples/env files | Removed | Accepted: initialization belongs in a separate project |
-| Webhook forwarding | `listen` hosted a local forwarding HTTP server; it did not establish the advertised public tunnel | Removed | Accepted: rebuild later only if missed |
-| Webhook management and logs | Commands mostly printed guidance instead of invoking APIs | No standalone webhook/log command groups in this snapshot | Removes misleading promises, not working CRUD/log retrieval |
-| IDE integration | MCP/skills setup already removed from main | No IDE installer; Fern adds `generate-skills` to export API command skills | Preserve the setup removal; decide whether the new export belongs in the public help |
-| Updates | Custom self-update and SDK-update automation | Central Fern generation opens CLI PRs from shared API inputs; upgrade binaries via npm/releases | Smaller maintenance surface; self-update command removed |
-| Telemetry | Handwritten PostHog analytics and opt-out configuration | No Vapi PostHog analytics package or analytics config commands | Old telemetry configuration is removed |
-| Distribution | GoReleaser, custom npm wrapper, stale Homebrew, installers, Docker | Fern-managed npm, native downloads and Homebrew configured | Generated npm and release/Homebrew workflows adopted; publishing setup and credential isolation remain |
-| MCP docs server | Separate TypeScript package in the repository | Removed from the new CLI tree | Existing published versions are unaffected; future server maintenance needs its own home |
-
-## Breaking command examples
-
-| Before | Candidate |
-| --- | --- |
-| `export VAPI_API_KEY=...` | OAuth target; no legacy API-key migration |
-| `vapi login` | `vapi auth login` with OAuth (staging evaluation) |
-| `vapi auth switch staging` | `vapi profiles use staging` |
-| `vapi assistant list` | `vapi assistants list` |
-| `vapi assistant get ID` | `vapi assistants get --id ID` |
-| `vapi phone list` | `vapi phone-numbers list` |
-| `vapi call get ID` | `vapi calls get --id ID` |
-| `vapi chat list` | `vapi chats list` |
-| `vapi tool get ID` | `vapi tools get --id ID` |
-| `vapi campaign list` | `vapi campaigns campaign-controller-find-all` |
-| `vapi manual` | `vapi man` |
-| `vapi version` | `vapi --version` |
-
-Old YAML credentials/settings are not imported. A selected profile's stored
-credential overrides the exported token. Inspect `profiles current` and
-`auth status` when switching environments. Resource IDs use named flags; singular
-resource command aliases are not installed.
-
-## Recorded product decisions
-
-| Area | Decision | Implementation status |
-| --- | --- | --- |
-| Command grammar | Keep Fern's groups, flags, and conventions | Present in generated output |
-| Long controller names | Shorten through annotations in `vapi`, propagated through OpenAPI | Mechanism confirmed; upstream source change remains to be made |
-| Authentication | OAuth, aligned with the other Vapi surfaces | Generated PKCE login configured for staging; live acceptance pending |
-| Old credentials | No API-key/YAML compatibility migration | Removed; no new migration path planned |
-| `init` | Separate project | Removed |
-| `listen` | Delete; rebuild only if missed | Removed |
-| Deletion | Keep immediate deletes and document dry run | Present and tested with local mocks |
-| Output | Keep Fern defaults | Present |
-| Installation | npm, native downloads, and Homebrew | Generated workflows present; credentials and live acceptance pending |
-| MCP docs server | Remove | Removed |
-| Publishing | Fern-managed | Generated workflows present; release credential boundary needs review |
-| `generate-skills` | User requested more information; keep/remove undecided | Built-in export remains in the inspection build |
-
-## Skill export: what the command does
-
-The compiled inspection build was run with:
+Use the beta npm channel while evaluating 1.0:
 
 ```bash
-vapi generate-skills --output-dir /tmp/vapi-cli-skills
+npm install --global @vapi-ai/cli@beta
+vapi --version
 ```
 
-It wrote 24 local files: `vapi-shared/SKILL.md` plus one for each API group,
-such as `vapi-assistants/SKILL.md`. The shared guide lists auth schemes,
-global flags, formats and dry run. Group guides list operations and explain
-how an agent can discover parameters through `--schema`.
+Homebrew is available starting with the stable release, not the prerelease.
+Native archives are available on the matching GitHub prerelease. The generated
+shell installer uses `$CARGO_HOME/bin`, or `~/.cargo/bin` when unset.
 
-It uses deterministic templates over the embedded spec, not an LLM. It does
-not install files into Codex/Claude, configure an IDE, read account resources,
-or embed the user's credential values. The OAuth build's shared guide labels
-authentication as a "custom auth provider"; it does not explain `auth login`
-or refresh. It is useful for command discovery, but incomplete as an auth guide.
+An old installation in `~/.vapi/bin` can shadow the new binary. Check which
+executable your shell finds:
 
-Recommendation remains to keep this built-in exporter because it tracks the
-exact installed CLI, while any automatic agent setup stays outside this repo.
-The user's decision on retaining it is still pending.
+```bash
+type -a vapi
+```
 
-## Remaining integration work
+Remove the obsolete installation or its `~/.vapi/bin` PATH entry, then open a
+new shell or run `hash -r`. On PowerShell, use `Get-Command vapi -All`.
 
-1. Deploy the companion API/gateway acceptance change for the registered
-   staging public client. Validate login, refresh, org selection/isolation,
-   logout and permission denial, then promote the production OAuth registration
-   and API server together. See [the OAuth setup](../RELEASING.md).
-2. Readable operation names now live in the shared SDK overrides in `docs`.
-   Review the breaking SDK method/request-type renames and coordinate package
-   versions when regenerating the server SDKs. The CLI consumes the same names
-   through the central `cli-sdk` group.
-3. Review Fern's generated credential boundary against PR #18 before enabling
-   npm trusted publishing. Bootstrap the five missing platform packages,
-   configure OIDC/Homebrew credentials, and validate release builds. The
-   publishing preview now succeeds and its workflows are checked in.
-4. Resolve the skill-export decision, run cross-platform checks and perform
-   disposable live API acceptance before publishing. Homebrew begins with
-   stable releases because Fern skips prerelease formula updates.
+## Sign in again
 
-The generated provider-resource wire tests initially failed because the spec
-marked reserved `Content-Type` as a required standalone header while Fern's IR
-removed it. `VapiAI/docs/fern/apis/cli/openapi-overrides.yml` makes it optional for
-the CLI without editing other SDK inputs or generated Rust.
+```bash
+vapi auth login
+vapi auth status
+```
+
+Login uses a public OAuth client with PKCE. `auth status` reports available
+credentials; it does not export tokens or establish your account identity.
+`auth logout` removes local credentials; it does not revoke a token at the
+identity provider. Sign out before switching from a staging OAuth registration
+to production, and sign in again afterward.
+
+For automation, set `VAPI_TOKEN` to a short-lived OAuth access token for the
+configured API audience. The CLI uses it without saving it or refreshing it.
+This variable does not restore support for legacy API keys. Without a selected
+profile, the environment token takes precedence over a saved login. A selected
+profile's saved credential takes precedence; unset `VAPI_TOKEN` to avoid an
+unintended fallback when that profile has no credential.
+
+For SSH login, the browser must reach the CLI's loopback callback. Forward all
+configured ports from your local machine, then run login on the remote host:
+
+```bash
+ssh -L 8484:127.0.0.1:8484 -L 8485:127.0.0.1:8485 -L 8486:127.0.0.1:8486 user@host
+vapi auth login --no-browser
+```
+
+Open the printed URL in the local browser. Opening it on an unrelated device
+without forwarding the callback cannot complete login. Containers similarly
+need reachable loopback forwarding, or an OAuth access token for automation.
+
+## Update commands and flags
+
+Use `vapi --help`, `vapi <group> --help`, and `vapi <group> <command> --schema`
+to inspect the generated commands and accepted parameters.
+
+| Go CLI | 1.0 beta |
+| --- | --- |
+| `assistant list/create/get/update/delete` | `assistants list/create/get/update/delete`; inspect the named flags with `--help` |
+| `call`, `chat`, `tool`, `phone-number`, `squad`, `file` groups | `calls`, `chats`, `tools`, `phone-numbers`, `squads`, `files` |
+| `--api-key` and saved API-key login | Removed; use OAuth login or an OAuth `VAPI_TOKEN` |
+| `--config` | Removed; use generated profiles and their supported environment variables |
+| `-v` | Use `--version` |
+| `auth whoami` | No identity-query equivalent; `auth status` reports credential status |
+| `auth token` | Removed; the CLI does not export stored tokens |
+| `auth switch` | Use `profiles use` or `--profile` with a newly configured profile |
+| `auth logout --all` | Removed; sign out of the relevant selected profiles individually |
+| `config get/set/env` and `config analytics ...` | Removed; see `profiles --help` and the supported global options |
+| `call end` | Removed; there is no generated equivalent to this convenience command |
+| `chat continue` | Removed; inspect `chats --help` for the API's current chat operations |
+| `tool test` and `tool types` | Removed; inspect `tools --help` and operation schemas; test tool servers separately |
+| `init` and `listen` | Removed |
+| Bundled MCP documentation server | Removed; use the separately maintained Vapi MCP server |
+| `install-man-pages` | Use `vapi man > vapi.1`, then install the resulting page using your system's man-page setup |
+| `update` and `update check` | Removed; reinstall through the chosen npm channel or native release |
+
+Shared SDK names also simplify commands such as `campaigns list` and
+`campaigns list-v2`. Existing server SDK code may require method/request-type
+renames when adopting regenerated SDK versions.
+
+## Check scripts and destructive operations
+
+Deletes execute immediately without an interactive confirmation. Preview the
+request with `--dry-run` before running destructive commands:
+
+```bash
+vapi assistants delete --id ASSISTANT_ID --dry-run
+```
+
+Check exit status before consuming command output. A list command without
+supported pagination options returns one server page, not necessarily every
+matching record. Inspect its `--help`; changing `--limit` alone does not ensure
+a complete export.
+
+## Platform and distribution changes
+
+The published npm platforms are Linux x86-64/AArch64, macOS x86-64/AArch64, and
+Windows x86-64. Linux ARMv6/ARMv7 builds and the old Docker image are no longer
+published. There is no built-in self-update command. Use the package manager or
+native archive that installed the CLI.
+
+See [the command reference](../reference.md) for all API operations and
+[release instructions](../RELEASING.md) for maintainer rollout requirements.

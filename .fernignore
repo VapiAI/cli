@@ -19,5 +19,3 @@ NOTICE
 patches/
 # Retain Vapi attribution; Replay rejects this generated file's test certificate.
 src/http.rs
-# Ignore the removed legacy input directory in pre-migration history.
-fern/

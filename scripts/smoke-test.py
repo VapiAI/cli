@@ -87,6 +87,31 @@ class CLITest(unittest.TestCase):
                 self.assertEqual(request[:2], ('GET', route))
                 self.assert_client_headers(request[2], 'campaigns_' + command)
 
+    def test_ephemeral_oauth_token_does_not_write_credentials(self):
+        self.cli('auth', 'logout')
+        before = {str(p): p.read_bytes() for p in Path(self.directory.name).rglob('auth-keyring.json')}
+        self.environment['VAPI_TOKEN'] = 'ephemeral-oauth-fixture'
+        self.cli('assistants', 'list')
+        self.assertEqual(self.server.requests[-1][2].get('authorization'), 'Bearer ephemeral-oauth-fixture')
+        after = {str(p): p.read_bytes() for p in Path(self.directory.name).rglob('auth-keyring.json')}
+        self.assertEqual(after, before)
+
+    def test_legacy_api_key_does_not_claim_to_shadow_oauth_login(self):
+        self.environment['VAPI_API_KEY'] = 'unused-legacy-key'
+        result = self.cli('auth', 'login', '--with-token', stdin='replacement-token\n')
+        self.assertNotIn('VAPI_API_KEY', result.stdout + result.stderr)
+        self.assertNotIn('shadows', result.stdout + result.stderr)
+
+    def test_help_names_real_environment_variables(self):
+        for scope in [(), ('calls',), ('calls', 'list')]:
+            with self.subTest(scope=scope):
+                text = self.cli(*scope, '--help').stdout
+                self.assertNotIn('<NAME>_', text)
+                self.assertNotIn('x-fern-', text)
+                self.assertIn('VAPI_OUTPUT', text)
+                self.assertIn('VAPI_USER_AGENT_SUFFIX', text)
+                self.assertNotIn('<NAME>_', self.cli(*scope, '--help', '--format', 'json').stdout)
+
     def test_oauth_login_uses_pkce_without_a_client_secret(self):
         spec = json.loads(self.cli('--spec-raw').stdout)
         flow = spec['components']['securitySchemes']['bearer']['flows']['authorizationCode']
@@ -232,10 +257,20 @@ class CLITest(unittest.TestCase):
         self.assertIn('bearer', status.stdout)
         self.assertNotIn('local-test-token', status.stdout + status.stderr)
         self.cli('auth', 'logout')
-        self.environment.update(VAPI_TOKEN='ignored-token', VAPI_API_KEY='ignored-api-key')
+        self.environment['VAPI_API_KEY'] = 'ignored-api-key'
         result = self.cli('assistants', 'list', success=False)
         self.assertIn('Authentication credentials are missing', result.stdout + result.stderr)
         self.assertEqual(self.server.requests, [])
+
+    def test_single_call_delete_has_required_id_and_no_required_body(self):
+        identifier = '11111111-1111-4111-8111-111111111111'
+        self.cli('calls', 'delete', success=False)
+        self.assertEqual(self.server.requests, [])
+        self.cli('calls', 'delete', '--id', identifier)
+        method, path, headers, body = self.server.requests[-1]
+        self.assertEqual((method, path), ('DELETE', '/call/' + identifier))
+        self.assertIn(body, (b'', b'{}'))
+        self.assert_client_headers(headers, 'calls_delete')
 
     def test_create_body_from_stdin(self):
         self.cli('assistants', 'create', '--json', '-', stdin='{"name":"From stdin"}')

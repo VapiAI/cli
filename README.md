@@ -5,17 +5,13 @@ terminal.
 
 ## Install
 
-Install with npm (requires Node.js):
+Install the 1.0 beta with npm (requires Node.js):
 
 ```bash
-npm install --global @vapi-ai/cli
+npm install --global @vapi-ai/cli@beta
 ```
 
-Or install with Homebrew:
-
-```bash
-brew install VapiAI/tap/vapi-cli
-```
+Homebrew installation starts with the stable release; it does not distribute this beta.
 
 You can also download a native binary from [GitHub Releases](https://github.com/VapiAI/cli/releases).
 
@@ -31,9 +27,10 @@ Complete sign-in in your browser, then check your session:
 vapi auth status
 ```
 
-For a terminal without browser access, use `vapi auth login --no-browser` and
-open the printed URL on a device with a browser. Use `vapi auth logout` to remove
-your stored credentials.
+For SSH or containers, `--no-browser` still needs the browser to reach the
+CLI's loopback callback. See [remote login and automation](docs/MIGRATION.md#sign-in-again)
+for port forwarding and OAuth `VAPI_TOKEN` usage. Use `vapi auth logout` to
+remove local credentials.
 
 ## Create an assistant
 

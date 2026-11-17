@@ -56,6 +56,10 @@ use crate::error::CliError;
 pub trait KeyringStore: Send + Sync + std::fmt::Debug {
     /// Retrieve a stored value, if any.
     fn get(&self, service: &str, account: &str) -> Result<Option<String>, CliError>;
+    /// Read current storage while coordinating a rotating-token refresh.
+    fn get_fresh(&self, service: &str, account: &str) -> Result<Option<String>, CliError> {
+        self.get(service, account)
+    }
     /// Store / replace a value.
     fn set(&self, service: &str, account: &str, value: &str) -> Result<(), CliError>;
     /// Remove a stored value. Idempotent — a missing entry is `Ok(())`.
@@ -739,6 +743,13 @@ impl<S: KeyringStore> std::fmt::Debug for CachingKeyringStore<S> {
 }
 
 impl<S: KeyringStore> KeyringStore for CachingKeyringStore<S> {
+    fn get_fresh(&self, service: &str, account: &str) -> Result<Option<String>, CliError> {
+        self.forget(service, account);
+        let value = self.inner.get_fresh(service, account)?;
+        self.remember(service, account, Ok(value.clone()));
+        Ok(value)
+    }
+
     fn get(&self, service: &str, account: &str) -> Result<Option<String>, CliError> {
         if let Some((read_at, value)) = self.entries().get(&Self::key(service, account)) {
             if read_at.elapsed() < self.ttl {

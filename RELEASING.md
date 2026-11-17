@@ -52,8 +52,7 @@ API-key login is not a release substitute. Track evidence on
 ## Fern-managed distribution
 
 The publishing preview succeeded after Fern organization access and the Fern
-GitHub App installation for `VapiAI/cli` were approved. The checked-in output is
-unchanged from the shared publishing preview (Fern CLI 5.169.0 / generator 0.59.1):
+GitHub App installation for `VapiAI/cli` were approved. The generated distribution is based on the shared publishing preview (Fern CLI 5.169.0 / generator 0.59.1):
 
 | File | Behavior |
 | --- | --- |
@@ -69,7 +68,7 @@ Generation is configured in the `cli-sdk` group of
 [`VapiAI/docs`](https://github.com/VapiAI/docs/blob/main/fern/apis/cli/generators.yml),
 alongside the server SDKs. Run its **Release CLI** workflow with a version to
 open a generated pull request here. It refreshes runtime and publishing files;
-Fern Replay preserves the schema and command-binding customizations.
+Fern Replay preserves the runtime and publishing customizations.
 `.fernignore` retains request attribution and the repository-owned docs and checks. No CLI-specific API snapshots are needed.
 
 For a local publishing preview, run from the docs checkout:
@@ -84,7 +83,24 @@ version tag after the gates below are satisfied.
 
 ### Release gates
 
-1. Complete live OAuth acceptance and production promotion above.
+Both generated tag workflows run `python3 scripts/check-release.py` before
+publishing. The guard currently refuses all public tags, including beta tags,
+because this checkout embeds the staging registration. Promote the source
+configuration and regenerate before tagging; do not bypass this guard.
+
+GitHub has reported no PR check runs for this candidate. A repository owner
+must verify that Actions is enabled and that push/PR workflows run before
+merging. Local checks are recorded separately and are not a substitute for
+checks on all three configured runner platforms.
+
+
+1. Complete live OAuth acceptance and production promotion above. Before
+   switching an installed beta from staging to production, run `vapi auth logout`
+   for every saved profile: credential slots are profile-scoped, not keyed by
+   issuer/client. Logout removes local credentials; it does not revoke the
+   authorization remotely. Test refresh with a locked/denied credential store:
+   a rotated token that cannot be saved requires unlocking it and logging in
+   again; the CLI must show that recovery path without printing tokens.
 2. Resolve the generated publishing credential boundary before enabling npm
    trusted publishing. In `ci.yml`, the platform publish jobs grant
    `id-token: write` during Rust compilation; they also execute third-party
@@ -103,7 +119,14 @@ version tag after the gates below are satisfied.
 4. Configure `HOMEBREW_TAP_TOKEN` with tap write access, or configure Fern's
    GitHub App distribution option and regenerate. Reconcile the tap's old
    formula/cask entries with `Formula/vapi-cli.rb` before the stable rollout.
-5. Validate release builds on the target runners. npm and cargo-dist build
+5. Before the first stable tag, update and verify the hosted `install.sh` and
+   `install.ps1`, the old npm launcher's `install.js`, and the old `vapi update`
+   path. They use `releases/latest` and Go-era `cli_<OS>_<arch>` asset names;
+   cargo-dist uses different asset names. A stable release changes that latest
+   pointer and can break existing installers. Beta prereleases do not replace
+   it. The installer/tap transition is separate release work, not implemented
+   by this generated preview.
+6. Validate release builds on the target runners. npm and cargo-dist build
    independently; cargo-dist enables `rustls` explicitly while the npm build
    uses target defaults, so matching profile names alone do not establish
    byte-identical artifacts. macOS signing in `release.yml` requires all three

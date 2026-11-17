@@ -21,6 +21,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Set up Node for offline packaging checks
+        if: runner.os == 'Linux'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check npm package contents without publishing
+        if: runner.os == 'Linux'
+        run: python scripts/test-packaging.py
+      - name: Check release safety fixtures
+        run: python scripts/test-release.py
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config time
