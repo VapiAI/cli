@@ -844,7 +844,7 @@ impl Binding for OpenApiBinding {
             // a clone so the client this request builds carries it.
             let http_config = prepared.http_config.clone().with_user_agent_suffix_override(
                 crate::cli_args::resolve_user_agent_suffix_override(root_matches),
-            );
+            ).with_vapi_client_command(root_matches);
 
             // Read --output flag for binary response file writing. The literal
             // `-` is a stdout sentinel (curl/wget convention) and bypasses
@@ -967,7 +967,7 @@ impl Binding for OpenApiBinding {
         );
         let http_config = entry.http_config.with_user_agent_suffix_override(
             crate::cli_args::resolve_user_agent_suffix_override(matches),
-        );
+        ).with_vapi_client_command(matches);
         let ctx = super::AppContext::new(
             entry.doc,
             entry.auth_provider,
@@ -1005,7 +1005,7 @@ impl Binding for OpenApiBinding {
         let entry = super::app::BindingEntry {
             http_config: entry.http_config.with_user_agent_suffix_override(
                 crate::cli_args::resolve_user_agent_suffix_override(matches),
-            ),
+            ).with_vapi_client_command(matches),
             ..entry
         };
         match existing {
