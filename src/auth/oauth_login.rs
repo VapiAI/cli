@@ -1534,7 +1534,7 @@ mod tests {
     #[test]
     fn built_in_callback_pages_have_no_marketing_link() {
         for outcome in [CallbackOutcome::Success, CallbackOutcome::Failure { error: "denied".into(), description: None }] {
-            let html = render_callback_page(&outcome);
+            let html = render_callback_page(outcome);
             assert!(!html.contains("Built with") && !html.contains("utm_"));
             assert!(html.contains("</html>"));
         }
